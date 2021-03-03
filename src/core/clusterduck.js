@@ -17,12 +17,23 @@ class ClusterDuck extends emitter {
         this.verbose = ![null, false].includes(args.verbose)
         this.pidFile = args.pidFile
         this.transports = {}
+
+        this.on('quack', function() {
+            console.log(arguments)
+        })
     }
 
     api() {
+        const clusterduck = this;
         return {
-            export: function (callback) {
-                callback()
+            export: function () {
+                return new Promise((resolve, reject) => {
+                    let clusters = {};
+                    for (let cluster of clusterduck.clusters) {
+                        clusters[cluster.name] = cluster.alive_nodes.addrs()
+                    }
+                    resolve(clusters)
+                });
             },
         };
     }
@@ -38,7 +49,7 @@ class ClusterDuck extends emitter {
      *
      */
     init_transports() {
-        for (const [key, instance] of Object.entries(arrayToObject(this.config.transports || [], 'hash'))) {
+        for (const [key, instance] of Object.entries(arrayToObject(this.config.transports || [], item => item.type))) {
             const transport = new (require('../transports/' + instance.type))(instance, this);
             this.transports[key] = {
                 config: instance,
@@ -48,6 +59,7 @@ class ClusterDuck extends emitter {
                 console.log(transport)
                 throw new Error('transport ' + JSON.stringify(instance) + ' does not have listen()');
             }
+
             transport.listen()
         }
     }
@@ -59,9 +71,9 @@ class ClusterDuck extends emitter {
     async init_clusters() {
         const clusterduck = this
         clusterduck.clusters = []
-        for (let k in this.config.clusters || []) {
-            let clusterConfig = this.config.clusters[k]
-            let cluster = new (require('../clusters/' + clusterConfig.type))(clusterConfig, clusterduck)
+        for (const name in this.config.clusters || []) {
+            let clusterConfig = this.config.clusters[name]
+            let cluster = new (require('../clusters/' + clusterConfig.type))(clusterConfig, name, clusterduck)
             clusterduck.clusters.push(cluster)
         }
         if (!this.slave) {

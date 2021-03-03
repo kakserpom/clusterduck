@@ -1,120 +1,150 @@
 const md5 = require('md5')
 const msg = require('axon')
 const CryptoBox = require('../misc/cryptobox')
-const LifeRaft = require('liferaft')
+const Raft = require('liferaft')
 const debug = require('diagnostics')('raft')
 
-class Raft {
+class Transport {
     constructor(config, clusterduck) {
 
         this.config = config
         this.clusterduck = clusterduck
+        this.clusterduck.quack = function() {
+            debug('Cannot quack yet')
+        };
     }
 
     listen() {
-        const cryptoBox = new CryptoBox(this.config.secret)
+        const transport = this
+        return new Promise((resolve, reject) => {
+            const cryptoBox = new CryptoBox(this.config.secret)
 
-        class MsgRaft extends LifeRaft {
+            const clusterduck = this.clusterduck
 
-            /**
-             * Initialized, start connecting all the things.
-             *
-             * @param {Object} options Options.
-             * @api private
-             */
-            initialize(options) {
-                debug('initializing reply socket on port %s', this.address);
+            class MsgRaft extends Raft {
 
-                const socket = this.socket = msg.socket('rep');
+                quack(payload, when) {
+                    raft.message(
+                        Raft.LEADER,
+                        {type: 'quack', payload: payload},
+                        when
+                    )
 
-                socket.bind(this.address);
-                socket.on('message', (data, fn) => {
-                    if (cryptoBox) {
-                        data = JSON.parse(cryptoBox.decrypt(data))
-                    }
-                    this.emit('data', data, fn)
-                });
+                }
 
-                socket.on('error', () => {
-                    debug('failed to initialize on port: ', this.address);
-                });
-            }
+                /**
+                 * Initialized, start connecting all the things.
+                 *
+                 * @param {Object} options Options.
+                 * @api private
+                 */
+                initialize(options) {
+                    debug('initializing reply socket on port %s', this.address);
 
-            /**
-             * The message to write.
-             *
-             * @param {Object} packet The packet to write to the connection.
-             * @param {Function} fn Completion callback.
-             * @api private
-             */
-            write(packet, fn) {
-                if (!this.socket) {
-                    this.socket = msg.socket('req');
+                    const socket = this.socket = msg.socket('rep');
 
-                    this.socket.connect(this.address);
-                    this.socket.on('error', function err() {
-                        console.error('failed to write to: ', this.address);
+                    socket.bind(this.address);
+                    socket.on('message', (data, fn) => {
+                        if (cryptoBox) {
+                            data = JSON.parse(cryptoBox.decrypt(data))
+                        }
+                        if (data.type === 'quack') {
+                            console.log({quack: data.payload})
+                            clusterduck.emit('quack', data.payload)
+                        } else {
+                            this.emit('data', data, fn)
+                        }
+                    });
+
+                    socket.on('error', () => {
+                        debug('failed to initialize on port: ', this.address);
                     });
                 }
 
-                //debug('writing packet to socket on port %s', this.address);
-                if (cryptoBox) {
-                    packet = cryptoBox.encrypt(JSON.stringify(packet));
+                /**
+                 * The message to write.
+                 *
+                 * @param {Object} packet The packet to write to the connection.
+                 * @param {Function} fn Completion callback.
+                 * @api private
+                 */
+                write(packet, fn) {
+                    if (!this.socket) {
+                        this.socket = msg.socket('req');
+
+                        this.socket.connect(this.address);
+                        this.socket.on('error', function err() {
+                            console.error('failed to write to: ', this.address);
+                        });
+                    }
+                    //debug('writing packet to socket on port %s', this.address);
+                    if (cryptoBox) {
+                        packet = cryptoBox.encrypt(JSON.stringify(packet));
+                    }
+                    this.socket.send(packet, (data) => {
+                        fn(undefined, data);
+                    });
                 }
-                this.socket.send(packet, (data) => {
-                    fn(undefined, data);
-                });
             }
-        }
 
-        const raft = new MsgRaft(this.config.address, {
-            'election min': 2000,
-            'election max': 5000,
-            'heartbeat': 1000,
-            Log: require('liferaft/log'),
-            path: this.config.path || '/var/run/clusterduck/db-' + md5(this.clusterduck.pidFile)
-        });
+            const raft = new MsgRaft(this.config.address, {
+                'election min': 2000,
+                'election max': 5000,
+                'heartbeat': 1000,
+                Log: require('liferaft/log'),
+                path: this.config.path || '/var/run/clusterduck/db-' + md5(this.clusterduck.pidFile)
+            });
 
-        raft.on('heartbeat timeout', function () {
-            debug('heart beat timeout, starting election');
-        });
-
-        raft.on('term change', function (to, from) {
-            debug('were now running on term %s -- was %s', to, from);
-        }).on('leader change', function (to, from) {
-            debug('we have a new leader to: %s -- was %s', to, from);
-        }).on('state change', function (to, from) {
-            debug('we have a state to: %s -- was %s', to, from);
-        });
-
-        raft.on('commit', function (command) {
-            console.log({command: command});
-        });
+            raft.on('heartbeat timeout', function () {
+                debug('heart beat timeout, starting election');
+            })
 
 
-        raft.on('leader', function () {
-            debug('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
-            debug('I am elected as leader');
-            debug('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
-        });
+            raft.on('term change', function (to, from) {
+                debug('were now running on term %s -- was %s', to, from);
+            }).on('leader change', function (to, from) {
+                if (raft.state !== Raft.LEADER) {
+                    transport.quack = raft.quack;
+                }
+                debug('we have a new leader to: %s -- was %s', to, from || 'unknown');
+            }).on('state change', function (to, from) {
+                debug('we have a state to: %s -- was %s', Raft.states[to], Raft.states[from]);
+            });
 
-        raft.on('candidate', function () {
-            debug('----------------------------------');
-            debug('I am starting as candidate');
-            debug('----------------------------------');
-        });
 
-        console.log(this.config.bootstrap);
+            raft.on('commit', function (command) {
+                console.log({command: command})
+            })
 
-        for (const addr of (this.config.bootstrap || [])) {
-            debug('join ' + addr)
-            if (addr === this.config.address) {
-                continue;
+            raft.on('leader', function () {
+                transport.quack = function(quack, when) {
+                    clusterduck.emit('quack', quack);
+                    !when || when(quack);
+                };
+                debug('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+                debug('I am elected as leader');
+                debug('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+            });
+
+            raft.on('candidate', function () {
+                debug('----------------------------------');
+                debug('I am starting as candidate');
+                debug('----------------------------------');
+            });
+
+            console.log(this.config.bootstrap);
+
+            for (const addr of (this.config.bootstrap || [])) {
+                debug('join ' + addr)
+                if (addr === this.config.address) {
+                    continue;
+                }
+                raft.join(addr)
             }
-            raft.join(addr)
-        }
 
+            resolve()
+        })
     }
 }
 
-return module.exports = Raft
+return module.exports = Transport

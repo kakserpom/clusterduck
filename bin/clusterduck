@@ -4,6 +4,7 @@
     const daemonizeProcess = require('daemonize-process')
     const pidFileClass = require('../src/misc/pid-file')
     const md5 = require('md5')
+    const yaml = require('js-yaml')
 
     const yargs = require('yargs');
 
@@ -33,9 +34,11 @@
         })
         .command('export', 'export', (yargs) => {
             command = function (clusterduck) {
-                new Promise(async (resolve, reject) => {
+                return new Promise(async (resolve, reject) => {
                     const [remote, d] = await clusterduck.dnode.client()
-                    remote.export(resolve, reject)
+                    const res = await remote.export();//.catch(reject)
+                    process.stdout.write(yaml.dump(res));
+                    d.end()
                 })
             }
         })

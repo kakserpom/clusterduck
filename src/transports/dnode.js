@@ -1,6 +1,7 @@
 const http = require('http')
 const yaml = require('js-yaml')
 const dnode = require('dnode')
+const dnodePromise = require('dnode-promise')
 const fs = require('fs')
 
 /**
@@ -22,18 +23,22 @@ class Dnode {
 
     listen() {
         const clusterduck = this.clusterduck
-        if (this.address.match(/^\//)) {
-            fs.existsSync(this.address) && fs.unlinkSync(this.address)
-        }
-        return dnode(clusterduck.api).on('remote', function (remote) {
-            //remote.handshake(clusterduck.id)
-        }).listen(this.address)
+        return new Promise((resolve, reject) => {
+            if (this.address.match(/^\//)) {
+                fs.existsSync(this.address) && fs.unlinkSync(this.address)
+            }
+            dnode(dnodePromise.toDnode(clusterduck.api())).on('remote', function (remote) {
+                //remote.handshake(clusterduck.id)
+            }).listen(this.address);
+
+            resolve(this)
+        })
     }
 
     client() {
         return new Promise((resolve, reject) => {
             const d = dnode.connect(this.address).on('remote', function (remote) {
-                resolve([remote, d])
+                resolve([dnodePromise.toPromise(remote), d])
             })
         })
     }

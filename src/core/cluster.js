@@ -9,8 +9,9 @@ class Cluster extends emitter {
      * @param config
      * @param clusterduck
      */
-    constructor(config, clusterduck) {
+    constructor(config, name, clusterduck) {
         super();
+        this.name = name
         this.clusterduck = clusterduck
         this.update_config(config)
     }
@@ -24,6 +25,12 @@ class Cluster extends emitter {
 
         this.last_state_propagation = -1
         this.last_state_change = 0
+
+        this.removeAllListeners()
+
+        this.on('node:state', function(state, node) {
+            node.state = state
+        })
 
         this._init_nodes(config.nodes || [])
         this._init_health_checks(config.health_checks || [])
@@ -61,8 +68,6 @@ class Cluster extends emitter {
     }
 
     _init_triggers(triggers) {
-        this.removeAllListeners()
-
         this.triggers = arrayToObject(triggers, 'hash')
 
         for (const [key, trigger] of Object.entries(this.triggers)) {
@@ -109,15 +114,17 @@ class Cluster extends emitter {
                 return
             }
             clusterChecks.push(Promise.all(checks).then(function (list) {
-                node.alive = true
+                cluster.emit('node:state', ClusterNode.STATE_ALIVE, node)
+                node.emit('node:state', ClusterNode.STATE_ALIVE, node)
             }).catch(function (error) {
-                node.alive = false
+                cluster.emit('node:state', ClusterNode.STATE_DEAD, node)
+                node.emit('node:state', ClusterNode.STATE_DEAD, node)
             }))
         }
 
         Promise.all(clusterChecks).then(function (list) {
             const now = Date.now()
-            if ((cluster.last_state_propagation|| 0) >= cluster.last_state_change) {
+            if (cluster.last_state_propagation >= cluster.last_state_change) {
                 return
             }
             cluster.last_state_propagation = now

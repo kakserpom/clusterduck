@@ -19,11 +19,13 @@
     "daemonize-process": "^3.0.0",
     "diagnostics": "^2.0.2",
     "dnode": "^1.2.2",
+    "dnode-promise": "^3.0.1",
     "easy-pid-file": "^1.0.7",
     "express": "^4.17.1",
     "http-server": "^0.12.3",
     "js-yaml": "^4.0.0",
     "liferaft": "^1.0.0",
+    "md5": "^2.3.0",
     "nanomsg": "^4.1.0",
     "npid": "^0.4.0",
     "one-time": "^1.0.0",
@@ -36,7 +38,6 @@
     "weak": "^1.0.1",
     "websocket": "^1.0.33",
     "yaml": "^1.10.0",
-    "yargs": "^16.2.0",
-    "md5": "^2.3.0"
+    "yargs": "^16.2.0"
   }
 }

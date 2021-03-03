@@ -7,7 +7,7 @@ class ClusterNode extends emitter {
         this._health_checks = {}
         this.cluster = cluster
         this.last_state_change = 0
-        this._alive = false
+        this._alive = ClusterNode.STATE_UNKNOWN
     }
 
     setConfig(config) {
@@ -15,17 +15,17 @@ class ClusterNode extends emitter {
         return this
     }
 
-    set alive(bool) {
-        if (this._alive === bool) {
+    set state(state) {
+        if (this._state === state) {
             return
         }
-        this._alive = bool
+        this._state = state
         this.last_state_change = Date.now()
         this.cluster.touch_state()
     }
 
     get alive() {
-        return this._alive
+        return this._state === ClusterNode.STATE_ALIVE
     }
 
     health_check(hcId, hc) {
@@ -40,5 +40,10 @@ ClusterNode.list = function (nodes) {
     }
     return nodes
 }
+
+ClusterNode.STATE_UNKNOWN = 'unknown'
+ClusterNode.STATE_ALIVE = 'alive'
+ClusterNode.STATE_DEAD = 'dead'
+ClusterNode.states = [ClusterNode.STATE_UNKNOWN, ClusterNode.STATE_ALIVE, ClusterNode.STATE_DEAD]
 
 return module.exports = ClusterNode

@@ -8,18 +8,18 @@ class CryptoBox {
         this.key = crypto.scryptSync(secret, 'salt', 24)
         this.iv = Buffer.alloc(16, 0)
         const hash = new SHA3(256);
-        hash.update('foo');
+        hash.update(secret);
         this.iv.fill(hash.digest())
     }
 
     cipher() {
-        return crypto.createCipheriv(this.algo, this.key, this.iv);
+        return crypto.createCipheriv(this.algo, this.key, this.iv)
     }
 
     encrypt(plain) {
         const cipher = this.cipher()
-        let encrypted = cipher.update(plain, 'utf8', 'hex');
-        encrypted += cipher.final('hex');
+        let encrypted = cipher.update(plain, 'utf8', 'binary')
+        encrypted += cipher.final('binary')
         return encrypted
     }
 
@@ -29,8 +29,8 @@ class CryptoBox {
 
     decrypt(encrypted) {
         const decipher = this.decipher()
-        let plain = decipher.update(encrypted, 'hex');
-        plain += decipher.final();
+        let plain = decipher.update(encrypted, 'binary', 'utf8')
+        plain += decipher.final('utf8')
         return plain
     }
 
