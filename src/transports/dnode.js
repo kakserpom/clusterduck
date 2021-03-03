@@ -25,12 +25,7 @@ class Dnode {
         if (this.address.match(/^\//)) {
             fs.existsSync(this.address) && fs.unlinkSync(this.address)
         }
-        return dnode({
-            export: function (callback) {
-
-                callback();
-            },
-        }).on('remote', function (remote) {
+        return dnode(clusterduck.api).on('remote', function (remote) {
             //remote.handshake(clusterduck.id)
         }).listen(this.address)
     }

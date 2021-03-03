@@ -19,6 +19,14 @@ class ClusterDuck extends emitter {
         this.transports = {}
     }
 
+    api() {
+        return {
+            export: function (callback) {
+                callback()
+            },
+        };
+    }
+
     get dnode() {
         return new (require('../transports/dnode'))(
             {},
