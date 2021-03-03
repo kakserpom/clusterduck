@@ -1,0 +1,42 @@
+{
+  "name": "clusterduck",
+  "version": "0.1",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kakserpom/clusterduck"
+  },
+  "bin": {
+    "clusterduck": "./bin/clusterduck"
+  },
+  "author": "Vasily Zorin",
+  "license": "LGPL-3.0-or-later",
+  "dependencies": {
+    "axon": "^2.0.3",
+    "daemonize-process": "^3.0.0",
+    "diagnostics": "^2.0.2",
+    "dnode": "^1.2.2",
+    "easy-pid-file": "^1.0.7",
+    "express": "^4.17.1",
+    "http-server": "^0.12.3",
+    "js-yaml": "^4.0.0",
+    "liferaft": "^1.0.0",
+    "nanomsg": "^4.1.0",
+    "npid": "^0.4.0",
+    "one-time": "^1.0.0",
+    "parse-duration": "^0.4.4",
+    "redis": "^3.0.2",
+    "sha3": "^2.1.4",
+    "shell-quote": "^1.7.2",
+    "shoe": "0.0.15",
+    "uuid": "^8.3.2",
+    "weak": "^1.0.1",
+    "websocket": "^1.0.33",
+    "yaml": "^1.10.0",
+    "yargs": "^16.2.0",
+    "md5": "^2.3.0"
+  }
+}

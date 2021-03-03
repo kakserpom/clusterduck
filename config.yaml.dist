@@ -1,0 +1,26 @@
+clusters:
+  redis_cache:
+    type: redis
+    nodes:
+      - addr: 127.0.0.1:6379
+      - addr: 127.0.0.1:6380
+
+    health_checks:
+      - type: basic
+        timeout: 1s
+        every: 1s
+
+    triggers:
+      - on: [ nodes:alive ]
+        do:
+          - type: shell
+            cwd: /tmp
+            commands:
+              - echo $nodes_addr_list > nodes_list
+
+transports:
+  - type: http
+    listen: 8484
+    no_slave: true
+    bootstrap: [ 127.0.0.1:8484 ]
+
