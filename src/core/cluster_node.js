@@ -1,6 +1,11 @@
 const HealthCheck = require('./health_check')
 const emitter = require('events').EventEmitter
 
+/**
+ * @event node:state
+ * @event node:passed
+ * @event node:failed
+ */
 class ClusterNode extends emitter {
     constructor(cluster) {
         super()
@@ -10,18 +15,31 @@ class ClusterNode extends emitter {
         this._alive = ClusterNode.STATE_UNKNOWN
     }
 
+    /**
+     *
+     * @param config
+     * @returns {ClusterNode}
+     */
     setConfig(config) {
         this.config = config
         return this
     }
 
+    /**
+     *
+     * @param state
+     */
     set state(state) {
         if (this._state === state) {
             return
         }
+
         this._state = state
         this.last_state_change = Date.now()
         this.cluster.touch_state()
+
+        this.cluster.emit('node:state', this, state)
+        this.emit('node:state', this, state)
     }
 
     get alive() {

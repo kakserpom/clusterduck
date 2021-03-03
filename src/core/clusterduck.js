@@ -3,9 +3,12 @@ const {v4: uuidv4} = require('uuid')
 
 const emitter = require('events').EventEmitter
 
+/**
+ *
+ */
 class ClusterDuck extends emitter {
     /**
-     *
+     * Constructor
      * @param configFile
      */
     constructor(configFile, args) {
@@ -23,6 +26,10 @@ class ClusterDuck extends emitter {
         })
     }
 
+    /**
+     *
+     * @returns {{export: (function(): Promise<unknown>)}}
+     */
     api() {
         const clusterduck = this;
         return {
