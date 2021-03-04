@@ -5,6 +5,7 @@ const emitter = require('events').EventEmitter
 /**
  * Cluster model
  *
+ * @abstract
  * @event node:state
  * @event node:passed
  * @event node:failed

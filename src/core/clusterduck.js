@@ -1,11 +1,10 @@
 const arrayToObject = require('../misc/array-to-object')
 const {v4: uuidv4} = require('uuid')
 
-const cluster = require('cluster')
 const emitter = require('events').EventEmitter
 
 /**
- *
+ * Main class
  */
 class ClusterDuck extends emitter {
     /**
@@ -15,8 +14,7 @@ class ClusterDuck extends emitter {
     constructor(configFile, args) {
         super()
 
-        const cluster = require('cluster')
-        this.isDuckling = cluster.isWorker
+        this.isDuckling = require('cluster').isWorker
 
         this.slave = !!args.slave
         this.verbose = ![null, false].includes(args.verbose)
@@ -25,7 +23,6 @@ class ClusterDuck extends emitter {
         if (this.isDuckling) {
             return
         }
-
 
         this.id = uuidv4()
         this.configFile = configFile
@@ -57,8 +54,8 @@ class ClusterDuck extends emitter {
         })
     }
 
-    spawn(callback) {
-        const duckling = cluster.fork().on('online', () => {
+    spawnDuckling(callback) {
+        const duckling = require('cluster').fork().on('online', () => {
             duckling.message('bootstrap', {
                 id: this.id,
                 config: this.config,

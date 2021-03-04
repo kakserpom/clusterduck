@@ -2,6 +2,8 @@ const HealthCheck = require('./health_check')
 const emitter = require('events').EventEmitter
 
 /**
+ * Cluster node representation
+ *
  * @event node:state
  * @event node:passed
  * @event node:failed

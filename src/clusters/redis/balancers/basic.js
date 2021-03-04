@@ -6,7 +6,7 @@ const {ReplyError} = require("ioredis");
 
 class BasicBalancer extends Balancer {
     init() {
-        this._pools = new Map;
+        this._pools = new Map
     }
 
     get_pool(node) {
@@ -35,6 +35,7 @@ class BasicBalancer extends Balancer {
             let pool, redis
             try {
                 const node = balancer.get_node_by_key(key)
+
                 if (node === null) {
                     throw new ReplyError('get_node_by_key(' + JSON.stringify(key) + ') returned null')
                 }
