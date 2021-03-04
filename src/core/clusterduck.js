@@ -1,6 +1,7 @@
 const arrayToObject = require('../misc/array-to-object')
 const {v4: uuidv4} = require('uuid')
 
+const cluster = require('cluster')
 const emitter = require('events').EventEmitter
 
 /**
@@ -13,17 +14,61 @@ class ClusterDuck extends emitter {
      */
     constructor(configFile, args) {
         super()
+
+        const cluster = require('cluster')
+        this.isDuckling = cluster.isWorker
+
+        this.slave = !!args.slave
+        this.verbose = ![null, false].includes(args.verbose)
+
+
+        if (this.isDuckling) {
+            return
+        }
+
+
         this.id = uuidv4()
         this.configFile = configFile
         this.config = require('../config')(this.configFile)
-        this.slave = !!args.slave
-        this.verbose = ![null, false].includes(args.verbose)
+
         this.pidFile = args.pidFile
         this.transports = {}
 
-        this.on('quack', function() {
+        this.on('quack', function () {
             console.log(arguments)
         })
+    }
+
+    duckling() {
+        process.on('message', message => {
+            ({
+                bootstrap: payload => {
+                    this.id = payload.id
+                    this.config = payload.config
+                },
+                runBalancer: payload => {
+                    this.init_clusters()
+                    const cluster = this.clusters[payload.clusterName] || null
+                    const balancer = cluster.balancers[payload.balancerKey] || null
+                    balancer.listen()
+                }
+            }
+                [message.type])(message.payload)
+        })
+    }
+
+    spawn(callback) {
+        const duckling = cluster.fork().on('online', () => {
+            duckling.message('bootstrap', {
+                id: this.id,
+                config: this.config,
+            })
+            callback(duckling)
+        });
+        duckling.message = function (type, payload) {
+            duckling.send({type: type, payload: payload})
+        }
+        return duckling
     }
 
     /**
@@ -76,24 +121,17 @@ class ClusterDuck extends emitter {
      * @returns {Promise<void>}
      */
     async init_clusters() {
-        const clusterduck = this
-        clusterduck.clusters = []
-        for (const name in this.config.clusters || []) {
-            let clusterConfig = this.config.clusters[name]
-            let cluster = new (require('../clusters/' + clusterConfig.type))(clusterConfig, name, clusterduck)
-            clusterduck.clusters.push(cluster)
-        }
-        if (!this.slave) {
-            clusterduck.run_health_checks()
-            setInterval(function () {
-                clusterduck.run_health_checks()
-            }, 1000)
+        this.clusters = {}
+        for (const [name, config] of Object.entries(this.config.clusters || [])) {
+            this.clusters[name] = new (require('../clusters/' + config.type))(config, name, this)
         }
     }
 
     async run_health_checks() {
         const clusterduck = this
-        clusterduck.clusters.map((cluster) => cluster.run_health_checks())
+        for (const [name, cluster] of Object.entries(clusterduck.clusters)) {
+            cluster.run_health_checks()
+        }
     }
 
     /**
@@ -103,6 +141,11 @@ class ClusterDuck extends emitter {
     async run() {
         this.init_transports()
         this.init_clusters()
+
+        this.run_health_checks()
+        setInterval(() => {
+            this.run_health_checks()
+        }, 1000)
 
         process.on('unhandledRejection', e => {
             this.emit('unhandled-rejection:' + e.name, e)

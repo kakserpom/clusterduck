@@ -10,9 +10,11 @@ class Balancer {
      *
      * @param config
      * @param cluster
+     * @param key
      */
-    constructor(config, cluster) {
+    constructor(config, cluster, key) {
         this.cluster = cluster
+        this.key = key
         this.update_config(config)
 
         /**
@@ -73,6 +75,18 @@ class Balancer {
      *
      */
     listen() {
+    }
+
+    spawnDucklings() {
+        const numCPUs =  require('os').cpus().length;
+        for (let i = 0; i < numCPUs; ++i) {
+            this.cluster.clusterduck.spawn(duckling => {
+                duckling.message('runBalancer', {
+                    clusterName: this.cluster.name,
+                    balancerKey: this.key
+                })
+            })
+        }
     }
 }
 

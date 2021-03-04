@@ -14,6 +14,7 @@ class Cluster extends emitter {
     /**
      *
      * @param config
+     * @param name
      * @param clusterduck
      */
     constructor(config, name, clusterduck) {
@@ -44,10 +45,10 @@ class Cluster extends emitter {
             node.state = ClusterNode.STATE_DEAD
         })
 
-        this._init_nodes(config.nodes || [])
-        this._init_health_checks(config.health_checks || [])
-        this._init_triggers(config.triggers || [])
-        this._init_balancers(config.balancers || [])
+        this._init_nodes()
+        this._init_health_checks()
+        this._init_triggers()
+        this._init_balancers()
     }
 
     /**
@@ -59,13 +60,12 @@ class Cluster extends emitter {
 
     /**
      * Initialize nodes
-     * @param nodes
      * @private
      */
-    _init_nodes(nodes) {
+    _init_nodes() {
         this.nodes = this.nodes || {}
         let i = 0
-        const newNodes = arrayToObject(nodes, item => {
+        const newNodes = arrayToObject(this.config.nodes || [], item => {
             item.pos = i++
             return item.addr
         });
@@ -95,11 +95,10 @@ class Cluster extends emitter {
 
     /**
      * Initialize triggers
-     * @param triggers
      * @private
      */
-    _init_triggers(triggers) {
-        this.triggers = arrayToObject(triggers, 'hash')
+    _init_triggers() {
+        this.triggers = arrayToObject(this.config.triggers || [], 'hash')
 
         for (const [key, trigger] of Object.entries(this.triggers)) {
             this.on(trigger.on, function (nodes) {
@@ -117,25 +116,25 @@ class Cluster extends emitter {
 
     /**
      * Initialize triggers
-     * @param triggers
      * @private
      */
-    _init_balancers(balancers) {
-        this.balancers = arrayToObject(balancers, 'hash')
+    _init_balancers() {
+        this.balancers = arrayToObject(this.config.balancers || [], 'hash')
 
         for (const [key, config] of Object.entries(this.balancers)) {
-            const balancer = this.balancers[key] = new (this.require('./balancers/' + config.type))(config, this)
-            balancer.listen()
+            const balancer = this.balancers[key] = new (this.require('./balancers/' + config.type))(config, this, key)
+            if (!this.clusterduck.isDuckling) {
+                balancer.spawnDucklings()
+            }
         }
     }
 
     /**
      * Initialize health checks
-     * @param health_checks
      * @private
      */
-    _init_health_checks(health_checks) {
-        this.health_checks = arrayToObject(health_checks, 'hash')
+    _init_health_checks() {
+        this.health_checks = arrayToObject(this.config.health_checks || [], 'hash')
     }
 
     /**

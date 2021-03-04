@@ -71,10 +71,14 @@
             }
         }
         const clusterduck = new (require('../src/core/clusterduck'))(argv.configFile, argv)
-        if (command) {
-            await command(clusterduck);
+        if (clusterduck.isDuckling) {
+            clusterduck.duckling()
         } else {
-            await clusterduck.run()
+            if (command) {
+                await command(clusterduck);
+            } else {
+                await clusterduck.run()
+            }
         }
     } catch (err) {
         console.error(argv.verbose ? err : err.message)
