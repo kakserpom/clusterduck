@@ -5,6 +5,7 @@ const ClusterNode = require('./cluster_node')
  *
  */
 class Balancer {
+
     /**
      *
      * @param config
@@ -34,6 +35,8 @@ class Balancer {
                 this.ring.remove(node.config.addr)
             }
         })
+
+        this.init()
     }
 
     /**

@@ -102,7 +102,7 @@ class ClusterDuck extends emitter {
      */
     async run() {
         this.init_transports()
-        this.init_clusters();
+        this.init_clusters()
 
         process.on('unhandledRejection', e => {
             this.emit('unhandled-rejection:' + e.name, e)

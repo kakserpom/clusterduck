@@ -1,5 +1,4 @@
-const redis = require("redis")
-const {promisify} = require("util")
+const Redis = require("ioredis")
 return module.exports = function () {
     return new Promise(async (resolve, reject) => {
 
@@ -11,20 +10,22 @@ return module.exports = function () {
 
         const split = this.node.config.addr.split(':', 2)
         const clientConfig = {
-            host: split[0],
-            port: parseInt(split[1] || 6379),
-            no_ready_check: true,
+            host: split[0]
         }
-        const client = redis.createClient(clientConfig)
+        if (this.node.config.enableReadyCheck != null) {
+            clientConfig.enableReadyCheck = this.node.config.enableReadyCheck
+        }
+        if (split.length > 1) {
+            clientConfig.port = split[1]
+        }
+        const client = new Redis(clientConfig)
         client.on('error', function (error) {
             reject({error: error, hc: this.config})
         })
 
-        const setAsync = promisify(client.set).bind(client)
+        await client.set('foo', 'bar')
 
-        await setAsync('foo', 'bar')
-
-        client.quit()
+        client.disconnect()
 
         resolve({})
     })

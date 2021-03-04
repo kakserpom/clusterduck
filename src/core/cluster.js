@@ -33,6 +33,7 @@ class Cluster extends emitter {
         this.last_state_propagation = -1
         this.last_state_change = 0
 
+        // @TODO: refactor with proxy eventemitter
         this.removeAllListeners()
 
         this.on('node:passed', function (node) {
@@ -46,6 +47,7 @@ class Cluster extends emitter {
         this._init_nodes(config.nodes || [])
         this._init_health_checks(config.health_checks || [])
         this._init_triggers(config.triggers || [])
+        this._init_balancers(config.balancers || [])
     }
 
     /**
@@ -79,6 +81,15 @@ class Cluster extends emitter {
     }
 
     /**
+     *
+     * @param type
+     * @returns {*}
+     */
+    get_health_check(type) {
+        return this.require('./health_checks/' + type)
+    }
+
+    /**
      * Initialize triggers
      * @param triggers
      * @private
@@ -96,6 +107,21 @@ class Cluster extends emitter {
                 })
 
             });
+        }
+    }
+
+
+    /**
+     * Initialize triggers
+     * @param triggers
+     * @private
+     */
+    _init_balancers(balancers) {
+        this.balancers = arrayToObject(balancers, 'hash')
+
+        for (const [key, config] of Object.entries(this.balancers)) {
+            const balancer =this.balancers[key] = new (this.require('./balancers/' + config.type))(config, this)
+            balancer.listen()
         }
     }
 
