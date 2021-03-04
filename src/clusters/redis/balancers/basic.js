@@ -1,33 +1,45 @@
 const Balancer = require('../../../core/balancer')
+const net = require('net')
+
 const RedisParser = require('redis-parser')
 const RedisEncoder = require('sermone')
+const Redis = require('ioredis')
 const {RedisPool} = require('ioredis-conn-pool')
-const net = require('net')
+const {Response} = require('redis-protocol/lib/encoder')
+const encode = function encode(data) {
+    let encoded = ''
+    let response = new Response({
+        write: function (chunk) {
+            encoded += chunk
+        }
+    });
+    (function () {
+        this.encode(data)
+    }).call(response)
+    return encoded
+}
+
 
 class BasicBalancer extends Balancer {
     init() {
         this._pools = new Map;
     }
 
-    get_pool(addr) {
-        let pool = this._pools.get(addr)
+    get_pool(node) {
+        let pool = this._pools.get(node.config.addr)
         if (pool) {
             return pool
         }
 
-        const addrSplit = addr.split(addr, 2)
-
         pool = new RedisPool({
-            redis: {
-                port: addrSplit[1] || 6379,
-                host: addrSplit[0]
-            },
+            redis: this.cluster.redis_config(node),
             pool: {
-                min: 2,
-                max: 10
+                min: 1,
+                max: 1
             }
         })
-        this._pools.set(addr, pool)
+
+        this._pools.set(node.config.addr, pool)
         return pool
     }
 
@@ -39,20 +51,34 @@ class BasicBalancer extends Balancer {
             constructor(stream) {
                 this.stream = stream
                 this.parser = new RedisParser({
+                    returnBuffers: false,
                     async returnReply(command) {
                         let key = 'default'
-                        if (command.length && command[0].toLowerCase() === 'command') {
-                            command.shift()
+                        let pool, redis;
+                        try {
+                            const node = balancer.get_node_by_key(key)
+                            pool = await balancer.get_pool(node)
+                            redis = await pool.getConnection()
+
+                            const res = await redis.sendCommand(
+                                new Redis.Command(
+                                    command[0],
+                                    command.slice(1),
+                                    'utf-8'
+                                )
+                            )
+                            const packet = encode(res)
+                            stream.write(packet)
+                        } catch (e) {
+                            if (e.name !== 'ReplyError') {
+                                throw e
+                            }
+                            stream.write('-' + e.message + "\r\n")
+                        } finally {
+                            if (pool && redis) {
+                                pool.release(redis)
+                            }
                         }
-                        console.log(command)
-                        const addr = balancer.ring.get(key)
-                        console.log(addr)
-                        const pool = balancer.get_pool(addr)
-                        console.log(pool)
-                        pool.command(...command, function (err, res) {
-                            console.log([command, err, res])
-                            this.stream.write(RedisEncoder.encode(err || res))
-                        })
                     },
                     returnError(err) {
                         console.log(err)
@@ -77,7 +103,7 @@ class BasicBalancer extends Balancer {
 
         const server = net.createServer(socket => {
             new Connection(socket)
-        });
+        })
 
         server.listen(this.config.listen)
     }

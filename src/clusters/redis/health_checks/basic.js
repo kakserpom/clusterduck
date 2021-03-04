@@ -8,17 +8,7 @@ return module.exports = function () {
             e.hide = true
         });
 
-        const split = this.node.config.addr.split(':', 2)
-        const clientConfig = {
-            host: split[0]
-        }
-        if (this.node.config.enableReadyCheck != null) {
-            clientConfig.enableReadyCheck = this.node.config.enableReadyCheck
-        }
-        if (split.length > 1) {
-            clientConfig.port = split[1]
-        }
-        const client = new Redis(clientConfig)
+        const client = new Redis(this.node.cluster.redis_config(this.node))
         client.on('error', function (error) {
             reject({error: error, hc: this.config})
         })
@@ -29,4 +19,4 @@ return module.exports = function () {
 
         resolve({})
     })
-};
+}

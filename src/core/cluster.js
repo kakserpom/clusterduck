@@ -80,6 +80,10 @@ class Cluster extends emitter {
         }
     }
 
+    get_node_by_addr(addr) {
+        return this.nodes[addr] || null
+    }
+
     /**
      *
      * @param type
@@ -120,7 +124,7 @@ class Cluster extends emitter {
         this.balancers = arrayToObject(balancers, 'hash')
 
         for (const [key, config] of Object.entries(this.balancers)) {
-            const balancer =this.balancers[key] = new (this.require('./balancers/' + config.type))(config, this)
+            const balancer = this.balancers[key] = new (this.require('./balancers/' + config.type))(config, this)
             balancer.listen()
         }
     }

@@ -39,6 +39,10 @@ class Balancer {
         this.init()
     }
 
+    get_node_by_key(key) {
+        return this.cluster.get_node_by_addr(this.ring.get(key))
+    }
+
     /**
      * Converts internal ClusterNode
      * @returns {addr: opts, ...}
