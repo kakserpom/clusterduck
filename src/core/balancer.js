@@ -18,8 +18,8 @@ class Balancer {
     constructor(config, cluster, key) {
         this.cluster = cluster
         this.key = key
-        this.ducklings = new Ducklings(this.cluster.clusterduck)
-        this.update_config(config)
+        this.ducklings = new Ducklings()
+        this.set_config(config)
 
         /**
          * Consistent hashing implementation
@@ -75,7 +75,7 @@ class Balancer {
      *
      * @param config
      */
-    update_config(config) {
+    set_config(config) {
         this.config = config
     }
 
@@ -83,17 +83,21 @@ class Balancer {
      *
      */
     listen() {
+
+    }
+
+    init() {
+        if (!Duckling.isDuckling) {
+            balancer.spawnDucklings()
+        }
     }
 
     spawnDucklings() {
-        const numCPUs = require('os').cpus().length;
+        const numCPUs = 1||require('os').cpus().length
         for (let i = 0; i < numCPUs; ++i) {
             this.cluster.clusterduck.duckling(duckling => {
                 this.ducklings.add(duckling)
-                duckling.message('runBalancer', {
-                    clusterName: this.cluster.name,
-                    balancerKey: this.key
-                })
+                duckling.notify('run-balancer', {cluster: this.cluster.name, balancer: this.key})
             })
         }
     }

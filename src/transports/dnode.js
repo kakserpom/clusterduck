@@ -18,7 +18,7 @@ class Dnode {
         this.config = config
         this.clusterduck = clusterduck
 
-        this.address = config.listen || this.clusterduck.pidFile.replace(/\.pid$/, '.sock')
+        this.address = config.listen || this.clusterduck.argv.pidFile.replace(/\.pid$/, '.sock')
     }
 
     listen() {

@@ -5,43 +5,30 @@ class Duckling extends emitter {
         super()
         this.process = require('cluster').fork().on('online', () => {
             callback(this)
-        }).on('disconnect', () => {
-            this.emit('disconnect', this)
         })
+            .on('disconnect', () => this.emit('disconnect', this))
+            .on('message', msg => this.emit(msg.event, ...(msg.args || [])))
     }
 
-    message(type, payload) {
-        this.process.send({type: type, payload: payload})
+    notify(evName, ...args) {
+        this.process.send({
+            event: evName,
+            args: args
+        })
     }
 }
 
-Duckling.run = function () {
-
-    process.on('message', message => {
-        ({
-            bootstrap: payload => {
-                this.id = payload.id
-                this.config = payload.config
-            },
-            runBalancer: payload => {
-
-                console.log('test')
-
-                const Clusters = require('./collections/clusters')
-                /**
-                 *
-                 * @type {Clusters}
-                 */
-                this.clusters = new Clusters(this, this.config.clusters || [])
-
-                const cluster = this.clusters.get(payload.clusterName)
-                const balancer = cluster.balancers[payload.balancerKey] || null
-                balancer.listen()
-            }
-        }
-            [message.type])(message.payload)
+Duckling.notifyParent = function (evName, args) {
+    process.send({
+        event: evName,
+        args: args
     })
-
+}
+Duckling.isDuckling = require('cluster').isWorker
+Duckling.events = new emitter
+Duckling.events.listen = function () {
+    console.log('listen')
+    process.on('message', msg => {console.log(msg);Duckling.events.emit(msg.event, ...msg.args)})
 }
 
 return module.exports = Duckling

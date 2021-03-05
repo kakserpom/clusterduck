@@ -92,7 +92,7 @@ class Transport {
                 'election max': 5000,
                 'heartbeat': 1000,
                 Log: require('liferaft/log'),
-                path: this.config.path || '/var/run/clusterduck/db-' + md5(this.clusterduck.pidFile)
+                path: this.config.path || '/var/run/clusterduck/db-' + md5(this.clusterduck.argv.pidFile)
             });
 
             raft.on('heartbeat timeout', function () {

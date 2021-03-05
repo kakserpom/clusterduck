@@ -1,5 +1,4 @@
 const arrayToObject = require('../misc/array-to-object')
-const {v4: uuidv4} = require('uuid')
 
 const emitter = require('events').EventEmitter
 
@@ -13,44 +12,40 @@ const Duckling = require('./duckling')
 class ClusterDuck extends emitter {
     /**
      * Constructor
-     * @param configFile
      */
-    constructor(configFile, args) {
+    constructor(argv) {
         super()
+        this.argv = argv
+        this.verbose = ![null, false].includes(this.argv.verbose)
+    }
 
-        this.isDuckling = require('cluster').isWorker
+    set_config(config) {
 
-        this.slave = !!args.slave
-        this.verbose = ![null, false].includes(args.verbose)
+        this.config = config
+        /**
+         *
+         * @type {Clusters}
+         */
+        this.clusters = new Clusters(this, this.config.clusters || [])
 
-
-        if (this.isDuckling) {
+        if (Duckling.isDuckling) {
             return
         }
 
-        this.ducklings = new Ducklings(this)
-
-        this.id = uuidv4()
-        this.configFile = configFile
-        this.config = require('../config')(this.configFile)
-
-        this.pidFile = args.pidFile
-        this.transports = {}
-
-        this.on('quack', function () {
-            console.log(arguments)
-        })
+        this.ducklings = new Ducklings()
     }
 
     duckling(callback) {
-       new Duckling(duckling => {
-           duckling.message('bootstrap', {
-               id: this.id,
-               config: this.config,
-           })
-           this.ducklings.add(duckling)
-           callback(duckling)
-       })
+        new Duckling(duckling => {
+            duckling.notify('bootstrap', {
+                id: this.id,
+                config: this.config,
+            })
+            duckling.on('ready', () => {
+                this.ducklings.add(duckling)
+                callback(duckling)
+            })
+        })
     }
 
     /**
@@ -82,6 +77,7 @@ class ClusterDuck extends emitter {
      *
      */
     init_transports() {
+        this.transports = {}
         for (const [key, instance] of Object.entries(arrayToObject(this.config.transports || [], item => item.type))) {
             const transport = new (require('../transports/' + instance.type))(instance, this);
             this.transports[key] = {
@@ -104,13 +100,6 @@ class ClusterDuck extends emitter {
      */
     async run() {
         this.init_transports()
-
-        /**
-         *
-         * @type {Clusters}
-         */
-        this.clusters = new Clusters(this, this.config.clusters || [])
-
         this.clusters.run_health_checks()
         setInterval(() => {
             this.clusters.run_health_checks()

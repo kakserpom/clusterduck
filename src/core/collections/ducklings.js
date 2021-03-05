@@ -10,20 +10,16 @@ const Set = require('collections/set')
 class Ducklings extends Set {
 
     /**
-     *
-     * @param clusterduck
-     * @param ducklings
+     * @inheritDoc
      */
-    constructor(clusterduck, ducklings) {
-        super(ducklings)
-        this.clusterduck = clusterduck
-
+    constructor() {
+        super(...arguments)
         this.addRangeChangeListener((plus) => {
-            for (let i = 0; i < plus.length; ++i) {
-                plus[i].on('disconnect', (duckling) => {
+            plus.map(duckling => {
+                duckling.on('disconnect', () => {
                     this.delete(duckling)
                 })
-            }
+            })
         })
     }
 }

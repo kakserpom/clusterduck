@@ -1,4 +1,6 @@
 const Dict = require('collections/dict')
+const Duckling = require('../duckling')
+
 
 /**
  *
@@ -10,6 +12,12 @@ class Clusters extends Dict {
         for (const [name, config] of Object.entries(clusters)) {
             const constructor = require('../../clusters/' + config.type)
             this.set(name, new constructor(config, name, this.clusterduck))
+        }
+
+        if (Duckling.isDuckling) {
+            Duckling.events.on('run-balancer', params => {
+                this.get(params.cluster).balancers[params.balancers].listen()
+            })
         }
     }
 

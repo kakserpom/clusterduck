@@ -1,6 +1,8 @@
 const arrayToObject = require('../misc/array-to-object')
 const ClusterNode = require('./cluster_node')
+const Duckling = require('./duckling')
 const emitter = require('events').EventEmitter
+const Balancers = require('./collections/balancers')
 
 /**
  * Cluster model
@@ -22,18 +24,19 @@ class Cluster extends emitter {
         super();
         this.name = name
         this.clusterduck = clusterduck
-        this.update_config(config)
+        this.set_config(config)
     }
 
     /**
      * Called whenever the config is loaded/updated
      * @param config
      */
-    update_config(config) {
+    set_config(config) {
         this.config = config
 
         this.last_state_propagation = -1
         this.last_state_change = 0
+
 
         // @TODO: refactor with proxy eventemitter
         this.removeAllListeners()
@@ -47,9 +50,12 @@ class Cluster extends emitter {
         })
 
         this._init_nodes()
+
+        this.balancers = new Balancers(this)
+
         this._init_health_checks()
         this._init_triggers()
-        this._init_balancers()
+
     }
 
     /**
@@ -114,22 +120,6 @@ class Cluster extends emitter {
         }
     }
 
-
-    /**
-     * Initialize triggers
-     * @private
-     */
-    _init_balancers() {
-
-        this.balancers = arrayToObject(this.config.balancers || [], 'hash')
-
-        for (const [key, config] of Object.entries(this.balancers)) {
-            const balancer = this.balancers[key] = new (this.require('./balancers/' + config.type))(config, this, key)
-            if (!this.clusterduck.isDuckling) {
-                balancer.spawnDucklings()
-            }
-        }
-    }
 
     /**
      * Initialize health checks

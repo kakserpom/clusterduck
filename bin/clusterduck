@@ -7,6 +7,7 @@
     const pidFileClass = require('../src/misc/pid-file')
     const md5 = require('md5')
     const yaml = require('js-yaml')
+    const {v4: uuidv4} = require('uuid')
 
     const yargs = require('yargs');
 
@@ -64,7 +65,7 @@
     const argv = yargs.argv;
 
     try {
-        if (argv.daemonize) {
+        if (argv.daemonize && !Duckling.isDuckling) {
             const pid = new pidFileClass(argv.pidFile);
             pid.acquireOrThrow()
             daemonizeProcess()
@@ -72,10 +73,19 @@
                 console.log('[INFO] An instance has just started. PID: ' + process.pid)
             }
         }
-        const clusterduck = new ClusterDuck(argv.configFile, argv)
-        if (clusterduck.isDuckling) {
-            Duckling.run.apply(clusterduck)
+        const clusterduck = new ClusterDuck(argv)
+        if (Duckling.isDuckling) {
+            Duckling.events.on('bootstrap', payload => {
+                clusterduck.id = payload.id
+                clusterduck.set_config(payload.config)
+
+                Duckling.notifyParent('ready')
+            })
+            Duckling.events.listen()
         } else {
+            clusterduck.id = uuidv4()
+            clusterduck.set_config(require('../src/config')(argv.configFile))
+
             if (command) {
                 await command(clusterduck);
             } else {
