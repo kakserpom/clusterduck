@@ -7,7 +7,7 @@ const arrayToObject = require('../../misc/array-to-object')
 const Dict = require('collections/dict')
 
 /**
- * Ducklings collection
+ * Balancers collection
  */
 class Balancers extends Dict {
 

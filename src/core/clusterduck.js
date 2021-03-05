@@ -3,6 +3,7 @@ const arrayToObject = require('../misc/array-to-object')
 const emitter = require('events').EventEmitter
 
 const Clusters = require('./collections/clusters')
+const Transports = require('./collections/transports')
 const Ducklings = require('./collections/ducklings')
 const Duckling = require('./duckling')
 
@@ -73,33 +74,14 @@ class ClusterDuck extends emitter {
         )
     }
 
-    /**
-     *
-     */
-    init_transports() {
-        this.transports = {}
-        for (const [key, instance] of Object.entries(arrayToObject(this.config.transports || [], item => item.type))) {
-            const transport = new (require('../transports/' + instance.type))(instance, this);
-            this.transports[key] = {
-                config: instance,
-                object: transport
-            }
-            if (typeof transport.listen != 'function') {
-                console.log(transport)
-                throw new Error('transport ' + JSON.stringify(instance) + ' does not have listen()');
-            }
-
-            transport.listen()
-        }
-    }
-
 
     /**
      *
      * @returns {Promise<void>}
      */
     async run() {
-        this.init_transports()
+        this.transports = new Transports(this)
+
         this.clusters.run_health_checks()
         setInterval(() => {
             this.clusters.run_health_checks()
