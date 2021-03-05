@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 (async function () {
 
+    const ClusterDuck = require('../src/core/clusterduck')
+    const Duckling = require('../src/core/duckling')
     const daemonizeProcess = require('daemonize-process')
     const pidFileClass = require('../src/misc/pid-file')
     const md5 = require('md5')
@@ -70,9 +72,9 @@
                 console.log('[INFO] An instance has just started. PID: ' + process.pid)
             }
         }
-        const clusterduck = new (require('../src/core/clusterduck'))(argv.configFile, argv)
+        const clusterduck = new ClusterDuck(argv.configFile, argv)
         if (clusterduck.isDuckling) {
-            clusterduck.duckling()
+            Duckling.run.apply(clusterduck)
         } else {
             if (command) {
                 await command(clusterduck);

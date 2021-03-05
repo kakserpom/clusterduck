@@ -16,6 +16,7 @@
   "license": "LGPL-3.0-or-later",
   "dependencies": {
     "axon": "^2.0.3",
+    "collections": "^5.1.12",
     "daemonize-process": "^3.0.0",
     "diagnostics": "^2.0.2",
     "dnode": "^1.2.2",
@@ -34,6 +35,7 @@
     "one-time": "^1.0.0",
     "parse-duration": "^0.4.4",
     "redis-parser": "^3.0.0",
+    "redis-protocol": "^0.1.10",
     "sha3": "^2.1.4",
     "shell-quote": "^1.7.2",
     "shoe": "0.0.15",
@@ -41,8 +43,7 @@
     "weak": "^1.0.1",
     "websocket": "^1.0.33",
     "yaml": "^1.10.0",
-    "yargs": "^16.2.0",
-    "redis-protocol": "^0.1.10"
+    "yargs": "^16.2.0"
   },
   "devDependencies": {
     "hiredis": "^0.5.0"

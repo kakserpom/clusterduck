@@ -120,6 +120,7 @@ class Cluster extends emitter {
      * @private
      */
     _init_balancers() {
+
         this.balancers = arrayToObject(this.config.balancers || [], 'hash')
 
         for (const [key, config] of Object.entries(this.balancers)) {
