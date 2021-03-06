@@ -75,7 +75,7 @@ class ClusterDuck extends emitter {
             export: function () {
                 return new Promise((resolve, reject) => {
                     resolve(clusterduck.clusters.reduce((cluster, clusters) => {
-                        clusters[cluster.name] = cluster.alive_nodes.addrs()
+                        clusters[cluster.name] = cluster.alive_nodes.map(node => node.addr)
                         return clusters
                     }, {}))
                 });

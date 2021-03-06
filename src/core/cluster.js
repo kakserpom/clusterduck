@@ -1,9 +1,9 @@
-const arrayToObject = require('../misc/array-to-object')
 const ClusterNode = require('./cluster_node')
 const Duckling = require('./duckling')
 const Balancer = require('./balancer')
 const emitter = require('events').EventEmitter
 const Collection = require('./collection')
+const HealthCheck = require("./health_check");
 
 /**
  * Cluster model
@@ -50,8 +50,15 @@ class Cluster extends emitter {
         })
 
 
-        this.nodes = (new Collection('addr', node => new ClusterNode(node, this)))
+        this.nodes = (new Collection('addr', node => {
+            return (new ClusterNode(node)).on('node:state', (node, state) => {
+                this.touch_state()
+                this.emit('node:state', node, state)
+            })
+        }))
             .addFromArray(this.config.nodes || [])
+
+        this.nodesHealthChecks = new Map()
 
         this.balancers = (new Collection('name', config => Balancer.factory(config, this)))
             .addFromObject(this.config.balancers || {})
@@ -61,8 +68,25 @@ class Cluster extends emitter {
         }
 
         this.balancers.forEach(balancer => balancer.start())
-        this._init_health_checks()
-        this._init_triggers()
+
+
+        this.health_checks = (new Collection('id', entry => {
+            return entry
+        }))
+            .addFromArray(this.config.health_checks || [])
+
+        this.triggers = (new Collection('id'))
+            .addFromArray(this.config.triggers || []).forEach(trigger => {
+                this.on(trigger.on, function (nodes) {
+                    (trigger.do || []).forEach(function (cfgAction) {
+                        const action = new (require('../actions/' + cfgAction.type))(cfgAction)
+                        action.invoke({
+                            nodes: nodes
+                        })
+                    })
+
+                });
+            })
 
     }
 
@@ -78,37 +102,16 @@ class Cluster extends emitter {
      * @param type
      * @returns {*}
      */
-    get_health_check(type) {
-        return this.require('./health_checks/' + type)
-    }
-
-    /**
-     * Initialize triggers
-     * @private
-     */
-    _init_triggers() {
-        this.triggers = arrayToObject(this.config.triggers || [], 'hash')
-
-        for (const [key, trigger] of Object.entries(this.triggers)) {
-            this.on(trigger.on, function (nodes) {
-                (trigger.do || []).forEach(function (cfgAction) {
-                    const action = new (require('../actions/' + cfgAction.type))(cfgAction)
-                    action.invoke({
-                        nodes: nodes
-                    })
-                })
-
-            });
+    health_check(node, config) {
+        const key = node.addr + '__' + config.id;
+        let hc = this.nodesHealthChecks.get(key)
+        if (!hc) {
+            hc = new HealthCheck(node, config, this.require('./health_checks/' + config.type))
+            hc.cluster = this
+            this.nodesHealthChecks.set(key, hc)
         }
-    }
 
-
-    /**
-     * Initialize health checks
-     * @private
-     */
-    _init_health_checks() {
-        this.health_checks = arrayToObject(this.config.health_checks || [], 'hash')
+        return hc
     }
 
     /**
@@ -131,12 +134,12 @@ class Cluster extends emitter {
         this.nodes.forEach(node => {
             let checks = []
 
-            for (const [hcId, hc] of Object.entries(this.health_checks)) {
-                const promise = node.health_check(hcId, hc).triggerIfDue();
+            this.health_checks.forEach(hc => {
+                const promise = this.health_check(node, hc).triggerIfDue();
                 if (promise != null) {
                     checks.push(promise)
                 }
-            }
+            })
 
             if (!checks.length) {
                 return

@@ -18,10 +18,12 @@ class HealthCheck {
      * Constructor
      * @param node
      * @param config
+     * @param execuet
      */
-    constructor(node, config) {
+    constructor(node, config, execute) {
         this.node = node
         this.config = config
+        this.execute = execute
         this.last_triggered = null
     }
 
@@ -58,7 +60,7 @@ class HealthCheck {
         // promiseWithTimeout hard caps the execution time
         return promiseWithTimeout(
             parseDuration(this.config.timeout),
-            this.node.cluster.get_health_check(this.config.type).apply(this)
+            this.execute.apply(this)
         ).catch(function (e) {
             if (hc.result == null) {
                 hc.result = e
