@@ -1,8 +1,6 @@
-const arrayToObject = require('../misc/array-to-object')
-
 const emitter = require('events').EventEmitter
 
-const Set = require('./set')
+const Collection = require('./collection')
 const Transport = require('./transport')
 const Duckling = require('./duckling')
 const Cluster = require('./cluster')
@@ -24,10 +22,10 @@ class ClusterDuck extends emitter {
 
         this.config = config
 
-        this.clusters = (new Set('name', config => Cluster.factory(config, this)))
+        this.clusters = (new Collection('name', config => Cluster.factory(config, this)))
             .addFromObject(this.config.clusters || {})
 
-       // console.log({entries: this.clusters.get({name: 'redis_cache'})})
+        // console.log({entries: this.clusters.get({name: 'redis_cache'})})
 
         if (Duckling.isDuckling) {
 
@@ -44,7 +42,7 @@ class ClusterDuck extends emitter {
         }
 
 
-        this.ducklings = new Set()
+        this.ducklings = new Collection()
         this.ducklings.addRangeChangeListener((plus) => {
             plus.map(duckling => {
                 duckling.on('disconnect', () => {
@@ -98,8 +96,8 @@ class ClusterDuck extends emitter {
      * @returns {Promise<void>}
      */
     async run() {
-        this.transports = (new Set('type', config => Transport.factory(config, this)))
-            .addFromArray( this.config.transports || [])
+        this.transports = (new Collection('type', config => Transport.factory(config, this)))
+            .addFromArray(this.config.transports || [])
         this.clusters.forEach(cluster => cluster.run_health_checks())
         setInterval(() => {
             this.clusters.forEach(cluster => cluster.run_health_checks())

@@ -8,7 +8,7 @@ const { SHAKE } = require('sha3');
 /**
  *
  */
-class _Set extends SortedSet {
+class Collection extends SortedSet {
 
     /**
      *
@@ -53,4 +53,4 @@ class _Set extends SortedSet {
     }
 }
 
-return module.exports = _Set
+return module.exports = Collection

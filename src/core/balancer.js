@@ -1,6 +1,6 @@
 const HashRing = require('hashring')
 const ClusterNode = require('./cluster_node')
-const Set = require('./set')
+const Collection = require('./collection')
 const Duckling = require('./duckling')
 
 /**
@@ -17,7 +17,7 @@ class Balancer {
     constructor(config, cluster) {
         this.name = config.name
         this.cluster = cluster
-        this.ducklings = new Set()
+        this.ducklings = new Collection()
         this.set_config(config)
 
         /**
@@ -49,7 +49,7 @@ class Balancer {
     }
 
     get_node_by_key(key) {
-        return this.cluster.get_node_by_addr(this.ring.get(key))
+        return this.cluster.nodes.get(this.ring.get(key))
     }
 
     /**

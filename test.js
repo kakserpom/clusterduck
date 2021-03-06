@@ -1,3 +1,4 @@
 const Set = require('collections/sorted-set')
-var nameSet = new Set();
-nameSet.get({name: "Kris"});
+const names = new Set();
+names.add({name: "Kris"});
+console.log(names.filter(obj => obj.name !== 'Kris').toArray())

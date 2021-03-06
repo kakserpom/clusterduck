@@ -3,7 +3,7 @@ const ClusterNode = require('./cluster_node')
 const Duckling = require('./duckling')
 const Balancer = require('./balancer')
 const emitter = require('events').EventEmitter
-const Set = require('./set')
+const Collection = require('./collection')
 
 /**
  * Cluster model
@@ -49,9 +49,11 @@ class Cluster extends emitter {
             node.state = ClusterNode.STATE_DEAD
         })
 
-        this._init_nodes()
 
-        this.balancers = (new Set('name', config => Balancer.factory(config, this)))
+        this.nodes = (new Collection('addr', node => new ClusterNode(node, this)))
+            .addFromArray(this.config.nodes || [])
+
+        this.balancers = (new Collection('name', config => Balancer.factory(config, this)))
             .addFromObject(this.config.balancers || {})
 
         if (Duckling.isDuckling) {
@@ -69,32 +71,6 @@ class Cluster extends emitter {
      */
     touch_state() {
         this.last_state_change = Date.now()
-    }
-
-    /**
-     * Initialize nodes
-     * @private
-     */
-    _init_nodes() {
-        this.nodes = this.nodes || {}
-        let i = 0
-        const newNodes = arrayToObject(this.config.nodes || [], item => {
-            item.pos = i++
-            return item.addr
-        });
-        for (let k in this.nodes) {
-            if (newNodes[k] == null) {
-                delete this.nodes[k]
-                this.touch_state()
-            }
-        }
-        for (let k in newNodes) {
-            this.nodes[k] = (this.nodes[k] || new ClusterNode(this)).setConfig(newNodes[k])
-        }
-    }
-
-    get_node_by_addr(addr) {
-        return this.nodes[addr] || null
     }
 
     /**
@@ -140,9 +116,9 @@ class Cluster extends emitter {
      * @returns {*}
      */
     get alive_nodes() {
-        return ClusterNode.list(Object.entries(this.nodes)
-            .filter(([key, node]) => node.alive))
-            .sort((a, b) => a.pos - b.pos)
+        return this.nodes.map(node => {
+            return node.alive ? node : false
+        }).filter(item => item)
     }
 
     /**
@@ -152,7 +128,7 @@ class Cluster extends emitter {
         const cluster = this
 
         let clusterChecks = []
-        for (const [key, node] of Object.entries(this.nodes)) {
+        this.nodes.forEach(node => {
             let checks = []
 
             for (const [hcId, hc] of Object.entries(this.health_checks)) {
@@ -172,7 +148,7 @@ class Cluster extends emitter {
                 node.emit('node:failed', node, error)
                 cluster.emit('node:failed', node, error)
             }))
-        }
+        })
 
         Promise.all(clusterChecks).then(function (list) {
             const now = Date.now()

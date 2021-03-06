@@ -20,7 +20,7 @@ class ShellAction {
      */
     async invoke(params) {
         const commands = this._prepare_commands(this.config.commands, {
-            addrs: params.nodes.addrs()
+            addrs: params.nodes.map(node => node.addr)
         });
 
         console.log(commands)
