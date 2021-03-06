@@ -41,7 +41,7 @@ class Balancer {
             if (state === ClusterNode.STATE_ALIVE) {
                 this.ring.add(this._nodes_config([node]))
             } else {
-                this.ring.remove(node.config.addr)
+                this.ring.remove(node.addr)
             }
         })
 
@@ -49,7 +49,7 @@ class Balancer {
     }
 
     get_node_by_key(key) {
-        return this.cluster.nodes.get(this.ring.get(key))
+        return this.cluster.nodes.get(this.ring.get(key)) || null
     }
 
     /**

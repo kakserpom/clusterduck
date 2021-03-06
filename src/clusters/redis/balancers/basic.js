@@ -10,7 +10,7 @@ class BasicBalancer extends Balancer {
     }
 
     get_pool(node) {
-        let pool = this._pools.get(node.config.addr)
+        let pool = this._pools.get(node.addr)
         if (pool) {
             return pool
         }
@@ -35,9 +35,8 @@ class BasicBalancer extends Balancer {
             let pool, redis
             try {
                 const node = balancer.get_node_by_key(key)
-
                 if (node === null) {
-                    throw new ReplyError('get_node_by_key(' + JSON.stringify(key) + ') returned null')
+                    throw new ReplyError('No active nodes in the cluster')
                 }
                 pool = await balancer.get_pool(node)
                 redis = await pool.getConnection()

@@ -46,13 +46,6 @@ class ClusterNode extends emitter {
             || (this._health_checks[hcId] = new HealthCheck(this, hc));
     }
 }
-ClusterNode.list = function (nodes) {
-    nodes.addrs = function () {
-        return this.map(node => node.addr)
-    }
-    return nodes
-}
-
 ClusterNode.STATE_UNKNOWN = 'unknown'
 ClusterNode.STATE_ALIVE = 'alive'
 ClusterNode.STATE_DEAD = 'dead'
