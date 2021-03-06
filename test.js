@@ -1,5 +1,3 @@
-function a() {
-    console.log(arguments)
-}
-
-a(10, ...[1,2,3])
+const Set = require('collections/sorted-set')
+var nameSet = new Set();
+nameSet.get({name: "Kris"});

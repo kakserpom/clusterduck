@@ -3,22 +3,22 @@ const yaml = require('js-yaml')
 const dnode = require('dnode')
 const dnodePromise = require('dnode-promise')
 const fs = require('fs')
+const Transport = require('../core/transport')
 
 /**
  *
  */
-class Dnode {
+class Dnode extends Transport {
 
     /**
      *
      * @param config
      * @param clusterduck
      */
-    constructor(config, clusterduck) {
-        this.config = config
-        this.clusterduck = clusterduck
+    constructor() {
+        super(...arguments)
 
-        this.address = config.listen || this.clusterduck.argv.pidFile.replace(/\.pid$/, '.sock')
+        this.address = this.config.listen || this.clusterduck.argv.pidFile.replace(/\.pid$/, '.sock')
     }
 
     listen() {

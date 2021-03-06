@@ -1,6 +1,6 @@
 const HashRing = require('hashring')
 const ClusterNode = require('./cluster_node')
-const Ducklings = require('./collections/ducklings')
+const Set = require('./set')
 const Duckling = require('./duckling')
 
 /**
@@ -13,12 +13,11 @@ class Balancer {
      *
      * @param config
      * @param cluster
-     * @param key
      */
-    constructor(config, cluster, key) {
+    constructor(config, cluster) {
+        this.name = config.name
         this.cluster = cluster
-        this.key = key
-        this.ducklings = new Ducklings()
+        this.ducklings = new Set()
         this.set_config(config)
 
         /**
@@ -87,20 +86,29 @@ class Balancer {
     }
 
     init() {
+    }
+
+
+    start() {
         if (!Duckling.isDuckling) {
-            balancer.spawnDucklings()
+            this.spawnDucklings()
         }
     }
 
     spawnDucklings() {
-        const numCPUs = 1||require('os').cpus().length
+        const numCPUs = 1 || require('os').cpus().length
         for (let i = 0; i < numCPUs; ++i) {
             this.cluster.clusterduck.duckling(duckling => {
                 this.ducklings.add(duckling)
-                duckling.notify('run-balancer', {cluster: this.cluster.name, balancer: this.key})
+                duckling.notify('run-balancer', {cluster: this.cluster.name, balancer: this.name})
             })
         }
     }
+}
+
+Balancer.factory =  (config, cluster) => {
+    const constructor = cluster.require('./balancers/' + config.type)
+    return new constructor(config, cluster)
 }
 
 return module.exports = Balancer

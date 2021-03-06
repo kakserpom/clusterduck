@@ -1,8 +1,9 @@
 const arrayToObject = require('../misc/array-to-object')
 const ClusterNode = require('./cluster_node')
 const Duckling = require('./duckling')
+const Balancer = require('./balancer')
 const emitter = require('events').EventEmitter
-const Balancers = require('./collections/balancers')
+const Set = require('./set')
 
 /**
  * Cluster model
@@ -17,12 +18,11 @@ class Cluster extends emitter {
     /**
      *
      * @param config
-     * @param name
      * @param clusterduck
      */
-    constructor(config, name, clusterduck) {
+    constructor(config, clusterduck) {
         super();
-        this.name = name
+        this.name = config.name
         this.clusterduck = clusterduck
         this.set_config(config)
     }
@@ -51,8 +51,14 @@ class Cluster extends emitter {
 
         this._init_nodes()
 
-        this.balancers = new Balancers(this)
+        this.balancers = (new Set('name', config => Balancer.factory(config, this)))
+            .addFromObject(this.config.balancers || {})
 
+        if (Duckling.isDuckling) {
+            return
+        }
+
+        this.balancers.forEach(balancer => balancer.start())
         this._init_health_checks()
         this._init_triggers()
 
@@ -177,6 +183,11 @@ class Cluster extends emitter {
             cluster.emit('nodes:alive', cluster.alive_nodes)
         })
     }
+}
+
+Cluster.factory = (config, clusterduck) => {
+    const constructor = require('../clusters/' + config.type)
+    return new constructor(config, clusterduck)
 }
 
 return module.exports = Cluster

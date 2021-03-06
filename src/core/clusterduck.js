@@ -2,10 +2,10 @@ const arrayToObject = require('../misc/array-to-object')
 
 const emitter = require('events').EventEmitter
 
-const Clusters = require('./collections/clusters')
-const Transports = require('./collections/transports')
-const Ducklings = require('./collections/ducklings')
+const Set = require('./set')
+const Transport = require('./transport')
 const Duckling = require('./duckling')
+const Cluster = require('./cluster')
 
 /**
  * Main class
@@ -23,17 +23,35 @@ class ClusterDuck extends emitter {
     set_config(config) {
 
         this.config = config
-        /**
-         *
-         * @type {Clusters}
-         */
-        this.clusters = new Clusters(this, this.config.clusters || [])
+
+        this.clusters = (new Set('name', config => Cluster.factory(config, this)))
+            .addFromObject(this.config.clusters || {})
+
+       // console.log({entries: this.clusters.get({name: 'redis_cache'})})
 
         if (Duckling.isDuckling) {
+
+            Duckling.events.on('run-balancer', params => {
+
+                //this.clusters.get({name: params.cluster})
+                this.clusters.get(params.cluster)
+                    .balancers
+                    .get(params.balancer)
+                    .listen()
+            })
+
             return
         }
 
-        this.ducklings = new Ducklings()
+
+        this.ducklings = new Set()
+        this.ducklings.addRangeChangeListener((plus) => {
+            plus.map(duckling => {
+                duckling.on('disconnect', () => {
+                    this.delete(duckling)
+                })
+            })
+        })
     }
 
     duckling(callback) {
@@ -80,11 +98,11 @@ class ClusterDuck extends emitter {
      * @returns {Promise<void>}
      */
     async run() {
-        this.transports = new Transports(this)
-
-        this.clusters.run_health_checks()
+        this.transports = (new Set('type', config => Transport.factory(config, this)))
+            .addFromArray( this.config.transports || [])
+        this.clusters.forEach(cluster => cluster.run_health_checks())
         setInterval(() => {
-            this.clusters.run_health_checks()
+            this.clusters.forEach(cluster => cluster.run_health_checks())
         }, 1000)
 
         process.on('unhandledRejection', e => {
