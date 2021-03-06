@@ -75,13 +75,7 @@
         }
         const clusterduck = new ClusterDuck(argv)
         if (Duckling.isDuckling) {
-            Duckling.events.on('bootstrap', payload => {
-                clusterduck.id = payload.id
-                clusterduck.set_config(payload.config)
-
-                Duckling.notifyParent('ready')
-            })
-            Duckling.events.listen()
+           clusterduck.runDuckling()
         } else {
             clusterduck.id = uuidv4()
             clusterduck.set_config(require('../src/config')(argv.configFile))

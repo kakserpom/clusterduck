@@ -18,6 +18,9 @@ class Balancer {
         this.name = config.name
         this.cluster = cluster
         this.ducklings = new Collection()
+        this.ducklings.addRangeChangeListener(plus => plus
+            .map(duckling => duckling.on('disconnect', () => this.ducklings.delete(duckling))))
+
         this.set_config(config)
 
         /**
@@ -25,7 +28,7 @@ class Balancer {
          * @type {HashRing}
          */
         this.ring = new HashRing(
-            this._nodes_config(this.cluster.alive_nodes),
+            this._nodes_config(this.cluster.active_nodes),
             this.config.algo || 'md5',
             {
                 'max cache size': this.config.cache_size || 10000
@@ -38,7 +41,7 @@ class Balancer {
 
         // Let's keep HashRing always up-to-date
         this.cluster.on('node:state', (node, state) => {
-            if (state === ClusterNode.STATE_ALIVE) {
+            if (node.active) {
                 this.ring.add(this._nodes_config([node]))
             } else {
                 this.ring.remove(node.addr)
@@ -62,10 +65,10 @@ class Balancer {
         let ret = {}
         nodes.map(node => {
             let opts = {}
-            if (node.config.weight != null) {
-                opts.weight = node.config.weight
+            if (node.weight != null) {
+                opts.weight = node.weight
             }
-            ret[node.config.addr] = opts
+            ret[node.addr] = opts
         })
         return ret
     }

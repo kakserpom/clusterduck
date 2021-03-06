@@ -6,12 +6,12 @@ class RedisCluster extends Cluster {
     }
 
     redis_config(node) {
-        const split = node.config.addr.split(':', 2)
+        const split = node.addr.split(':', 2)
         let clientConfig = {
             host: split[0]
         }
-        if (node.config.enableReadyCheck != null) {
-            clientConfig.enableReadyCheck = node.config.enableReadyCheck
+        if (node.enableReadyCheck != null) {
+            clientConfig.enableReadyCheck = node.enableReadyCheck
         }
         if (split.length > 1) {
             clientConfig.port = split[1]

@@ -42,51 +42,62 @@ class Cluster extends emitter {
         this.removeAllListeners()
 
         this.on('node:passed', function (node) {
-            node.state = ClusterNode.STATE_ALIVE
+            node.state = {available: true}
         })
 
-        this.on('node:failed', function (node) {
-            node.state = ClusterNode.STATE_DEAD
+        this.on('node:failed', function (node, error) {
+            node.state = {available: false}
         })
 
 
-        this.nodes = (new Collection('addr', node => {
+        this.nodes = new Collection('addr', node => {
             return (new ClusterNode(node)).on('node:state', (node, state) => {
                 this.touch_state()
                 this.emit('node:state', node, state)
             })
-        }))
-            .addFromArray(this.config.nodes || [])
+        })
+        this.nodes.addFromArray(this.config.nodes || [])
 
         this.nodesHealthChecks = new Map()
 
-        this.balancers = (new Collection('name', config => Balancer.factory(config, this)))
-            .addFromObject(this.config.balancers || {})
+        this.balancers = new Collection('name', config => Balancer.factory(config, this))
+        this.balancers.addFromObject(this.config.balancers || {})
 
         if (Duckling.isDuckling) {
             return
         }
 
+        this.on('node:state', (node, state) => {
+            this.clusterduck.ducklings.map(duckling => {
+                duckling.notify('node:state', {
+                    cluster: this.cluster.name,
+                    node: node.addr,
+                    state: state
+                })
+            })
+        })
+
         this.balancers.forEach(balancer => balancer.start())
 
 
-        this.health_checks = (new Collection('id', entry => {
+        this.health_checks = new Collection('id', entry => {
             return entry
-        }))
-            .addFromArray(this.config.health_checks || [])
+        })
+        this.health_checks.addFromArray(this.config.health_checks || [])
 
-        this.triggers = (new Collection('id'))
-            .addFromArray(this.config.triggers || []).forEach(trigger => {
-                this.on(trigger.on, function (nodes) {
-                    (trigger.do || []).forEach(function (cfgAction) {
-                        const action = new (require('../actions/' + cfgAction.type))(cfgAction)
-                        action.invoke({
-                            nodes: nodes
-                        })
+        this.triggers = new Collection('id')
+        this.triggers.addFromArray(this.config.triggers || [])
+        this.triggers.forEach(trigger => {
+            this.on(trigger.on, function (nodes) {
+                (trigger.do || []).forEach(function (cfgAction) {
+                    const action = new (require('../actions/' + cfgAction.type))(cfgAction)
+                    action.invoke({
+                        nodes: nodes
                     })
+                })
 
-                });
-            })
+            });
+        })
 
     }
 
@@ -118,9 +129,9 @@ class Cluster extends emitter {
      * Get an array of the alive nodes in the cluster
      * @returns {*}
      */
-    get alive_nodes() {
+    get active_nodes() {
         return this.nodes.map(node => {
-            return node.alive ? node : false
+            return node.active ? node : false
         }).filter(item => item)
     }
 
@@ -159,7 +170,7 @@ class Cluster extends emitter {
                 return
             }
             cluster.last_state_propagation = now
-            cluster.emit('nodes:alive', cluster.alive_nodes)
+            cluster.emit('nodes:active', cluster.active_nodes)
         })
     }
 }

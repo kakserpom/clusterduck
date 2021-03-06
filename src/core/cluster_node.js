@@ -9,14 +9,20 @@ const emitter = require('events').EventEmitter
  * @event node:failed
  */
 class ClusterNode extends emitter {
-    constructor(config) {
+    constructor(entry) {
         super()
-        this._health_checks = {}
         this.last_state_change = 0
-        this._state = ClusterNode.STATE_UNKNOWN
-        this.config = config
+        this.available = false
+        this.active = false
+        this.spare = false
 
-        this.addr = config.addr
+        for (const [key, value] of Object.entries(entry)) {
+            if (ClusterNode.volatile.includes(key)) {
+                throw new Error('Property ' + JSON.stringify(key) + ' is volatile and cannot be set in constructor')
+            }
+
+            this[key] = value
+        }
     }
 
     /**
@@ -24,22 +30,34 @@ class ClusterNode extends emitter {
      * @param state
      */
     set state(state) {
-        if (this._state === state) {
-            return
+
+        let changed = false
+        for (const [key, value] of Object.entries(state)) {
+            if (this[key] === value) {
+                continue
+            }
+
+            changed = true
+            this[key] = value
         }
 
-        this._state = state
-        this.last_state_change = Date.now()
-        this.emit('node:state', this, state)
+        if (changed) {
+            this.active = this.available && !this.disabled && !this.spare
+            this.last_state_change = Date.now()
+            this.emit('node:state', this, this.state)
+        }
     }
 
-    get alive() {
-        return this._state === ClusterNode.STATE_ALIVE
+    get state() {
+        let state = {}
+        ClusterNode.volatile.forEach(key => {
+            state[key] = this[key]
+        })
+        return state
     }
+
+
 }
-ClusterNode.STATE_UNKNOWN = 'unknown'
-ClusterNode.STATE_ALIVE = 'alive'
-ClusterNode.STATE_DEAD = 'dead'
-ClusterNode.states = [ClusterNode.STATE_UNKNOWN, ClusterNode.STATE_ALIVE, ClusterNode.STATE_DEAD]
 
+ClusterNode.volatile = ['available', 'active', 'spare']
 return module.exports = ClusterNode

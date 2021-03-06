@@ -61,16 +61,16 @@ Now let's set up a simple __health check__.
 
 Now every second each node in the cluster will get checked on.
 
-Now let's live export the list of alive nodes:
+Now let's live export the list of active nodes:
 
 ```yaml
     triggers:
-      - on: [ nodes:alive ]
+      - on: [ nodes:active ]
         do:
           - type: shell
             cwd: /tmp
             commands:
-              - "echo $nodes_addr_list > alive_nodes.json"
+              - "echo $nodes_addr_list > active_nodes.json"
 ```
 
 This will make sure that `/tmp/nodes_list` always contains a current list of alive nodes.
@@ -92,16 +92,14 @@ For debugging purposes use `DEBUG` environmental variable:
 
 Event               | Description
 --------------------|------------------------------------------------------
-`nodes`             | Set of alive nodes has changed
-`nodes:alive`       | Set of alive nodes has changed
-`nodes:dead`        | Set of dead nodes has changed
+`nodes`             | Set of nodes has changed
+`nodes:active`      | Set of active nodes has changed
 
 ### Node events
 
 Event               | Description
 --------------------|------------------------------------------------------
-`alive`             | Node is marked alive
-`dead`              | Node is marked dead
+`state`             | Node state has changed
 
 ## Transports
 

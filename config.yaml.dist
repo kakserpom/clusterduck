@@ -11,7 +11,7 @@ clusters:
         every: 1s
 
     triggers:
-      - on: [ nodes:alive ]
+      - on: [ nodes:active ]
         do:
           - type: shell
             cwd: /tmp

@@ -27,29 +27,9 @@ class ClusterDuck extends emitter {
 
         // console.log({entries: this.clusters.get({name: 'redis_cache'})})
 
-        if (Duckling.isDuckling) {
-
-            Duckling.events.on('run-balancer', params => {
-
-                //this.clusters.get({name: params.cluster})
-                this.clusters.get(params.cluster)
-                    .balancers
-                    .get(params.balancer)
-                    .listen()
-            })
-
-            return
-        }
-
-
         this.ducklings = new Collection()
-        this.ducklings.addRangeChangeListener((plus) => {
-            plus.map(duckling => {
-                duckling.on('disconnect', () => {
-                    this.delete(duckling)
-                })
-            })
-        })
+        this.ducklings.addRangeChangeListener(plus => plus
+            .map(duckling => duckling.on('disconnect', () => this.ducklings.delete(duckling))))
     }
 
     duckling(callback) {
@@ -60,6 +40,15 @@ class ClusterDuck extends emitter {
             })
             duckling.on('ready', () => {
                 this.ducklings.add(duckling)
+                this.clusters.forEach(cluster => {
+                    cluster.nodes.forEach(node => {
+                        duckling.notify('node:state', {
+                            cluster: cluster.name,
+                            node: node.addr,
+                            state: node.state
+                        })
+                    })
+                })
                 callback(duckling)
             })
         })
@@ -75,7 +64,7 @@ class ClusterDuck extends emitter {
             export: function () {
                 return new Promise((resolve, reject) => {
                     resolve(clusterduck.clusters.reduce((cluster, clusters) => {
-                        clusters[cluster.name] = cluster.alive_nodes.map(node => node.addr)
+                        clusters[cluster.name] = cluster.active_nodes.map(node => node.addr)
                         return clusters
                     }, {}))
                 });
@@ -90,6 +79,28 @@ class ClusterDuck extends emitter {
         )
     }
 
+    runDuckling() {
+        Duckling.events.on('bootstrap', payload => {
+            this.id = payload.id
+            this.set_config(payload.config)
+
+            Duckling.events.on('run-balancer', params => {
+                this.clusters.get(params.cluster)
+                    .balancers
+                    .get(params.balancer)
+                    .listen()
+            })
+            Duckling.events.on('node:state', params => {
+                this.clusters.get(params.cluster)
+                    .nodes
+                    .get(params.node)
+                    .state = params.state
+            })
+
+            Duckling.notifyParent('ready')
+        })
+        Duckling.events.listen()
+    }
 
     /**
      *

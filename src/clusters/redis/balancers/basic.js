@@ -23,7 +23,7 @@ class BasicBalancer extends Balancer {
             }
         })
 
-        this._pools.set(node.config.addr, pool)
+        this._pools.set(node.addr, pool)
         return pool
     }
 
