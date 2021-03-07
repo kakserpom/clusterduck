@@ -1,12 +1,13 @@
 # clusterduck
 
-`clusterduck` is a humble take on fault-tolerant cluster __monitoring__ and __balancing__ implemented in pure Javascript.
+`clusterduck` is a humble take on fault-tolerant cluster __monitoring__ and __balancing__ service implemented in Javascript.
 
-### [Raft] consensus algorithm
-Ducks love them rafts. We run [liferaft] over an encrypted TCP/IP transport.
-
-### Easy to use and customize
-Due to its modular architecture you can build your own plugin under an hour.
+- __[Raft] consensus algorithm for high availablity.__
+  [liferaft] is running over an encrypted TCP/IP transport. Ducks love them rafts 😉
+- __Easy to use and extend.__
+  It was designed to solve your problems, not create them.
+  Given its simple modular architecture you can hack up your own plugin under an hour.
+  
 
 
 ## Table Of Contents

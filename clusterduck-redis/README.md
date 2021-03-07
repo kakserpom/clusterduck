@@ -1,8 +1,10 @@
 # clusterduck-redis
 
-`clusterduck-redis` is the Redis extension for `clusterduck`.
+`clusterduck-redis` is the Redis extension for `clusterduck` which includes:
 
-
+- Health checks
+- Balancer running on [Envoy] with seamless [hot restarting].
+- Native Redis balancer *(EXPERIMENTAL)*
 
 ## Table Of Contents
 
@@ -58,7 +60,7 @@ Now let's set up a simple __health check__.
 
 ### Envoy balancer
 
-[Envoy](https://envoyproxy.io/) is required to be installed.
+[Envoy] is required to be installed.
 
 Let's write up a config:
 
@@ -78,8 +80,8 @@ Let's write up a config:
             port_value: 9901
 ```
 
-> `clusterduck` will run  `envoy` with an according configuration. [Hot restarting](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/operations/hot_restart)
-works out-of-box so the `envoy` is always kept in __sync__ with `clusterduck`. It requires no middleware or additional configuration.
+> `clusterduck` will run  `envoy` with an according configuration.
+> [Hot restarting] works out-of-box so the `envoy` is always kept in __sync__ with `clusterduck`. It requires no middleware or additional configuration.
 
 ## Debug
 
@@ -121,5 +123,6 @@ Event               | Description
 LGPL 3.0 or later.
 
 [ioredis]: https://ramcloud.stanford.edu/raft.pdf
-
 [Liferaft]: https://github.com/unshiftio/liferaft
+[hot restarting]: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/operations/hot_restart
+[Envoy]: https://envoyproxy.io/
