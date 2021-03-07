@@ -1,4 +1,5 @@
 const quote = require('shell-quote').quote
+const exec = require('child_process').exec
 
 /**
  *
@@ -63,7 +64,6 @@ class ShellAction {
      * @return {Promise<string>}
      */
     _exec_shell_command(cmd, options) {
-        const exec = require('child_process').exec;
         return new Promise((resolve, reject) => {
             exec(cmd, options || {}, (error, stdout, stderr) => {
                 if (error) {

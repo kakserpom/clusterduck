@@ -4,6 +4,7 @@ const Balancer = require('./balancer')
 const emitter = require('events').EventEmitter
 const Collection = require('./collection')
 const HealthCheck = require("./health_check");
+const debug = require('diagnostics')('cluster')
 
 /**
  * Cluster model
@@ -56,6 +57,18 @@ class Cluster extends emitter {
                 this.emit('node:state', node, state)
             })
         })
+        this.nodes.addRangeChangeListener((plus, minus) => {
+            plus.map(node => {
+                node.emit('node:inserted', node)
+                this.emit('node:inserted', node)
+            })
+            minus.map(node => {
+                node.emit('node:deleted', node)
+                this.emit('node:deleted', node)
+            })
+        })
+
+
         this.nodes.addFromArray(this.config.nodes || [])
 
         this.nodesHealthChecks = new Map()
@@ -68,9 +81,11 @@ class Cluster extends emitter {
         }
 
         this.on('node:state', (node, state) => {
+
+            debug('node:state', node.addr, state)
             this.clusterduck.ducklings.map(duckling => {
                 duckling.notify('node:state', {
-                    cluster: this.cluster.name,
+                    cluster: this.name,
                     node: node.addr,
                     state: state
                 })

@@ -1,7 +1,7 @@
 const HashRing = require('hashring')
-const ClusterNode = require('./cluster_node')
 const Collection = require('./collection')
 const Duckling = require('./duckling')
+const debug = require('diagnostics')('balancer')
 
 /**
  * Abstract balancer
@@ -35,12 +35,10 @@ class Balancer {
             });
 
 
-        this.cluster.on('node:inserted', function () {
-
-        })
+        this.cluster.on('node:deleted', node => this.ring.remove(node.addr))
 
         // Let's keep HashRing always up-to-date
-        this.cluster.on('node:state', (node, state) => {
+        this.cluster.on('node:state', node => {
             if (node.active) {
                 this.ring.add(this._nodes_config([node]))
             } else {
@@ -91,16 +89,15 @@ class Balancer {
     init() {
     }
 
-
     start() {
         if (!Duckling.isDuckling) {
-            this.spawnDucklings()
+            this.spawnDucklings(1||require('os').cpus().length)
         }
     }
 
-    spawnDucklings() {
-        const numCPUs = 1 || require('os').cpus().length
-        for (let i = 0; i < numCPUs; ++i) {
+    spawnDucklings(number) {
+        debug(this.name + ': Spawning ' + number + ' ducklings');
+        for (let i = 0; i < number; ++i) {
             this.cluster.clusterduck.duckling(duckling => {
                 this.ducklings.add(duckling)
                 duckling.notify('run-balancer', {cluster: this.cluster.name, balancer: this.name})
@@ -109,7 +106,7 @@ class Balancer {
     }
 }
 
-Balancer.factory =  (config, cluster) => {
+Balancer.factory = (config, cluster) => {
     const constructor = cluster.require('./balancers/' + config.type)
     return new constructor(config, cluster)
 }

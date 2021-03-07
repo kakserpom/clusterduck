@@ -1,5 +1,5 @@
 const emitter = require('events').EventEmitter
-
+const debug = require('diagnostics')('duckling')
 class Duckling extends emitter {
     constructor(callback) {
         super()
@@ -29,7 +29,6 @@ Duckling.notifyParent = function (evName, args) {
 Duckling.isDuckling = require('cluster').isWorker
 Duckling.events = new emitter
 Duckling.events.listen = function () {
-    console.log('listen')
     process.on('message', msg => Duckling.events.emit(msg.event, ...msg.args))
 }
 

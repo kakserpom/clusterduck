@@ -25,8 +25,6 @@ class ClusterDuck extends emitter {
         this.clusters = (new Collection('name', config => Cluster.factory(config, this)))
             .addFromObject(this.config.clusters || {})
 
-        // console.log({entries: this.clusters.get({name: 'redis_cache'})})
-
         this.ducklings = new Collection()
         this.ducklings.addRangeChangeListener(plus => plus
             .map(duckling => duckling.on('disconnect', () => this.ducklings.delete(duckling))))
@@ -80,6 +78,16 @@ class ClusterDuck extends emitter {
     }
 
     runDuckling() {
+
+
+        process.on('unhandledRejection', e => {
+            this.emit('unhandled-rejection:' + e.name, e)
+            if (!e.hide) {
+                console.error('Uncaught rejection', e)
+            }
+        });
+
+
         Duckling.events.on('bootstrap', payload => {
             this.id = payload.id
             this.set_config(payload.config)

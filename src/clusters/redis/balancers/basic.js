@@ -41,6 +41,10 @@ class BasicBalancer extends Balancer {
                 pool = await balancer.get_pool(node)
                 redis = await pool.getConnection()
 
+                redis.on('error', error => {
+                    console.log({error: error})
+                })
+
                 const res = await redis.sendCommand(
                     new Redis.Command(
                         command[0],
@@ -50,10 +54,12 @@ class BasicBalancer extends Balancer {
                 )
                 this.encode(res)
             } catch (e) {
-                if (e.name !== 'ReplyError') {
-                    throw e
+                if (['ReplyError', 'MaxRetriesPerRequestError'].includes(e.name)) {
+                    this.error(e.message)
+                } else {
+                    console.error(e)
                 }
-                this.error(e.message)
+
             } finally {
                 if (pool && redis) {
                     pool.release(redis)
