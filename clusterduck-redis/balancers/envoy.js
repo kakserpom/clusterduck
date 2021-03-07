@@ -1,6 +1,6 @@
-const Balancer = require('../../../core/balancer')
+const Balancer = require('clusterduck/core/balancer')
 
-const parseAddr = require('../../../misc/addr')
+const parseAddr = require('clusterduck/misc/addr')
 
 const fs = require('fs')
 const util = require('util')

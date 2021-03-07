@@ -1,4 +1,4 @@
-const Balancer = require('../../../core/balancer')
+const Balancer = require('clusterduck/core/balancer')
 const Redis = require('ioredis')
 const {RedisPool} = require('ioredis-conn-pool')
 const RedisServer = require('../redis-server')

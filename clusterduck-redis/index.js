@@ -1,5 +1,5 @@
-const Cluster = require('../../core/cluster')
-const parseAddr = require('../../misc/addr')
+const Cluster = require('clusterduck/core/cluster')
+const parseAddr = require('clusterduck/misc/addr')
 
 class RedisCluster extends Cluster {
     require(what) {

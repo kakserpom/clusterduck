@@ -1,0 +1,25 @@
+{
+  "name": "clusterduck-redis",
+  "version": "0.1.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kakserpom/clusterduck"
+  },
+  "author": "Vasily Zorin",
+  "license": "LGPL-3.0-or-later",
+  "dependencies": {
+    "hashring": "^3.2.0",
+    "ioredis": "^4.23.0",
+    "ioredis-conn-pool": "^1.0.0",
+    "redis-parser": "^3.0.0",
+    "redis-protocol": "^0.1.10",
+    "shell-quote": "^1.7.2"
+  },
+  "devDependencies": {
+    "hiredis": "^0.5.0"
+  }
+}
