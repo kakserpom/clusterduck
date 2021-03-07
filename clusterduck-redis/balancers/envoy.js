@@ -15,7 +15,11 @@ class BasicBalancer extends Balancer {
      *
      */
     init() {
+
+        // https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-base-id
         this.base_id = null
+
+        // https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-restart-epoch
         this.restart_epoch = 0
     }
 
@@ -131,8 +135,11 @@ class BasicBalancer extends Balancer {
         return envoy
     }
 
+    /**
+     *
+     * @returns {Promise<void>}
+     */
     async listen() {
-        const balancer = this
 
         const execute = args => {
             const quote = require('shell-quote').quote
@@ -156,6 +163,7 @@ class BasicBalancer extends Balancer {
                 }
             })
         }
+
         if (this.base_id) {
             ++this.restart_epoch
             execute(['--base-id', this.base_id])

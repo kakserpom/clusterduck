@@ -17,7 +17,8 @@
     "ioredis-conn-pool": "^1.0.0",
     "redis-parser": "^3.0.0",
     "redis-protocol": "^0.1.10",
-    "shell-quote": "^1.7.2"
+    "shell-quote": "^1.7.2",
+    "tmp-promise": "^3.0.2"
   },
   "devDependencies": {
     "hiredis": "^0.5.0"
