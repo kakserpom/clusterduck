@@ -39,7 +39,7 @@ class BasicBalancer extends Balancer {
         };
 
         const listener = {
-            name: "redis_listener",
+            name: this.cluster.name + '_listener',
             address: {
                 socket_address: address(this.config.listen)
             },
@@ -47,16 +47,16 @@ class BasicBalancer extends Balancer {
                 {
                     filters: [
                         {
-                            name: "envoy.filters.network.redis_proxy",
+                            name: 'envoy.filters.network.redis_proxy',
                             typed_config: {
-                                "@type": "type.googleapis.com/envoy.extensions.filters.network.redis_proxy.v3.RedisProxy",
-                                stat_prefix: "egress_redis",
+                                '@type': 'type.googleapis.com/envoy.extensions.filters.network.redis_proxy.v3.RedisProxy',
+                                stat_prefix: 'egress_redis',
                                 settings: {
-                                    op_timeout: "5s"
+                                    op_timeout: this.config.op_timeout || '5s'
                                 },
                                 prefix_routes: {
                                     catch_all_route: {
-                                        cluster: "redis_cluster"
+                                        cluster: this.cluster.name
                                     }
                                 }
                             }
@@ -79,11 +79,11 @@ class BasicBalancer extends Balancer {
 
         const cluster = {
             name: this.cluster.name,
-            connect_timeout: this.config.connect_timeout || "1s",
-            type: this.config.dns_type || "strict_dns",
-            lb_policy: this.config.lb_policy || "MAGLEV",
+            connect_timeout: this.config.connect_timeout || '1s',
+            type: this.config.dns_type || 'strict_dns',
+            lb_policy: this.config.lb_policy || 'MAGLEV',
             load_assignment: {
-                cluster_name: "redis_cluster",
+                cluster_name: this.cluster.name,
                 endpoints: [
                     {
                         lb_endpoints: endpoints
@@ -119,7 +119,8 @@ class BasicBalancer extends Balancer {
             args = [
                 'envoy',
                 '--config-yaml', JSON.stringify(this.envoy()),
-                '--restart-epoch', this.restart_epoch
+                '--restart-epoch', this.restart_epoch,
+                '--drain-strategy', this.config.drain_strategy || 'immediate',
             ].concat(args)
 
             const command = quote(args)

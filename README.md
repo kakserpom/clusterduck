@@ -1,10 +1,11 @@
 # clusterduck
 
-`clusterduck` is a take on consensus-based cluster monitoring implemented in Javascript. Whenever
+`clusterduck` is a humble take on fault-tolerant cluster __monitoring__ and __balancing__, implemented in pure Javascript.
+
 
 ## [Raft] consensus algorithm
 
-Ducks love them rafts.
+Ducks love them rafts. 
 
 We run [Liferaft] over an encrypted TCP transport.
 
