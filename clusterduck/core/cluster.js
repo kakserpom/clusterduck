@@ -194,6 +194,10 @@ class Cluster extends emitter {
 
 Cluster.factory = (config, clusterduck) => {
     const constructor = require(config.type)
+    if (typeof constructor !== 'function') {
+        throw new Error('Unable to initialize cluster ' + JSON.stringify(config.name)
+            + ': module ' + JSON.stringify(config.type)+ ' not found')
+    }
     return new constructor(config, clusterduck)
 }
 

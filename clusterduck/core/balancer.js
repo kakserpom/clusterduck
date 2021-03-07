@@ -19,7 +19,7 @@ class Balancer {
         this.cluster = cluster
         this.ducklings = new Collection()
         this.ducklings.addRangeChangeListener(plus => plus
-            .map(duckling => duckling.on('disconnect', () => this.ducklings.delete(duckling))))
+            .forEach(duckling => duckling.on('disconnect', () => this.ducklings.delete(duckling))))
 
         this.set_config(config)
 

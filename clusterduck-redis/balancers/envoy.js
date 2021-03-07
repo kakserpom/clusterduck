@@ -65,8 +65,33 @@ class BasicBalancer extends Balancer {
             }
         }
 
+        // Let's make the list of active nodes
+        const endpoints = this.cluster.active_nodes.map(node => {
+            return {
+                endpoint: {
+                    address: address(node.addr, 6379)
+                }
+            }
+        })
+
+        // Envoy cluster definition
+        const cluster = {
+            name: this.cluster.name + '__' + this.name,
+            connect_timeout: this.config.connect_timeout || '1s',
+            type: this.config.dns_type || 'strict_dns',
+            lb_policy: this.config.lb_policy || 'MAGLEV',
+            load_assignment: {
+                cluster_name: this.cluster.name,
+                endpoints: [
+                    {
+                        lb_endpoints: endpoints
+                    }
+                ]
+            }
+        }
+
         const listener = {
-            name: this.cluster.name + '_listener',
+            name: cluster.name + '__listener',
             address: address(this.config.listen),
             filter_chains: [
                 {
@@ -81,7 +106,7 @@ class BasicBalancer extends Balancer {
                                 },
                                 prefix_routes: {
                                     catch_all_route: {
-                                        cluster: this.cluster.name
+                                        cluster: cluster.name
                                     }
                                 }
                             }
@@ -90,32 +115,6 @@ class BasicBalancer extends Balancer {
                 }
             ]
         }
-
-        // Let's make the list of active nodes
-        const endpoints = this.cluster.active_nodes.map(node => {
-            return {
-                endpoint: {
-                    address: address(node.addr, 6379)
-                }
-            }
-        })
-
-        // Envoy cluster definition
-        const cluster = {
-            name: this.cluster.name,
-            connect_timeout: this.config.connect_timeout || '1s',
-            type: this.config.dns_type || 'strict_dns',
-            lb_policy: this.config.lb_policy || 'MAGLEV',
-            load_assignment: {
-                cluster_name: this.cluster.name,
-                endpoints: [
-                    {
-                        lb_endpoints: endpoints
-                    }
-                ]
-            }
-        }
-
 
         // Now we make the final object
         let envoy = {}
@@ -159,7 +158,7 @@ class BasicBalancer extends Balancer {
             exec(command, {}, (error, stdout, stderr) => {
 
                 if (error) {
-                    debug(`error: ${error}`)
+                    console.log(`error: ${error}`)
                 }
             })
         }

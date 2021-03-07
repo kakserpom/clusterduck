@@ -20,7 +20,7 @@
         type: 'boolean',
     })
         .option('config-file', {
-            alias: 'f',
+            alias: 'c',
             default: '/etc/clusterduck.yaml',
             description: 'Daemonize',
             type: 'string',
@@ -33,6 +33,11 @@
             type: 'string',
         })
         .strict()
+        .option('experimental', {
+            description: 'Allow using experimental modules',
+            type: 'boolean',
+            default: false
+        })
         .option('verbose', {
             alias: 'v',
             description: 'Verbosity devel',

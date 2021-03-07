@@ -1,6 +1,7 @@
 # clusterduck
 
-`clusterduck` is a humble take on fault-tolerant cluster __monitoring__ and __balancing__, implemented in pure Javascript.
+`clusterduck` is a humble take on fault-tolerant cluster __monitoring__ and __balancing__ implemented in pure Javascript.
+
 
 
 ## [Raft] consensus algorithm
@@ -20,20 +21,16 @@ npm -g clusterduck
 ## Table Of Contents
 
 - [Installation](#installation)
-- [Usage](#usage)
-    - [Configuration](#configuration)
-    - [Command-line](#command-line)
-    - [Cluster events](#cluster-events)
-    - [Node events](#node-events)
+- [Configuration](#configuration)
+- [Command-line](#command-line)
+- [Events](#events)
+  - [Node events](#node-events)
+  - [Cluster events](#cluster-events)
 - [Transports](#transports)
 - [Dependencies](#dependencies)
 - [License](#license)
 
-## Usage
-
-Once you have done with installation, you need to write a config.
-
-### Configuration
+## Configuration
 
 The default config file path is `/etc/clusterduck.yaml`
 Let's define a simple `Redis cluster.
@@ -76,7 +73,7 @@ Now let's live export the list of active nodes:
 
 This will make sure that `/tmp/nodes_list` always contains a current list of alive nodes.
 
-### Command-line
+## Command-line
 
 Run the  `clusterduck` command to see if it all works for you.
 
@@ -88,7 +85,7 @@ For debugging purposes use `DEBUG` environmental variable:
 `DEBUG=* clusterduck`
 
 
-
+## Events
 ### Cluster events
 
 Event               | Description

@@ -4,8 +4,16 @@ const {RedisPool} = require('ioredis-conn-pool')
 const RedisServer = require('../redis-server')
 const {ReplyError} = require("ioredis");
 
-class BasicBalancer extends Balancer {
+/**
+ *
+ */
+class NativeBalancer extends Balancer {
     init() {
+
+        if (!this.cluster.clusterduck.args.experimental) {
+            throw new Error('clusterduck-redis: the native balancer is EXPERIMENTAL, --experimental is required')
+        }
+
         this._pools = new Map
     }
 
@@ -69,4 +77,4 @@ class BasicBalancer extends Balancer {
     }
 }
 
-return module.exports = BasicBalancer
+return module.exports = NativeBalancer

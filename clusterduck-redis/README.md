@@ -10,61 +10,85 @@ npm -g clusterduck-redis
 ## Table Of Contents
 
 - [Installation](#installation)
-- [Usage](#usage)
-    - [Configuration](#configuration)
-    - [Command-line](#command-line)
-    - [Cluster events](#cluster-events)
-    - [Node events](#node-events)
-- [Transports](#transports)
+- [Configuration](#configuration)
 - [Dependencies](#dependencies)
 - [License](#license)
 
-## Usage
+## Configuration
 
-Once you have done with installation, you need to write a config.
-
-### Configuration
-
-The default config file path is `/etc/clusterduck.yaml`
-Let's define a simple `Redis cluster.
-
+Let's defined a Redis cluster named `my_redis_cluster`:
 ```yaml
-clusters:
-  redis_cache:
-    type: redis
+# clusters:
+
+  my_redis_cluster:
+    type: clusterduck-redis
+```
+
+
+### Nodes
+Then let's define some nodes:
+```yaml
+    # List of nodes
     nodes:
       - addr: 127.0.0.1:6379
       - addr: 127.0.0.1:6380
 ```
+*Note that you can omit this altogether if you want to only add nodes dynamically.*
 
-Where `redis_cache` is the name of our new cluster.
-
-Note that you can omit `nodes` if you want to add nodes dynamically.
-
+### Health checks
 Now let's set up a simple __health check__.
 
 ```yaml
     health_checks:
+    
       - type: basic
         timeout: 1s
         every: 1s
 ```
+*Now every second each node in the cluster will get checked on.*
 
-Now every second each node in the cluster will get checked on.
+### Envoy balancer
 
-### Debug
+[Envoy](https://envoyproxy.io/) is required to be installed.
+
+Let's write up a config:
+
+```yaml
+  balancers:
+   
+    my_balancer:
+        type: envoy
+        listen: 0.0.0.0:9999
+      
+        # This section is optional
+        admin:
+          access_log_path: "/tmp/admin_access.log"
+          address:
+            socket_address:
+              address: "127.0.0.1"
+              port_value: 9901
+```
+
+> `clusterduck` will run  `envoy` with an according configuration. [Hot restarting](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/operations/hot_restart)
+   works out-of-box so the `envoy` is always kept in __sync__ with `clusterduck`.
+It requires no middleware or additional configuration.
+
+Now 
+
+
+## Debug
 For debugging purposes use `DEBUG` environmental variable:
 `DEBUG=ioredis clusterduck`
 
 
-### Cluster events
+## Cluster events
 
 Event               | Description
 --------------------|------------------------------------------------------
 `nodes`             | Set of nodes has changed
 `nodes:active`      | Set of active nodes has changed
 
-### Node events
+## Node events
 
 Event               | Description
 --------------------|------------------------------------------------------
