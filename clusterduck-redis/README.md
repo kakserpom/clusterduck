@@ -1,11 +1,8 @@
 # clusterduck-redis
 
-`clusterduck-redis` is the Redis extension for `clusterduck`
+`clusterduck-redis` is the Redis extension for `clusterduck`.
 
-## Installation
-```
-npm -g clusterduck-redis
-```
+
 
 ## Table Of Contents
 
@@ -14,37 +11,49 @@ npm -g clusterduck-redis
 - [Dependencies](#dependencies)
 - [License](#license)
 
+
+## Installation
+
+```
+npm -g clusterduck-redis
+```
+
 ## Configuration
 
-Let's defined a Redis cluster named `my_redis_cluster`:
+Let's define a Redis cluster named `my_redis_cluster`:
+
 ```yaml
 # clusters:
 
-  my_redis_cluster:
-    type: clusterduck-redis
+my_redis_cluster:
+  type: clusterduck-redis
 ```
 
-
 ### Nodes
+
 Then let's define some nodes:
+
 ```yaml
     # List of nodes
     nodes:
       - addr: 127.0.0.1:6379
       - addr: 127.0.0.1:6380
 ```
+
 *Note that you can omit this altogether if you want to only add nodes dynamically.*
 
 ### Health checks
+
 Now let's set up a simple __health check__.
 
 ```yaml
     health_checks:
-    
+      
       - type: basic
         timeout: 1s
         every: 1s
 ```
+
 *Now every second each node in the cluster will get checked on.*
 
 ### Envoy balancer
@@ -55,31 +64,27 @@ Let's write up a config:
 
 ```yaml
   balancers:
-   
+
     my_balancer:
-        type: envoy
-        listen: 0.0.0.0:9999
-      
-        # This section is optional
-        admin:
-          access_log_path: "/tmp/admin_access.log"
-          address:
-            socket_address:
-              address: "127.0.0.1"
-              port_value: 9901
+      type: envoy
+      listen: 0.0.0.0:9999
+
+      # This section is optional
+      admin:
+        access_log_path: "/tmp/admin_access.log"
+        address:
+          socket_address:
+            address: "127.0.0.1"
+            port_value: 9901
 ```
 
 > `clusterduck` will run  `envoy` with an according configuration. [Hot restarting](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/operations/hot_restart)
-   works out-of-box so the `envoy` is always kept in __sync__ with `clusterduck`.
-It requires no middleware or additional configuration.
-
-Now 
-
+works out-of-box so the `envoy` is always kept in __sync__ with `clusterduck`. It requires no middleware or additional configuration.
 
 ## Debug
-For debugging purposes use `DEBUG` environmental variable:
-`DEBUG=ioredis clusterduck`
 
+For debugging purposes use `DEBUG` environmental variable:
+`DEBUG=ioredis*,envoy clusterduck`
 
 ## Cluster events
 
@@ -94,12 +99,13 @@ Event               | Description
 --------------------|------------------------------------------------------
 `state`             | Node state has changed
 
-
 ## Dependencies
 
+- [clusterduck](https://www.npmjs.com/package/clusterduck)
 - [ioredis](https://www.npmjs.com/package/ioredis-conn-pool)
 
 ### Native balancer
+
 - [ioredis-conn-pool](https://www.npmjs.com/package/ioredis-conn-pool)
 - [hashring](https://www.npmjs.com/package/hashring)
 - [redis-parser](https://www.npmjs.com/package/hashring)
@@ -107,8 +113,8 @@ Event               | Description
 - [shell-quote](https://www.npmjs.com/package/hashring)
 
 ### Envoy balancer
-- [tmp-promise](https://www.npmjs.com/package/tmp-promise)
 
+- [tmp-promise](https://www.npmjs.com/package/tmp-promise)
 
 ## License
 

@@ -2,13 +2,25 @@
 
 `clusterduck` is a humble take on fault-tolerant cluster __monitoring__ and __balancing__ implemented in pure Javascript.
 
+### [Raft] consensus algorithm
+Ducks love them rafts. We run [liferaft] over an encrypted TCP/IP transport.
+
+### Easy to use and customize
+Due to its modular architecture you can build your own plugin under an hour.
 
 
-## [Raft] consensus algorithm
+## Table Of Contents
 
-Ducks love them rafts. 
+- [Installation](#installation)
+- [Command-line interface](#command-line)
+- [Configuration](#configuration)
+- [Events](#events)
+  - [Node events](#node-events)
+  - [Cluster events](#cluster-events)
+- [Transports](#transports)
+- [Dependencies](#dependencies)
+- [License](#license)
 
-We run [Liferaft] over an encrypted TCP transport.
 
 ## Installation
 
@@ -18,36 +30,46 @@ Node 11.x is required.
 npm -g clusterduck
 ```
 
-## Table Of Contents
 
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Command-line](#command-line)
-- [Events](#events)
-  - [Node events](#node-events)
-  - [Cluster events](#cluster-events)
-- [Transports](#transports)
-- [Dependencies](#dependencies)
-- [License](#license)
+## Command-line interface
+
+Run the  `clusterduck` command to see if it all works for you.
+
+If you want to daemonize it, run `clusterduck -d`
+
+If you want to stop a running daemon, run `clusterduck stop`
+
+For debugging purposes use `DEBUG` environmental variable:
+`DEBUG=* clusterduck`
 
 ## Configuration
 
 The default config file path is `/etc/clusterduck.yaml`
-Let's define a simple `Redis cluster.
+
+### Clusters
+Let's define a Redis cluster named `my_redis_cluster`:
 
 ```yaml
-clusters:
-  redis_cache:
-    type: redis
+# clusters:
+
+my_redis_cluster:
+  type: clusterduck-redis
+```
+
+### Nodes
+
+Then let's define some nodes:
+
+```yaml
+    # List of nodes
     nodes:
       - addr: 127.0.0.1:6379
       - addr: 127.0.0.1:6380
 ```
 
-Where `redis_cache` is the name of our new cluster.
+*Note that you can omit this altogether if you want to only add nodes dynamically.*
 
-Note that you can omit `nodes` if you want to add nodes dynamically.
-
+### Health checks
 Now let's set up a simple __health check__.
 
 ```yaml
@@ -57,8 +79,9 @@ Now let's set up a simple __health check__.
         every: 1s
 ```
 
-Now every second each node in the cluster will get checked on.
+*Now every second each node in the cluster will get checked on.*
 
+### Triggers
 Now let's live export the list of active nodes:
 
 ```yaml
@@ -70,20 +93,7 @@ Now let's live export the list of active nodes:
             commands:
               - "echo $nodes_addr_list > active_nodes.json"
 ```
-
-This will make sure that `/tmp/nodes_list` always contains a current list of alive nodes.
-
-## Command-line
-
-Run the  `clusterduck` command to see if it all works for you.
-
-If you want to daemonize it, run `clusterduck -d`
-
-If you want to stop a running daemon, run `clusterduck stop`
-
-For debugging purposes use `DEBUG` environmental variable:
-`DEBUG=* clusterduck`
-
+*This will make sure that `/tmp/nodes_list` always contains a current list of alive nodes*.
 
 ## Events
 ### Cluster events
