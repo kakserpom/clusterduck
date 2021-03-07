@@ -78,10 +78,10 @@ class BasicBalancer extends Balancer {
         });
 
         const cluster = {
-            name: "redis_cluster",
-            connect_timeout: "1s",
-            type: "strict_dns",
-            lb_policy: "MAGLEV",
+            name: this.cluster.name,
+            connect_timeout: this.config.connect_timeout || "1s",
+            type: this.config.dns_type || "strict_dns",
+            lb_policy: this.config.lb_policy || "MAGLEV",
             load_assignment: {
                 cluster_name: "redis_cluster",
                 endpoints: [
@@ -94,14 +94,8 @@ class BasicBalancer extends Balancer {
 
         let envoy = {}
 
-        envoy.admin = {
-            access_log_path: "/tmp/admin_access.log",
-            address: {
-                socket_address: {
-                    address: "127.0.0.1",
-                    port_value: 9901
-                }
-            }
+        if (this.config.admin) {
+            envoy.admin = this.config.admin
         }
 
         envoy.static_resources = {
