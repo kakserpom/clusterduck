@@ -136,7 +136,7 @@ Parameter           | Description
 
 ## Dependencies
 
-###Core
+### Core
 
 - [uuid](https://www.npmjs.com/package/uuid) — command-line argument parser
 - [yargs](https://www.npmjs.com/package/yargs) — command-line argument parser
@@ -150,18 +150,18 @@ Parameter           | Description
 - [shell-quote](https://www.npmjs.com/package/shell-quote)
 - [parse-duration](https://www.npmjs.com/package/parse-duration)
 
-###Raft
+### Raft
 - [liferaft](https://www.npmjs.com/package/liferaft) — Raft protocol implementation
 - [axon](https://www.npmjs.com/package/axon)
 - [leveldown](https://www.npmjs.com/package/leveldown)
 
-###WebSocket
+### WebSocket
 - [websocket](https://www.npmjs.com/package/websocket)
 - [weak](https://www.npmjs.com/package/weak)
 - [shoe](https://www.npmjs.com/package/shoe)
 - [express](https://www.npmjs.com/package/express)
 
-###DNode transport
+### DNode transport
 - [dnode](https://www.npmjs.com/package/dnode)
 - [dnode-promise](https://www.npmjs.com/package/dnode-promise)
 
