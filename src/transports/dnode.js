@@ -18,10 +18,10 @@ class Dnode extends Transport {
     constructor() {
         super(...arguments)
 
-        this.address = this.config.listen || this.clusterduck.argv.pidFile.replace(/\.pid$/, '.sock')
+        this.address = this.listen || this.clusterduck.argv.pidFile.replace(/\.pid$/, '.sock')
     }
 
-    listen() {
+    doListen() {
         const clusterduck = this.clusterduck
         return new Promise((resolve, reject) => {
             if (this.address.match(/^\//)) {

@@ -4,6 +4,7 @@ const parseAddr = require('../../../misc/addr')
 
 const fs = require('fs')
 const util = require('util')
+const tmp = require('tmp-promise')
 
 const debug = require('diagnostics')('envoy')
 
@@ -159,11 +160,10 @@ class BasicBalancer extends Balancer {
             ++this.restart_epoch
             execute(['--base-id', this.base_id])
         } else {
-            const base_id_path = '/tmp/envoy-base-id'
-
+            const base_id_file = await tmp.file();
             execute([
                 '--use-dynamic-base-id',
-                '--base-id-path', base_id_path,
+                '--base-id-path', base_id_file.path,
             ])
 
             function sleep(ms) {
@@ -172,11 +172,11 @@ class BasicBalancer extends Balancer {
 
             await sleep(500)
 
-            this.base_id = parseInt(await util.promisify(fs.readFile)(base_id_path))
+            this.base_id = parseInt(await util.promisify(fs.readFile)(base_id_file.path))
 
             debug(`acquired base id: ${this.base_id}`)
 
-            await util.promisify(fs.unlink)(base_id_path)
+            await base_id_file.cleanup()
         }
     }
 }

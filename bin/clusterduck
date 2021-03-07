@@ -13,7 +13,8 @@
 
     let command;
 
-    yargs.option('daemonize', {
+    const parser = yargs
+        .option('daemonize', {
         alias: 'd',
         description: 'Daemonize',
         type: 'boolean',
@@ -23,13 +24,15 @@
             default: '/etc/clusterduck.yaml',
             description: 'Daemonize',
             type: 'string',
-        }).option('pid-file', {
-        description: 'Pid-file',
-        default: function () {
-            return '/var/run/clusterduck/clusterduck-' + md5(yargs.argv.configFile) + '.pid'
-        },
-        type: 'string',
-    })
+        });
+        parser.option('pid-file', {
+            description: 'Pid-file',
+            default: function () {
+                return '/var/run/clusterduck/clusterduck-' + md5(parser.parse().configFile) + '.pid'
+            },
+            type: 'string',
+        })
+        .strict()
         .option('verbose', {
             alias: 'v',
             description: 'Verbosity devel',
@@ -62,7 +65,8 @@
         })
         .help()
         .alias('help', 'h');
-    const argv = yargs.argv;
+
+    const argv = parser.parse()
 
     try {
         if (argv.daemonize && !Duckling.isDuckling) {
@@ -75,7 +79,7 @@
         }
         const clusterduck = new ClusterDuck(argv)
         if (Duckling.isDuckling) {
-           clusterduck.runDuckling()
+            clusterduck.runDuckling()
         } else {
             clusterduck.id = uuidv4()
             clusterduck.set_config(require('../src/config')(argv.configFile))

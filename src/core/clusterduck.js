@@ -18,6 +18,10 @@ class ClusterDuck extends emitter {
         this.verbose = ![null, false].includes(this.argv.verbose)
     }
 
+    /**
+     * Set config
+     * @param config
+     */
     set_config(config) {
 
         this.config = config
@@ -30,6 +34,10 @@ class ClusterDuck extends emitter {
             .map(duckling => duckling.on('disconnect', () => this.ducklings.delete(duckling))))
     }
 
+    /**
+     * Spawn a duckling
+     * @param callback
+     */
     duckling(callback) {
         new Duckling(duckling => {
             duckling.notify('bootstrap', {
@@ -53,7 +61,7 @@ class ClusterDuck extends emitter {
     }
 
     /**
-     *
+     * API
      * @returns {{export: (function(): Promise<unknown>)}}
      */
     api() {
@@ -70,6 +78,11 @@ class ClusterDuck extends emitter {
         };
     }
 
+
+    /**
+     *  Dnode API
+     * @returns {Dnode}
+     */
     get dnode() {
         return new (require('../transports/dnode'))(
             {},
@@ -77,8 +90,10 @@ class ClusterDuck extends emitter {
         )
     }
 
+    /**
+     * Main function for a duckling
+     */
     runDuckling() {
-
 
         process.on('unhandledRejection', e => {
             this.emit('unhandled-rejection:' + e.name, e)
@@ -111,12 +126,15 @@ class ClusterDuck extends emitter {
     }
 
     /**
-     *
+     * Main function for the core process
      * @returns {Promise<void>}
      */
     async run() {
         this.transports = (new Collection('type', config => Transport.factory(config, this)))
             .addFromArray(this.config.transports || [])
+        this.transports.forEach(transport => transport.doListen())
+
+
         this.clusters.forEach(cluster => cluster.run_health_checks())
         setInterval(() => {
             this.clusters.forEach(cluster => cluster.run_health_checks())

@@ -3,7 +3,7 @@
  * @type {SetConstructor|(function(*=, *=, *=, *=): *)}
  */
 const SortedSet = require('collections/sorted-set')
-const { SHAKE } = require('sha3');
+const {SHAKE} = require('sha3');
 
 /**
  *

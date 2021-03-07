@@ -4,20 +4,9 @@ const yaml = require('js-yaml')
  *
  */
 class Http {
-
-    /**
-     *
-     * @param config
-     * @param clusterduck
-     */
-    constructor(config, clusterduck) {
-        this.config = config
-        this.clusterduck = clusterduck
-    }
-
-    listen() {
+    doListen() {
         const api = this
-        const port = this.config.listen || 8485
+        const port = this.listen || 8485
 
         const express = require('express')
         const app = express()

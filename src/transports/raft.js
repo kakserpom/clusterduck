@@ -1,23 +1,28 @@
 const md5 = require('md5')
 const msg = require('axon')
 const CryptoBox = require('../misc/cryptobox')
+const Transport = require('../core/transport')
 const Raft = require('liferaft')
 const debug = require('diagnostics')('raft')
 
-class Transport {
+class RaftTransport extends Transport {
+    /**
+     *
+     * @param config
+     * @param clusterduck
+     */
     constructor(config, clusterduck) {
+        super(config, clusterduck)
 
-        this.config = config
-        this.clusterduck = clusterduck
         this.clusterduck.quack = function() {
             debug('Cannot quack yet')
         };
     }
 
-    listen() {
+    doListen() {
         const transport = this
         return new Promise((resolve, reject) => {
-            const cryptoBox = new CryptoBox(this.config.secret)
+            const cryptoBox = new CryptoBox(this.secret)
 
             const clusterduck = this.clusterduck
 
@@ -87,12 +92,12 @@ class Transport {
                 }
             }
 
-            const raft = new MsgRaft(this.config.address, {
+            const raft = new MsgRaft(this.address, {
                 'election min': 2000,
                 'election max': 5000,
                 'heartbeat': 1000,
                 Log: require('liferaft/log'),
-                path: this.config.path || '/var/run/clusterduck/db-' + md5(this.clusterduck.argv.pidFile)
+                path: this.path || '/var/run/clusterduck/db-' + md5(this.clusterduck.argv.pidFile)
             });
 
             raft.on('heartbeat timeout', function () {
@@ -132,11 +137,11 @@ class Transport {
                 debug('----------------------------------');
             });
 
-            console.log(this.config.bootstrap);
+            console.log(this.bootstrap);
 
-            for (const addr of (this.config.bootstrap || [])) {
+            for (const addr of (this.bootstrap || [])) {
                 debug('join ' + addr)
-                if (addr === this.config.address) {
+                if (addr === this.address) {
                     continue;
                 }
                 raft.join(addr)
@@ -147,4 +152,4 @@ class Transport {
     }
 }
 
-return module.exports = Transport
+return module.exports = RaftTransport
