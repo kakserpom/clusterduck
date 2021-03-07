@@ -8,12 +8,19 @@ const util = require('util')
 const debug = require('diagnostics')('envoy')
 
 class BasicBalancer extends Balancer {
+
+
+    /**
+     *
+     */
     init() {
         this.base_id = null
         this.restart_epoch = 0
     }
 
-
+    /**
+     * Start
+     */
     start() {
 
         this.cluster.on('nodes:active', () => {
@@ -22,27 +29,40 @@ class BasicBalancer extends Balancer {
 
     }
 
+    /**
+     * Envoy configuration
+     * @returns {{}}
+     */
     envoy() {
+
+        /**
+         *  Generate address object
+         * @param address
+         * @param default_port
+         * @returns {{mode: number, path: string}|{address: string, port_value: number}}
+         */
         const address = (address, default_port) => {
             const addr = parseAddr(address, default_port)
             if (addr.path) {
                 return {
-                    path: addr.path,
-                    mode: parseInt(addr.query.mode || 744)
+                    socket_address: {
+                        path: addr.path,
+                        mode: parseInt(addr.query.mode || 744)
+                    }
                 }
             } else {
                 return {
-                    address: addr.hostname,
-                    port_value: parseInt(addr.port)
+                    socket_address: {
+                        address: addr.hostname,
+                        port_value: parseInt(addr.port)
+                    }
                 }
             }
-        };
+        }
 
         const listener = {
             name: this.cluster.name + '_listener',
-            address: {
-                socket_address: address(this.config.listen)
-            },
+            address: address(this.config.listen),
             filter_chains: [
                 {
                     filters: [
@@ -64,19 +84,18 @@ class BasicBalancer extends Balancer {
                     ]
                 }
             ]
-        };
+        }
 
-
+        // Let's make the list of active nodes
         const endpoints = this.cluster.active_nodes.map(node => {
             return {
                 endpoint: {
-                    address: {
-                        socket_address: address(node.addr)
-                    }
+                    address: address(node.addr, 6379)
                 }
             }
-        });
+        })
 
+        // Envoy cluster definition
         const cluster = {
             name: this.cluster.name,
             connect_timeout: this.config.connect_timeout || '1s',
@@ -90,8 +109,10 @@ class BasicBalancer extends Balancer {
                     }
                 ]
             }
-        };
+        }
 
+
+        // Now we make the final object
         let envoy = {}
 
         if (this.config.admin) {
@@ -132,13 +153,13 @@ class BasicBalancer extends Balancer {
                 if (error) {
                     debug(`error: ${error}`)
                 }
-            });
+            })
         }
         if (this.base_id) {
             ++this.restart_epoch
             execute(['--base-id', this.base_id])
         } else {
-            const base_id_path = '/tmp/envoy-base-id';
+            const base_id_path = '/tmp/envoy-base-id'
 
             execute([
                 '--use-dynamic-base-id',
@@ -146,7 +167,7 @@ class BasicBalancer extends Balancer {
             ])
 
             function sleep(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
+                return new Promise(resolve => setTimeout(resolve, ms))
             }
 
             await sleep(500)
