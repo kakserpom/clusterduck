@@ -1,6 +1,6 @@
 # clusterduck-redis
 
-`clusterduck-redis` is the Redis extension for `clusterduck` which includes:
+`clusterduck-redis` is a [Redis] extension for [Clusterduck] which includes:
 
 - Health checks
 - Balancer running on [Envoy] with seamless [hot restarting].
@@ -10,6 +10,9 @@
 
 - [Installation](#installation)
 - [Configuration](#configuration)
+  - [Nodes](#nodes)
+  - [Health checks](#health-checks)
+  - [Envoy balancer](#envoy-balancer)
 - [Dependencies](#dependencies)
 - [License](#license)
 
@@ -78,9 +81,8 @@ Let's write up a config:
           socket_address:
             address: "127.0.0.1"
             port_value: 9901
-```
-
-> `clusterduck` will run  `envoy` with an according configuration.
+``` 
+> *Note:* `clusterduck` will run  `envoy` with an according configuration.
 > [Hot restarting] works out-of-box so the `envoy` is always kept in __sync__ with `clusterduck`. It requires no middleware or additional configuration.
 
 ## Debug
@@ -103,7 +105,7 @@ Event               | Description
 
 ## Dependencies
 
-- [clusterduck](https://www.npmjs.com/package/clusterduck)
+- [clusterduck]
 - [ioredis](https://www.npmjs.com/package/ioredis-conn-pool)
 
 ### Native balancer
@@ -126,3 +128,5 @@ LGPL 3.0 or later.
 [Liferaft]: https://github.com/unshiftio/liferaft
 [hot restarting]: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/operations/hot_restart
 [Envoy]: https://envoyproxy.io/
+[Redis]: https://redis.io/
+[Clusterduck]: (https://www.npmjs.com/package/clusterduck)
