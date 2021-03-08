@@ -153,7 +153,7 @@ class BasicBalancer extends Balancer {
 
             const command = quote(args)
 
-            debug(`[${this.restart_epoch}] ${command}`)
+            debug('[%s] %s', this.restart_epoch, command)
 
             exec(command, {}, (error, stdout, stderr) => {
 
@@ -181,7 +181,7 @@ class BasicBalancer extends Balancer {
 
             this.base_id = parseInt(await util.promisify(fs.readFile)(base_id_file.path))
 
-            debug(`acquired base id: ${this.base_id}`)
+            debug('acquired base id: %s', this.base_id)
 
             await base_id_file.cleanup()
         }
