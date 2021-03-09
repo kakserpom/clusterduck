@@ -10,6 +10,7 @@ cd -
 cd clusterduck-redis
 npm link --unsafe-perm
 cd -
+
 cd clusterduck
 npm link clusterduck-redis --unsafe-perm
 cd -

@@ -43,10 +43,7 @@ class RaftTransport extends Transport {
     doListen() {
         const transport = this
         return new Promise((resolve, reject) => {
-            //const cryptoBox = new CryptoBox(this.secret)
-            const cryptoBox = false
-
-            const clusterduck = this.clusterduck
+            const cryptoBox = this.secret ? new CryptoBox(this.secret) : false
 
             class DuckRaft extends Liferaft {
 

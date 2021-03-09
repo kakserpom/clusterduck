@@ -146,13 +146,13 @@ Parameter           | Description
 
 ### Core
 
-- [uuid](https://www.npmjs.com/package/uuid) — command-line argument parser
+- [uuid](https://www.npmjs.com/package/uuid) — uuid generation
 - [yargs](https://www.npmjs.com/package/yargs) — command-line argument parser
 - [js-yaml](https://www.npmjs.com/package/js-yaml) — configuration files
 - [yaml](https://www.npmjs.com/package/yaml) — configuration files
 - [collections](https://www.npmjs.com/package/collections) — entity collections
 - [daemonize-process](https://www.npmjs.com/package/daemonize-process)
-- [diagnostics](https://www.npmjs.com/package/diagnostics)
+- [diagnostics](https://www.npmjs.com/package/diagnostics) - debug output
 - [md5](https://www.npmjs.com/package/md5)
 - [sha3](https://www.npmjs.com/package/sha3)
 - [shell-quote](https://www.npmjs.com/package/shell-quote)
