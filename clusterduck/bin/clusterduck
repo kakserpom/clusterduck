@@ -46,7 +46,7 @@
         .command('export', 'export', (yargs) => {
             command = function (clusterduck) {
                 return new Promise(async (resolve, reject) => {
-                    const [remote, d] = await clusterduck.dnode.client()
+                    const [remote, d] = await clusterduck.jayson.client()
                     const res = await remote.export();//.catch(reject)
                     process.stdout.write(yaml.dump(res));
                     d.end()

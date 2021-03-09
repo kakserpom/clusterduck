@@ -65,26 +65,30 @@ class ClusterDuck extends emitter {
      * @returns {{export: (function(): Promise<unknown>)}}
      */
     api() {
-        const clusterduck = this;
         return {
-            export: function () {
-                return new Promise((resolve, reject) => {
-                    resolve(clusterduck.clusters.reduce((cluster, clusters) => {
-                        clusters[cluster.name] = cluster.active_nodes.map(node => node.addr)
-                        return clusters
-                    }, {}))
+            /**
+             *
+             * @param args
+             * @param callback
+             * @returns {Promise<void>}
+             */
+            export: async (args, callback) => {
+                let clusters = {}
+                const res = this.clusters.forEach(cluster => {
+                    clusters[cluster.name] = cluster.active_nodes.map(node => node.addr)
                 });
+                callback(null, clusters)
             },
-        };
+        }
     }
 
 
     /**
-     *  Dnode API
-     * @returns {Dnode}
+     * Jayson
+     * @returns {JaysonTransport}
      */
-    get dnode() {
-        return new (require('../transports/dnode'))(
+    get jayson() {
+        return new (require('../transports/jayson'))(
             {},
             this
         )

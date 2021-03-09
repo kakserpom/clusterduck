@@ -12,6 +12,7 @@
   "author": "Vasily Zorin",
   "license": "LGPL-3.0-or-later",
   "dependencies": {
+    "diagnostics": "^2.0.2",
     "hashring": "^3.2.0",
     "ioredis": "^4.23.0",
     "ioredis-conn-pool": "^1.0.0",
@@ -19,9 +20,5 @@
     "redis-protocol": "^0.1.10",
     "shell-quote": "^1.7.2",
     "tmp-promise": "^3.0.2"
-  },
-  "devDependencies": {
-    "hiredis": "^0.5.0"
   }
 }
-

@@ -2,8 +2,9 @@ const md5 = require('md5')
 const msg = require('axon')
 const CryptoBox = require('../misc/cryptobox')
 const Transport = require('../core/transport')
-const Raft = require('liferaft')
+const Liferaft = require('liferaft')
 const debug = require('diagnostics')('raft')
+const debugDeep = require('diagnostics')('raft-deep')
 
 class RaftTransport extends Transport {
     /**
@@ -14,11 +15,15 @@ class RaftTransport extends Transport {
     constructor(config, clusterduck) {
         super(config, clusterduck)
 
-        this.clusterduck.quack = function() {
+        this.clusterduck.quack = function () {
             debug('Cannot quack yet')
         };
     }
 
+    /**
+     *
+     * @returns {Promise<unknown>}
+     */
     doListen() {
         const transport = this
         return new Promise((resolve, reject) => {
@@ -26,11 +31,11 @@ class RaftTransport extends Transport {
 
             const clusterduck = this.clusterduck
 
-            class MsgRaft extends Raft {
+            class DuckRaft extends Liferaft {
 
                 quack(payload, when) {
                     raft.message(
-                        Raft.LEADER,
+                        DuckRaft.LEADER,
                         {type: 'quack', payload: payload},
                         when
                     )
@@ -44,7 +49,7 @@ class RaftTransport extends Transport {
                  * @api private
                  */
                 initialize(options) {
-                    debug('initializing reply socket on port %s', this.address);
+                    debug('binding socket: %s', this.address);
 
                     const socket = this.socket = msg.socket('rep');
 
@@ -59,11 +64,11 @@ class RaftTransport extends Transport {
                         } else {
                             this.emit('data', data, fn)
                         }
-                    });
+                    })
 
                     socket.on('error', () => {
                         debug('failed to initialize on port: ', this.address);
-                    });
+                    })
                 }
 
                 /**
@@ -75,45 +80,44 @@ class RaftTransport extends Transport {
                  */
                 write(packet, fn) {
                     if (!this.socket) {
-                        this.socket = msg.socket('req');
+                        this.socket = msg.socket('req')
 
-                        this.socket.connect(this.address);
+                        this.socket.connect(this.address)
                         this.socket.on('error', function err() {
-                            console.error('failed to write to: ', this.address);
-                        });
+                            console.error('failed to write to: %s', this.address)
+                        })
                     }
-                    //debug('writing packet to socket on port %s', this.address);
+                    debugDeep('sending a packet %s', this.address);
                     if (cryptoBox) {
-                        packet = cryptoBox.encrypt(JSON.stringify(packet));
+                        packet = cryptoBox.encrypt(JSON.stringify(packet))
                     }
                     this.socket.send(packet, (data) => {
                         fn(undefined, data);
-                    });
+                    })
                 }
             }
 
-            const raft = new MsgRaft(this.address, {
-                'election min': 2000,
-                'election max': 5000,
-                'heartbeat': 1000,
-                Log: require('liferaft/log'),
+            const raft = new DuckRaft(this.address, {
+                'election min': this.election_min || 2000,
+                'election max': this.election_max || 5000,
+                'heartbeat': this.heartbeat || 1000,
+                Log: require(this.log_module || 'liferaft/log'),
                 path: this.path || '/var/run/clusterduck/db-' + md5(this.clusterduck.argv.pidFile)
-            });
-
-            raft.on('heartbeat timeout', function () {
-                debug('heart beat timeout, starting election');
             })
 
+            raft.on('heartbeat timeout', function () {
+                debug('heart beat timeout, starting election')
+            })
 
             raft.on('term change', function (to, from) {
-                debug('were now running on term %s -- was %s', to, from);
+                debugDeep('were now running on term %s -- was %s', to, from)
             }).on('leader change', function (to, from) {
-                if (raft.state !== Raft.LEADER) {
+                if (raft.state !== DuckRaft.LEADER) {
                     transport.quack = raft.quack;
                 }
-                debug('we have a new leader to: %s -- was %s', to, from || 'unknown');
+                debug('NEW LEADER: %s (prior was %s)', to, from || 'unknown')
             }).on('state change', function (to, from) {
-                debug('we have a state to: %s -- was %s', Raft.states[to], Raft.states[from]);
+                debug('STATE CHANGE: %s (prior from %s)', DuckRaft.states[to], DuckRaft.states[from])
             });
 
 
@@ -122,7 +126,7 @@ class RaftTransport extends Transport {
             })
 
             raft.on('leader', function () {
-                transport.quack = function(quack, when) {
+                transport.quack = function (quack, when) {
                     clusterduck.emit('quack', quack);
                     !when || when(quack);
                 };

@@ -25,7 +25,7 @@
 
 ## Installation
 
-Node 11.x is required.
+Node 15.x is recommended.
 
 ```
 npm -g clusterduck
@@ -170,8 +170,8 @@ Parameter           | Description
 - [express](https://www.npmjs.com/package/express)
 
 ### DNode transport
-- [dnode](https://www.npmjs.com/package/dnode)
-- [dnode-promise](https://www.npmjs.com/package/dnode-promise)
+- [jayson](https://www.npmjs.com/package/jayson)
+- [jayson-promise](https://www.npmjs.com/package/jayson-promise)
 
 
 ## License

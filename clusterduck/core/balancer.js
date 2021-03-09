@@ -1,4 +1,3 @@
-const HashRing = require('hashring')
 const Collection = require('../misc/collection')
 const Duckling = require('./duckling')
 const debug = require('diagnostics')('balancer')
@@ -23,6 +22,12 @@ class Balancer {
 
         this.set_config(config)
 
+        this.init()
+    }
+
+    init_ring() {
+
+        const HashRing = require('hashring')
         /**
          * Consistent hashing implementation
          * @type {HashRing}
@@ -45,8 +50,6 @@ class Balancer {
                 this.ring.remove(node.addr)
             }
         })
-
-        this.init()
     }
 
     get_node_by_key(key) {
@@ -96,7 +99,7 @@ class Balancer {
     }
 
     spawnDucklings(number) {
-        debug(this.name + ': Spawning ' + number + ' ducklings');
+        debug('%s: Spawning %s duckling(s)', this.name, number);
         for (let i = 0; i < number; ++i) {
             this.cluster.clusterduck.duckling(duckling => {
                 this.ducklings.add(duckling)

@@ -43,20 +43,24 @@ class Cluster extends emitter {
         this.removeAllListeners()
 
         this.on('node:passed', function (node) {
-            node.state = {available: true}
+            node.transaction().set({available: true}).commit()
         })
 
         this.on('node:failed', function (node, error) {
-            node.state = {available: false}
+            node.transaction().set({available: false}).commit()
         })
-
 
         this.nodes = new Collection('addr', node => {
-            return (new ClusterNode(node)).on('node:state', (node, state) => {
-                this.touch_state()
-                this.emit('node:state', node, state)
-            })
+            return (new ClusterNode(node, this))
+                .on('node:state', (node, state) => {
+                    this.touch_state()
+                    this.emit('node:state', node, state)
+                })
+                .on('commit', commit => {
+
+                })
         })
+
         this.nodes.addRangeChangeListener((plus, minus) => {
             plus.map(node => {
                 node.emit('node:inserted', node)
@@ -82,7 +86,7 @@ class Cluster extends emitter {
 
         this.on('node:state', (node, state) => {
 
-            debug('node:state', node.addr, state)
+            debug('node:state: %s', node.addr, state)
             this.clusterduck.ducklings.map(duckling => {
                 duckling.notify('node:state', {
                     cluster: this.name,
@@ -196,7 +200,7 @@ Cluster.factory = (config, clusterduck) => {
     const constructor = require(config.type)
     if (typeof constructor !== 'function') {
         throw new Error('Unable to initialize cluster ' + JSON.stringify(config.name)
-            + ': module ' + JSON.stringify(config.type)+ ' not found')
+            + ': module ' + JSON.stringify(config.type) + ' not found')
     }
     return new constructor(config, clusterduck)
 }

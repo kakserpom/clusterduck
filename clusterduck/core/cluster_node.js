@@ -1,5 +1,6 @@
 const HealthCheck = require('./health_check')
-const emitter = require('events').EventEmitter
+const Entity = require('../misc/entity')
+const Commit = require('../misc/commit')
 
 /**
  * Cluster node representation
@@ -8,9 +9,10 @@ const emitter = require('events').EventEmitter
  * @event node:passed
  * @event node:failed
  */
-class ClusterNode extends emitter {
-    constructor(entry) {
+class ClusterNode extends Entity {
+    constructor(entry, cluster) {
         super()
+        this.cluster = cluster
         this.last_state_change = 0
         this.available = false
         this.active = false
@@ -23,6 +25,18 @@ class ClusterNode extends emitter {
 
             this[key] = value
         }
+    }
+
+    transaction() {
+        return new Commit(this, (commit, entity) => {
+            if (Object.keys(commit.set).includes('available', 'disabled', 'spare')) {
+                commit.set.active = this.available && !this.disabled && !this.spare
+            }
+            if (!commit.empty()) {
+                commit.set.last_state_change = Date.now()
+                commit.path = ['clusters', this.cluster.name, 'nodes', this.addr]
+            }
+        })
     }
 
     /**
