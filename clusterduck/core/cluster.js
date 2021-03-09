@@ -51,13 +51,13 @@ class Cluster extends emitter {
 
         this.on('node:passed', node => {
             this.clusterduck.commit([
-                (new UpdateNode).target(node).attr({available: true})
+                (new UpdateNode).target(node).attr({available: true, checked: true})
             ])
         })
 
-        this.on('node:failed',  (node, error) => {
+        this.on('node:failed', (node, error) => {
             this.clusterduck.commit([
-                (new UpdateNode).target(node).attr({available: false})
+                (new UpdateNode).target(node).attr({available: false, checked: true})
             ])
         })
 
@@ -95,7 +95,7 @@ class Cluster extends emitter {
         this.on('node:state', (node, state) => {
 
             debug('node:state: %s', node.addr, state)
-            this.clusterduck.ducklings.map(duckling => {
+            this.clusterduck.ducklings.forEach(duckling => {
                 duckling.notify('node:state', {
                     cluster: this.name,
                     node: node.addr,
@@ -106,7 +106,7 @@ class Cluster extends emitter {
             if (this.last_state_propagation >= this.last_state_change) {
                 return
             }
-            this.last_state_propagation =  Date.now()
+            this.last_state_propagation = Date.now()
             this.emit('nodes:active', this.active_nodes)
         })
 
@@ -177,24 +177,25 @@ class Cluster extends emitter {
         let clusterChecks = []
 
         this.nodes.forEach(node => {
-            let checks = []
+            let nodeChecks = []
             this.health_checks.forEach(hc => {
                 const promise = this.health_check(node, hc).triggerIfDue();
                 if (promise != null) {
-                    checks.push(promise)
+                    nodeChecks.push(promise)
                 }
             })
 
-            if (!checks.length) {
+            if (!nodeChecks.length) {
                 return
             }
-            clusterChecks.push(Promise.all(checks).then(function (list) {
+            const allNodeChecks = Promise.all(nodeChecks).then(list => {
                 node.emit('node:passed', node)
                 cluster.emit('node:passed', node)
-            }).catch(function (error) {
+            }).catch(error => {
                 node.emit('node:failed', node, error)
                 cluster.emit('node:failed', node, error)
-            }))
+            })
+            clusterChecks.push(allNodeChecks)
         })
 
         Promise.all(clusterChecks).then(list => {

@@ -1,5 +1,6 @@
 const quote = require('shell-quote').quote
 const exec = require('child_process').exec
+const debug = require('diagnostics')('triggers')
 
 /**
  *
@@ -24,7 +25,7 @@ class ShellAction {
             addrs: params.nodes.map(node => node.addr)
         });
 
-        console.log(commands)
+        debug('Triggering shell:', commands)
 
         const options = {};
         if (this.config.cwd != null) {

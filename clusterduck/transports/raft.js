@@ -17,27 +17,23 @@ class RaftTransport extends Transport {
         super(config, clusterduck)
 
         this.on('replicaCommit', bundle => {
+            this.commit(Commit.fromBundle(bundle))
+        })
+
+        this.on('commit', bundle => {
             const commit = Commit.fromBundle(bundle)
             commit.run(clusterduck)
         })
-
-        this.on('commit', commit => {
-            console.log(['commit', commit])
-        })
     }
 
-    commit(bundle) {
-        if (this.isLeader()) {
-            this.raft.command(bundle)
+    commit(commit) {
+        if (this.raft.state === Liferaft.LEADER) {
+            this.raft.command(commit.bundle())
+        } else if (this.raft.state === Liferaft.CANDIDATE) {
+            commit.run(this.clusterduck)
         } else {
-
-
-            this.command(bundle)
+            this.command(commit.bundle())
         }
-    }
-
-    isLeader() {
-        return this.raft.state === Liferaft.LEADER
     }
 
     /**
@@ -147,8 +143,7 @@ class RaftTransport extends Transport {
 
 
             raft.on('commit', command => {
-                console.log(['real commit', command])
-               // transport.emit('commit', ...arguments)
+                transport.emit('commit', command)
             })
 
             raft.on('leader', () => {
@@ -162,8 +157,6 @@ class RaftTransport extends Transport {
                 debug('I am starting as candidate');
                 debug('----------------------------------');
             });
-
-            console.log(this.bootstrap);
 
             for (const addr of (this.bootstrap || [])) {
                 debug('join ' + addr)

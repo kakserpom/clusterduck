@@ -181,7 +181,7 @@ class ClusterDuck extends emitter {
             return
         }
 
-        raft.commit(commit.bundle())
+        raft.commit(commit)
     }
 }
 
