@@ -3,6 +3,7 @@ const msg = require('axon')
 const CryptoBox = require('../misc/cryptobox')
 const Transport = require('../core/transport')
 const Liferaft = require('liferaft')
+const Commit = require("../core/commit");
 const debug = require('diagnostics')('raft')
 const debugDeep = require('diagnostics')('raft-deep')
 
@@ -15,9 +16,28 @@ class RaftTransport extends Transport {
     constructor(config, clusterduck) {
         super(config, clusterduck)
 
-        this.clusterduck.quack = function () {
-            debug('Cannot quack yet')
-        };
+        this.on('replicaCommit', bundle => {
+            const commit = Commit.fromBundle(bundle)
+            commit.run(clusterduck)
+        })
+
+        this.on('commit', commit => {
+            console.log(['commit', commit])
+        })
+    }
+
+    commit(bundle) {
+        if (this.isLeader()) {
+            this.raft.command(bundle)
+        } else {
+
+
+            this.command(bundle)
+        }
+    }
+
+    isLeader() {
+        return this.raft.state === Liferaft.LEADER
     }
 
     /**
@@ -27,20 +47,12 @@ class RaftTransport extends Transport {
     doListen() {
         const transport = this
         return new Promise((resolve, reject) => {
-            const cryptoBox = new CryptoBox(this.secret)
+            //const cryptoBox = new CryptoBox(this.secret)
+            const cryptoBox = false
 
             const clusterduck = this.clusterduck
 
             class DuckRaft extends Liferaft {
-
-                quack(payload, when) {
-                    raft.message(
-                        DuckRaft.LEADER,
-                        {type: 'quack', payload: payload},
-                        when
-                    )
-
-                }
 
                 /**
                  * Initialized, start connecting all the things.
@@ -51,18 +63,34 @@ class RaftTransport extends Transport {
                 initialize(options) {
                     debug('binding socket: %s', this.address);
 
+                    transport.command = async bundle => {
+                        const when = () => {
+                        }
+
+
+                        const packet = await this.packet('replicaCommit', bundle)
+
+                        this.message(
+                            Liferaft.LEADER,
+                            packet,
+                            when
+                        )
+                    }
+
                     const socket = this.socket = msg.socket('rep');
 
                     socket.bind(this.address);
                     socket.on('message', (data, fn) => {
                         if (cryptoBox) {
-                            data = JSON.parse(cryptoBox.decrypt(data))
+                            const decrypted = cryptoBox.decrypt(data)
+                            data = JSON.parse(decrypted)
                         }
-                        if (data.type === 'quack') {
-                            console.log({quack: data.payload})
-                            clusterduck.emit('quack', data.payload)
-                        } else {
-                            this.emit('data', data, fn)
+                        this.emit('data', data, fn)
+                    })
+
+                    this.on('rpc', packet => {
+                        if (packet.type === 'replicaCommit') {
+                            transport.emit('replicaCommit', packet.data)
                         }
                     })
 
@@ -87,7 +115,7 @@ class RaftTransport extends Transport {
                             console.error('failed to write to: %s', this.address)
                         })
                     }
-                    debugDeep('sending a packet %s', this.address);
+                    debugDeep('sending a packet %s', this.address)
                     if (cryptoBox) {
                         packet = cryptoBox.encrypt(JSON.stringify(packet))
                     }
@@ -97,7 +125,7 @@ class RaftTransport extends Transport {
                 }
             }
 
-            const raft = new DuckRaft(this.address, {
+            const raft = this.raft = new DuckRaft(this.address, {
                 'election min': this.election_min || 2000,
                 'election max': this.election_max || 5000,
                 'heartbeat': this.heartbeat || 1000,
@@ -112,30 +140,24 @@ class RaftTransport extends Transport {
             raft.on('term change', function (to, from) {
                 debugDeep('were now running on term %s -- was %s', to, from)
             }).on('leader change', function (to, from) {
-                if (raft.state !== DuckRaft.LEADER) {
-                    transport.quack = raft.quack;
-                }
                 debug('NEW LEADER: %s (prior was %s)', to, from || 'unknown')
             }).on('state change', function (to, from) {
                 debug('STATE CHANGE: %s (prior from %s)', DuckRaft.states[to], DuckRaft.states[from])
             });
 
 
-            raft.on('commit', function (command) {
-                console.log({command: command})
+            raft.on('commit', command => {
+                console.log(['real commit', command])
+               // transport.emit('commit', ...arguments)
             })
 
-            raft.on('leader', function () {
-                transport.quack = function (quack, when) {
-                    clusterduck.emit('quack', quack);
-                    !when || when(quack);
-                };
+            raft.on('leader', () => {
                 debug('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
                 debug('I am elected as leader');
                 debug('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
             });
 
-            raft.on('candidate', function () {
+            raft.on('candidate', () => {
                 debug('----------------------------------');
                 debug('I am starting as candidate');
                 debug('----------------------------------');

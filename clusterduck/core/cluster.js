@@ -6,6 +6,9 @@ const Collection = require('../misc/collection')
 const HealthCheck = require("./health_check");
 const debug = require('diagnostics')('cluster')
 
+const Commit = require('./commit')
+const UpdateNode = require('./commands/update-node')
+
 /**
  * Cluster model
  *
@@ -28,6 +31,10 @@ class Cluster extends emitter {
         this.set_config(config)
     }
 
+    path() {
+        return ['clusters', this.name]
+    }
+
     /**
      * Called whenever the config is loaded/updated
      * @param config
@@ -42,12 +49,16 @@ class Cluster extends emitter {
         // @TODO: refactor with proxy eventemitter
         this.removeAllListeners()
 
-        this.on('node:passed', function (node) {
-            node.transaction().set({available: true}).commit()
+        this.on('node:passed', node => {
+            this.clusterduck.commit([
+                (new UpdateNode).target(node).attr({available: true})
+            ])
         })
 
-        this.on('node:failed', function (node, error) {
-            node.transaction().set({available: false}).commit()
+        this.on('node:failed',  (node, error) => {
+            this.clusterduck.commit([
+                (new UpdateNode).target(node).attr({available: false})
+            ])
         })
 
         this.nodes = new Collection('addr', node => {
@@ -55,9 +66,6 @@ class Cluster extends emitter {
                 .on('node:state', (node, state) => {
                     this.touch_state()
                     this.emit('node:state', node, state)
-                })
-                .on('commit', commit => {
-
                 })
         })
 
@@ -94,6 +102,12 @@ class Cluster extends emitter {
                     state: state
                 })
             })
+
+            if (this.last_state_propagation >= this.last_state_change) {
+                return
+            }
+            this.last_state_propagation =  Date.now()
+            this.emit('nodes:active', this.active_nodes)
         })
 
         this.balancers.forEach(balancer => balancer.start())
@@ -164,8 +178,6 @@ class Cluster extends emitter {
 
         this.nodes.forEach(node => {
             let checks = []
-
-
             this.health_checks.forEach(hc => {
                 const promise = this.health_check(node, hc).triggerIfDue();
                 if (promise != null) {
@@ -185,13 +197,8 @@ class Cluster extends emitter {
             }))
         })
 
-        Promise.all(clusterChecks).then(function (list) {
-            const now = Date.now()
-            if (cluster.last_state_propagation >= cluster.last_state_change) {
-                return
-            }
-            cluster.last_state_propagation = now
-            cluster.emit('nodes:active', cluster.active_nodes)
+        Promise.all(clusterChecks).then(list => {
+
         })
     }
 }

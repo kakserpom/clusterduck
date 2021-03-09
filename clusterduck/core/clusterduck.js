@@ -4,6 +4,7 @@ const Collection = require('../misc/collection')
 const Transport = require('./transport')
 const Duckling = require('./duckling')
 const Cluster = require('./cluster')
+const Commit = require("./commit")
 
 /**
  * Main class
@@ -32,6 +33,24 @@ class ClusterDuck extends emitter {
         this.ducklings = new Collection()
         this.ducklings.addRangeChangeListener(plus => plus
             .map(duckling => duckling.on('disconnect', () => this.ducklings.delete(duckling))))
+    }
+
+
+    /**
+     *
+     * @param path
+     * @returns object|null
+     */
+    resolveEntityPath(path) {
+        let ptr = this
+        path.map(key => {
+            if (typeof ptr === 'object' && ptr instanceof Collection) {
+                ptr = ptr.get(key)
+            } else {
+                ptr = ptr[key]
+            }
+        })
+        return ptr
     }
 
     /**
@@ -150,6 +169,19 @@ class ClusterDuck extends emitter {
                 console.error('Uncaught rejection', e)
             }
         });
+    }
+
+    commit(commands) {
+        const commit = new Commit(commands)
+        const raft = this.transports.get('raft')
+
+        // Non-Raft mode
+        if (!raft) {
+            commit.run(this)
+            return
+        }
+
+        raft.commit(commit.bundle())
     }
 }
 

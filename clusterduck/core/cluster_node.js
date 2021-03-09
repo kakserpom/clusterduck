@@ -1,6 +1,5 @@
 const HealthCheck = require('./health_check')
 const Entity = require('../misc/entity')
-const Commit = require('../misc/commit')
 
 /**
  * Cluster node representation
@@ -27,39 +26,8 @@ class ClusterNode extends Entity {
         }
     }
 
-    transaction() {
-        return new Commit(this, (commit, entity) => {
-            if (Object.keys(commit.set).includes('available', 'disabled', 'spare')) {
-                commit.set.active = this.available && !this.disabled && !this.spare
-            }
-            if (!commit.empty()) {
-                commit.set.last_state_change = Date.now()
-                commit.path = ['clusters', this.cluster.name, 'nodes', this.addr]
-            }
-        })
-    }
-
-    /**
-     *
-     * @param state
-     */
-    set state(state) {
-
-        let changed = false
-        for (const [key, value] of Object.entries(state)) {
-            if (this[key] === value) {
-                continue
-            }
-
-            changed = true
-            this[key] = value
-        }
-
-        if (changed) {
-            this.active = this.available && !this.disabled && !this.spare
-            this.last_state_change = Date.now()
-            this.emit('node:state', this, this.state)
-        }
+    path() {
+        return this.cluster.path().concat(['nodes', this.addr])
     }
 
     get state() {

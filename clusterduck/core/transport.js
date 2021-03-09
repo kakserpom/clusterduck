@@ -1,4 +1,7 @@
-class Transport {
+const emitter = require('events').EventEmitter
+const debug = require('diagnostics')('transport')
+
+class Transport extends emitter {
 
     /**
      *
@@ -6,6 +9,7 @@ class Transport {
      * @param clusterduck
      */
     constructor(config, clusterduck) {
+        super()
         this.clusterduck = clusterduck
 
         for (const [key, value] of Object.entries(config)) {

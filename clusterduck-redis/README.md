@@ -18,7 +18,7 @@
 
 
 ## Installation
-
+[Clusterduck] is required.
 ```
 npm -g clusterduck-redis
 ```
