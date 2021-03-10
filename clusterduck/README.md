@@ -151,6 +151,14 @@ Parameter           | Description
 `listen`            | Port to listen
 `no_slave`          |
 
+## Roadmap
+
+- Peer discovery/exchange
+- CLI
+- Live config updates (i.e. more Commands)
+- Web-interface with websocket
+- REST API
+
 ## Dependencies
 
 ### Raft
@@ -172,15 +180,6 @@ Parameter           | Description
 ### Transports
 - [express](https://www.npmjs.com/package/express)
 - [jayson](https://www.npmjs.com/package/jayson), [jayson-promise](https://www.npmjs.com/package/jayson-promise)
-
-
-## Roadmap
-
-- Peer discovery/exchange
-- CLI
-- Live config updates (i.e. more Commands)
-- Web-interface with websocket
-- REST API
 
 
 ## License
