@@ -1,5 +1,8 @@
 # clusterduck
 
+*The project is new and in the stage of extensive development.*
+
+
 `clusterduck` is a humble take on fault-tolerant cluster __monitoring__ and __balancing__ service implemented in Javascript.
 
 - __[Raft] consensus algorithm for high availablity.__
@@ -25,12 +28,18 @@
 
 ## Installation
 
-Node 15.x is recommended.
+*Node 15.x is recommended.*
 
-```
+```bash
 npm -g clusterduck
 ```
 
+Alternatively, you can clone the repo and link the dependencies which is useful for development purposes:
+```bash
+git clone git@github.com:kakserpom/clusterduck.git
+cd clusterduck
+node link
+```
 
 ## Command-line interface
 
@@ -144,34 +153,34 @@ Parameter           | Description
 
 ## Dependencies
 
-### Core
+### Raft
+- [liferaft](https://www.npmjs.com/package/liferaft) — Raft protocol implementation (kudos to 3d-Eden and @bergos)
+- [axon](https://www.npmjs.com/package/axon) — Transport library
+- [leveldown](https://www.npmjs.com/package/leveldown) — DB for log persistence
+
+### Misc
 
 - [uuid](https://www.npmjs.com/package/uuid) — uuid generation
 - [yargs](https://www.npmjs.com/package/yargs) — command-line argument parser
-- [js-yaml](https://www.npmjs.com/package/js-yaml) — configuration files
-- [yaml](https://www.npmjs.com/package/yaml) — configuration files
+- [js-yaml](https://www.npmjs.com/package/js-yaml), [yaml](https://www.npmjs.com/package/yaml)  — configuration files
 - [collections](https://www.npmjs.com/package/collections) — entity collections
 - [daemonize-process](https://www.npmjs.com/package/daemonize-process)
 - [diagnostics](https://www.npmjs.com/package/diagnostics) - debug output
-- [md5](https://www.npmjs.com/package/md5)
-- [sha3](https://www.npmjs.com/package/sha3)
-- [shell-quote](https://www.npmjs.com/package/shell-quote)
-- [parse-duration](https://www.npmjs.com/package/parse-duration)
+- [md5](https://www.npmjs.com/package/md5), [sha3](https://www.npmjs.com/package/sha3)
+- [shell-quote](https://www.npmjs.com/package/shell-quote), [parse-duration](https://www.npmjs.com/package/parse-duration)
 
-### Raft
-- [liferaft](https://www.npmjs.com/package/liferaft) — Raft protocol implementation
-- [axon](https://www.npmjs.com/package/axon)
-- [leveldown](https://www.npmjs.com/package/leveldown)
-
-### WebSocket
-- [websocket](https://www.npmjs.com/package/websocket)
-- [weak](https://www.npmjs.com/package/weak)
-- [shoe](https://www.npmjs.com/package/shoe)
+### Transports
 - [express](https://www.npmjs.com/package/express)
+- [jayson](https://www.npmjs.com/package/jayson), [jayson-promise](https://www.npmjs.com/package/jayson-promise)
 
-### DNode transport
-- [jayson](https://www.npmjs.com/package/jayson)
-- [jayson-promise](https://www.npmjs.com/package/jayson-promise)
+
+## Roadmap
+
+- Peer discovery/exchange
+- CLI
+- Live config updates (i.e. more Commands)
+- Web-interface with websocket
+- REST API
 
 
 ## License

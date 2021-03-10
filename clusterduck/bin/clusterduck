@@ -87,7 +87,7 @@
             clusterduck.runDuckling()
         } else {
             clusterduck.id = uuidv4()
-            clusterduck.set_config(require('../config')(argv.configFile))
+            clusterduck.set_config(require('../misc/config')(argv.configFile))
 
             if (command) {
                 await command(clusterduck);

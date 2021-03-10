@@ -20,6 +20,7 @@
     "daemonize-process": "^3.0.0",
     "diagnostics": "^2.0.2",
     "express": "^4.17.1",
+    "hashring": "^3.2.0",
     "jayson": "^3.4.4",
     "js-yaml": "^4.0.0",
     "liferaft": "github:bergos/liferaft",
@@ -27,10 +28,8 @@
     "parse-duration": "^0.4.4",
     "sha3": "^2.1.4",
     "shell-quote": "^1.7.2",
-    "shoe": "0.0.15",
     "tmp-promise": "^3.0.2",
     "uuid": "^8.3.2",
-    "websocket": "^1.0.33",
     "yaml": "^1.10.0",
     "yargs": "^16.2.0"
   }

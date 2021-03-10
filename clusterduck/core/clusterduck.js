@@ -131,13 +131,21 @@ class ClusterDuck extends emitter {
             this.set_config(payload.config)
 
             Duckling.events.on('run-balancer', params => {
-                this.clusters.get(params.cluster)
+                const cluster = this.clusters.get(params.cluster)
+                if (!cluster) {
+                    throw new Error('cluster ' + JSON.stringify(params.cluster) + ' not found')
+                }
+                cluster
                     .balancers
                     .get(params.balancer)
                     .listen()
             })
             Duckling.events.on('node:state', params => {
-                this.clusters.get(params.cluster)
+                const cluster = this.clusters.get(params.cluster)
+                if (!cluster) {
+                    throw new Error('cluster ' + JSON.stringify(params.cluster) + ' not found')
+                }
+                    cluster
                     .nodes
                     .get(params.node)
                     .state = params.state

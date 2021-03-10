@@ -93,9 +93,6 @@ class Balancer {
     }
 
     start() {
-        if (!Duckling.isDuckling) {
-            this.spawnDucklings(1||require('os').cpus().length)
-        }
     }
 
     spawnDucklings(number) {
@@ -110,6 +107,9 @@ class Balancer {
 }
 
 Balancer.factory = (config, cluster) => {
+    if (!config.type) {
+        throw new Error('balancer type must be defined in ' + JSON.stringify(config))
+    }
     const constructor = cluster.require('./balancers/' + config.type)
     return new constructor(config, cluster)
 }

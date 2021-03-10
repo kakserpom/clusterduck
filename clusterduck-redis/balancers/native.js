@@ -35,6 +35,11 @@ class NativeBalancer extends Balancer {
         return pool
     }
 
+    start() {
+        if (!Duckling.isDuckling) {
+            this.spawnDucklings(require('os').cpus().length)
+        }
+    }
 
     listen() {
         const balancer = this

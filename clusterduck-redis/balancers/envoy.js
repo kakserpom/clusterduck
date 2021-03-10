@@ -8,6 +8,9 @@ const tmp = require('tmp-promise')
 
 const debug = require('diagnostics')('envoy')
 
+/**
+ *
+ */
 class BasicBalancer extends Balancer {
 
 
