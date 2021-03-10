@@ -145,10 +145,9 @@ class BasicBalancer extends Balancer {
 
         const execute = args => {
             const quote = require('shell-quote').quote
-            const exec = require('child_process').exec
+            const execFile = require('child_process').execFile
 
             args = [
-                'envoy',
                 '--config-yaml', JSON.stringify(this.envoy()),
                 '--restart-epoch', this.restart_epoch,
                 '--drain-strategy', this.config.drain_strategy || 'immediate',
@@ -158,7 +157,7 @@ class BasicBalancer extends Balancer {
 
             debug('[%s] %s', this.restart_epoch, command)
 
-            exec(command, {}, (error, stdout, stderr) => {
+            execFile(this.config.envoy_bin || 'envoy', args, (error, stdout, stderr) => {
 
                 if (error) {
                     console.log(`error: ${error}`)
