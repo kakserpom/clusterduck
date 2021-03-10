@@ -5,13 +5,14 @@
 
 `clusterduck` is a humble take on fault-tolerant cluster __monitoring__ and __balancing__ service implemented in Javascript.
 
-- __[Raft] consensus algorithm for high availablity.__
+- __[Raft] consensus algorithm for high availability.__
   [liferaft] is running over an encrypted TCP/IP transport. Ducks love them rafts 😉
 - __Easy to use and extend.__
-  It was designed to solve your problems, not create them.
-  Given its simple modular architecture you can hack up your own plugin under an hour.
+  Given its modular architecture you can hack up your own plugin under an hour.
   
+### Featured extensions
 
+- [clusterduck-redis](https://www.npmjs.com/package/clusterduck-redis) — Redis health checks and **envoy**-based balancing
 
 ## Table Of Contents
 
