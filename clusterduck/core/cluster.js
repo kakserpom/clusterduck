@@ -66,19 +66,22 @@ class Cluster extends emitter {
                 .on('node:state', (node, state) => {
                     this.touch_state()
                     this.emit('node:state', node, state)
+                    this.propagate()
+                })
+                .on('node:inserted', node => {
+                    this.touch_state()
+                    this.emit('node:inserted', node)
+                    this.propagate()
+                })
+                .on('node:deleted', node => {
+                    this.touch_state()
+                    this.emit('node:deleted', node)
+                    this.propagate()
                 })
         })
 
-        this.nodes.addRangeChangeListener((plus, minus) => {
-            plus.map(node => {
-                node.emit('node:inserted', node)
-                this.emit('node:inserted', node)
-            })
-            minus.map(node => {
-                node.emit('node:deleted', node)
-                this.emit('node:deleted', node)
-            })
-        })
+        this.nodes.on('added', node => node.emit('node:inserted', node))
+        this.nodes.on('removed', node => node.emit('node:deleted', node))
 
 
         this.nodes.addFromArray(this.config.nodes || [])
@@ -102,12 +105,7 @@ class Cluster extends emitter {
                     state: state
                 })
             })
-
-            if (this.last_state_propagation >= this.last_state_change) {
-                return
-            }
-            this.last_state_propagation = Date.now()
-            this.emit('nodes:active', this.active_nodes)
+            this.propagate()
         })
 
         this.balancers.forEach(balancer => balancer.start())
@@ -134,6 +132,14 @@ class Cluster extends emitter {
             });
         })
 
+    }
+
+    propagate() {
+        if (this.last_state_propagation >= this.last_state_change) {
+            return
+        }
+        this.last_state_propagation = Date.now()
+        this.emit('nodes:active', this.active_nodes)
     }
 
     /**

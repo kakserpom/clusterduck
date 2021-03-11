@@ -7,6 +7,7 @@ const util = require('util')
 const tmp = require('tmp-promise')
 
 const debug = require('diagnostics')('envoy')
+const debugDeep = require('diagnostics')('envoy-deep')
 
 /**
  *
@@ -150,40 +151,50 @@ class BasicBalancer extends Balancer {
     async listen() {
 
         const execute = args => {
-            const quote = require('shell-quote').quote
-            const execFile = require('child_process').execFile
+            return new Promise((resolve, reject) => {
 
-            args = [
-                '--config-yaml', JSON.stringify(this.envoy()),
-                '--restart-epoch', this.restart_epoch,
-                '--drain-strategy', this.config.drain_strategy || 'immediate',
-            ].concat(args)
+                const run = () => {
+                    const quote = require('shell-quote').quote
+                    const spawn = require('child_process').execFile
 
-            debug('[%s] %s', this.restart_epoch, quote(args))
+                    args = [
+                        '--config-yaml', JSON.stringify(this.envoy()),
+                        '--restart-epoch', this.restart_epoch,
+                        '--drain-strategy', this.config.drain_strategy || 'immediate',
+                    ].concat(args)
 
-            this.process = execFile(this.config.envoy_bin || 'envoy', args, (error, stdout, stderr) => {
+                    debug('[%s] %s', this.restart_epoch, quote(args))
 
-                if (error) {
-                    console.log(`error: ${error}`)
+                    this.process = spawn(this.config.envoy_bin || 'envoy', args)
+
+                    this.process.stderr.on('data', data => {
+                        debugDeep(data.split("\n").map(
+                            line => `[cluster=${this.cluster.name} balancer=${this.name} epoch=${this.restart_epoch}] ${line}`
+                        ))
+
+                        if (data.match(/previous envoy process is still initializing/)) {
+                            setTimeout(() => {
+                                run()
+                            }, 200)
+                        } else if (data.match(/\] starting main dispatch loop/)) {
+                            resolve()
+                        }
+                    })
                 }
+
+                run()
             })
         }
 
         if (this.base_id) {
             ++this.restart_epoch
-            execute(['--base-id', this.base_id])
+            await execute(['--base-id', this.base_id])
         } else {
             const base_id_file = await tmp.file();
-            execute([
+            await execute([
                 '--use-dynamic-base-id',
                 '--base-id-path', base_id_file.path,
             ])
-
-            function sleep(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms))
-            }
-
-            await sleep(500)
 
             this.base_id = parseInt(await util.promisify(fs.readFile)(base_id_file.path))
 

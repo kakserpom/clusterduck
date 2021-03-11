@@ -5,6 +5,8 @@ const Transport = require('./transport')
 const Duckling = require('./duckling')
 const Cluster = require('./cluster')
 const Commit = require("./commit")
+const InsertNode = require("./commands/insert-node")
+const DeleteNode = require("./commands/delete-node")
 
 /**
  * Main class
@@ -84,6 +86,10 @@ class ClusterDuck extends emitter {
      * @returns {{export: (function(): Promise<unknown>)}}
      */
     api(jayson) {
+
+        const error = (code, message) => {
+            return {code: code, message: message}
+        }
         return {
             /**
              *
@@ -107,15 +113,60 @@ class ClusterDuck extends emitter {
              * @param callback
              * @returns {Promise<void>}
              */
-            insertNode: (args) => {
+            insertNode: args => {
                 return new Promise((resolve, reject) => {
-                    const [clusterName, addr] = args
-                    const cluster = this.clusters.get(clusterName)
-                    if (!cluster) {
-                        reject(jayson.error('test', 'Cluster not found'))
-                        return
+                    try {
+                        const [clusterName, node] = args
+                        const cluster = this.clusters.get(clusterName)
+                        if (!cluster) {
+                            reject(error(1, 'Cluster not found'))
+                            return
+                        }
+
+                        this.commit([
+                            (new InsertNode).target(cluster).define(node)
+                        ])
+
+                        resolve(node)
+                    } catch (e) {
+                        console.log(e)
+                        reject(error(1, e.message))
                     }
-                    resolve([])
+                })
+            },
+
+
+            /**
+             *
+             * @param args
+             * @param callback
+             * @returns {Promise<void>}
+             */
+            deleteNode: args => {
+                return new Promise((resolve, reject) => {
+                    try {
+                        const [clusterName, addr] = args
+                        const cluster = this.clusters.get(clusterName)
+                        if (!cluster) {
+                            reject(error(1, 'Cluster not found'))
+                            return
+                        }
+
+                        const node = cluster.nodes.get(addr)
+                        if (!node) {
+                            reject(error(1, 'Node not found'))
+                            return
+                        }
+
+                        this.commit([
+                            (new DeleteNode).target(node)
+                        ])
+
+                        resolve('OK')
+                    } catch (e) {
+                        console.log(e)
+                        reject(error(1, e.message))
+                    }
                 })
             },
         }
