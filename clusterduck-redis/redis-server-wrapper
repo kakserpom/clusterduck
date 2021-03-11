@@ -1,0 +1,149 @@
+#!/usr/bin/env node
+
+const util = require('util')
+const daemonizeProcess = require('daemonize-process')
+const pidFileClass = require('clusterduck/misc/pid-file')
+const execFile = require('child_process').execFile
+const yargs = require('yargs/yargs')
+const {hideBin} = require('yargs/helpers')
+const tcpPortUsed = require('tcp-port-used')
+const fs = require('fs')
+
+const Yargs = yargs(hideBin(process.argv)).strict()
+    .option('daemonize', {
+        alias: 'd',
+        description: 'Daemonize',
+        type: 'boolean',
+        nargs: 0
+    })
+    .option('port-range', {
+        description: 'Port range',
+        type: 'string',
+        default: '6379,6479',
+    })
+    .option('config-file', {
+        alias: 'c',
+        default: '/etc/redis/redis.conf',
+        description: 'Config file',
+        type: 'string',
+    })
+    .option('redis-server-bin', {
+        default: 'redis-server',
+        description: 'Path to redis-server',
+        type: 'string',
+    })
+    .option('data-dir', {
+        default: '/var/lib/redis-%d',
+        description: 'Data directory path pattern',
+        type: 'string',
+    })
+    .option('pid-file', {
+        default: '/var/run/redis/redis-server-%d.pid',
+        description: 'Pid file path pattern',
+        type: 'string',
+    })
+    .command('stop [port]', 'stop an instance', yargs => {
+        yargs
+            .positional('port', {
+                describe: 'port',
+                demandOption: true
+            })
+    }, async yargs => {
+        if (!yargs.port) {
+            console.log('port is required')
+            return
+        }
+        const pidFile = new pidFileClass(util.format(yargs.pidFile, yargs.port))
+        try {
+            pidFile.stop()
+        } catch (e) {
+            console.error(e.message)
+        }
+    })
+    .command('start [port]', 'start an instance', yargs => {
+        yargs
+            .positional('port', {
+                describe: 'port to start a Redis on',
+                default: 0
+            })
+    }, async yargs => {
+        const start = port => {
+            return new Promise(async (resolve, reject) => {
+                const inUse = await tcpPortUsed.check(port)
+                if (inUse) {
+                    resolve(false)
+                    return
+                }
+                const dir = util.format(yargs.dataDir, port)
+
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, '0755', true);
+                }
+
+                const pidFile = new pidFileClass(util.format(yargs.pidFile, port))
+
+                if (!pidFile.acquire()) {
+                    resolve(false)
+                    return
+                }
+
+
+                console.log(`Starting Redis on port ${port}`)
+                const redis = execFile(yargs.redisServerBin,
+                    [
+                        '--dir', dir,
+                        '--port', port,
+                    ],
+                    (err, stdout, stderr) => {
+                    })
+
+                process.on('SIGTERM',  () => process.emit('exit', 'SIGTERM'))
+                process.on('exit',  () => redis.kill())
+
+                redis.stdout.on('data', data => {
+                    console.log(data)
+                })
+
+                redis.stderr.on('data', data => {
+                    console.error(data)
+                })
+
+                resolve(redis)
+            })
+        }
+
+        if (yargs.port) {
+            try {
+                const redis = await start(yargs.port)
+                if (!redis) {
+                    console.error(`Cannnot start a Redis instance on port ${yargs.port}`)
+                    return
+                }
+                yargs.daemonize && daemonizeProcess()
+
+                redis.stdout.on('data', () => {})
+            } catch (e) {
+                console.log(e)
+            }
+        } else {
+            let redis
+            const [minPort, maxPort] = yargs.portRange.split(',', 2).map(str => parseInt(str))
+            for (let tryPort = minPort; tryPort <= maxPort; ++tryPort) {
+                try {
+                    redis = await start(tryPort)
+                    if (redis) {
+                        break
+                    }
+                } catch (e) {}
+            }
+            if (redis) {
+                yargs.daemonize && daemonizeProcess()
+                redis.stdout.on('data', () => {})
+            }
+        }
+
+    })
+    .strict()
+    .demandCommand()
+
+Yargs.parse()

@@ -2,6 +2,15 @@
   "name": "clusterduck-redis",
   "version": "0.1.1",
   "description": "",
+  "homepage": "https://npmjs.com/package/clusterduck-redis",
+  "keywords": [
+    "clustering",
+    "monitoring",
+    "balancing",
+    "balancer",
+    "redis",
+    "clusterduck"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,6 +21,7 @@
   "author": "Vasily Zorin",
   "license": "LGPL-3.0-or-later",
   "dependencies": {
+    "daemonize-process": "^3.0.0",
     "diagnostics": "^2.0.2",
     "hashring": "^3.2.0",
     "ioredis": "^4.23.0",
@@ -19,6 +29,8 @@
     "redis-parser": "^3.0.0",
     "redis-protocol": "^0.1.10",
     "shell-quote": "^1.7.2",
-    "tmp-promise": "^3.0.2"
+    "tcp-port-used": "^1.0.2",
+    "tmp-promise": "^3.0.2",
+    "yargs": "^16.2.0"
   }
 }
