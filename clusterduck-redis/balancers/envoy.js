@@ -137,6 +137,12 @@ class BasicBalancer extends Balancer {
         return envoy
     }
 
+    stop() {
+        if (this.process) {
+            this.process.kill()
+        }
+    }
+
     /**
      *
      * @returns {Promise<void>}
@@ -153,11 +159,9 @@ class BasicBalancer extends Balancer {
                 '--drain-strategy', this.config.drain_strategy || 'immediate',
             ].concat(args)
 
-            const command = quote(args)
+            debug('[%s] %s', this.restart_epoch, quote(args))
 
-            debug('[%s] %s', this.restart_epoch, command)
-
-            execFile(this.config.envoy_bin || 'envoy', args, (error, stdout, stderr) => {
+            this.process = execFile(this.config.envoy_bin || 'envoy', args, (error, stdout, stderr) => {
 
                 if (error) {
                     console.log(`error: ${error}`)
