@@ -1,16 +1,33 @@
 const fs = require('fs')
+
+/**
+ *
+ */
 class PidFile {
 
+    /**
+     *
+     * @param path
+     */
     constructor(path) {
         this.path = path
     }
 
+    /**
+     *
+     * @returns {boolean|int}
+     */
     get pid() {
         if (!fs.existsSync(this.path))  {
             return false
         }
-        return fs.readFileSync(this.path);
+        return parseInt(fs.readFileSync(this.path).toString())
     }
+
+    /**
+     * Is daemon running?
+     * @returns {boolean}
+     */
     get running() {
         try {
             const pid = this.pid
@@ -28,6 +45,9 @@ class PidFile {
         }
     }
 
+    /**
+     * Stop the daemon
+     */
     stop() {
         if (!this.running) {
             throw new Error('Daemon does not seem to be running')
@@ -36,6 +56,10 @@ class PidFile {
         process.kill(this.pid)
     }
 
+    /**
+     *
+     * @returns {boolean}
+     */
     acquire() {
         for (let i = 0; i < 5; ++i) {
             if (this.running) {
@@ -60,11 +84,13 @@ class PidFile {
         throw new Error('Something went wrong')
     }
 
+    /**
+     * Acquire the pid-file or throw an exception
+     */
     acquireOrThrow() {
         if (!this.acquire()) {
             throw new Error('An instance seems to be running already (' + this.path + ')')
         }
-        return true
     }
 }
 

@@ -87,6 +87,8 @@ Now let's set up a simple __health check__.
       - type: basic
         timeout: 1s
         every: 1s
+        commands:
+          - [ 'SET', 'x', 'y' ]
 ```
 
 *Now every second each node in the cluster will get checked on.*
@@ -138,6 +140,7 @@ Parameter           | Description
 --------------------|------------------------------------------------------
 `address`           | Address to listen
 `secret`            | Encryption passphrase, same in all Clusterduck instances
+`bootstrap`         | List of node addresses to connect with. __For now it is crucial to declare all yours nodes on each server.__
 
 ### HTTP
 

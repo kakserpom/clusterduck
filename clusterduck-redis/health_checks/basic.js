@@ -15,8 +15,17 @@ return module.exports = function () {
                 reject({error: error, hc: this.config})
             })
 
-            await client.set('foo', 'bar')
-
+            const commands = this.config.commands || []
+            for (let i = 0; i < commands.length; ++i) {
+                const command = commands[i]
+                const res = await client.sendCommand(
+                    new Redis.Command(
+                        command[0],
+                        command.slice(1),
+                        'utf-8'
+                    )
+                )
+            }
             client.disconnect()
         } catch (error) {
             debug(error)

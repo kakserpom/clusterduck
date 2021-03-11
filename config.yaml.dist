@@ -9,6 +9,8 @@ clusters:
       - type: basic
         timeout: 1s
         every: 1s
+        commands:
+            - [ 'SET', 'x', 'y' ]
 
     triggers:
       - on: [ nodes:active ]

@@ -8,6 +8,10 @@ const {ReplyError} = require("ioredis");
  *
  */
 class NativeBalancer extends Balancer {
+
+    /**
+     * Constructor
+     */
     init() {
 
         if (!this.cluster.clusterduck.args.experimental) {
@@ -17,6 +21,11 @@ class NativeBalancer extends Balancer {
         this._pools = new Map
     }
 
+    /**
+     * Get a pool
+     * @param node
+     * @returns {RedisPool|any}
+     */
     get_pool(node) {
         let pool = this._pools.get(node.addr)
         if (pool) {
@@ -35,12 +44,18 @@ class NativeBalancer extends Balancer {
         return pool
     }
 
+    /**
+     * Start a balancer
+     */
     start() {
         if (!Duckling.isDuckling) {
             this.spawnDucklings(require('os').cpus().length)
         }
     }
 
+    /**
+     * Listen
+     */
     listen() {
         const balancer = this
         this.server = RedisServer.createServer(async function (command) {

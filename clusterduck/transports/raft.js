@@ -121,7 +121,7 @@ class RaftTransport extends Transport {
 
             const logPath = this.path || '/var/lib/clusterduck/db-' + md5(this.clusterduck.argv.pidFile)
             try {
-                fs.mkdirSync(logPath, '0755', true)
+                fs.existsSync(logPath) || fs.mkdirSync(logPath, '0755', true)
             } catch (e) {
                 this.clusterduck.panic(e)
                 return

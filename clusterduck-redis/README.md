@@ -10,15 +10,16 @@
 
 - [Installation](#installation)
 - [Configuration](#configuration)
-  - [Nodes](#nodes)
-  - [Health checks](#health-checks)
-  - [Envoy balancer](#envoy-balancer)
+    - [Nodes](#nodes)
+    - [Health checks](#health-checks)
+    - [Envoy balancer](#envoy-balancer)
 - [Dependencies](#dependencies)
 - [License](#license)
 
-
 ## Installation
+
 [Clusterduck] is required.
+
 ```
 npm -g clusterduck-redis
 ```
@@ -53,10 +54,12 @@ Now let's set up a simple __health check__.
 
 ```yaml
     health_checks:
-      
+
       - type: basic
         timeout: 1s
         every: 1s
+        commands:
+          - [ 'SET', 'x', 'y' ]
 ```
 
 *Now every second each node in the cluster will get checked on.*
@@ -82,6 +85,7 @@ Let's write up a config:
             address: "127.0.0.1"
             port_value: 9901
 ``` 
+
 > *Note:* `clusterduck` will run  `envoy` with an according configuration.
 > [Hot restarting] works out-of-box so the `envoy` is always kept in __sync__ with `clusterduck`. It requires no middleware or additional configuration.
 
@@ -125,8 +129,13 @@ Event               | Description
 LGPL 3.0 or later.
 
 [ioredis]: https://ramcloud.stanford.edu/raft.pdf
+
 [Liferaft]: https://github.com/unshiftio/liferaft
+
 [hot restarting]: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/operations/hot_restart
+
 [Envoy]: https://envoyproxy.io/
+
 [Redis]: https://redis.io/
+
 [Clusterduck]: (https://www.npmjs.com/package/clusterduck)
