@@ -6,7 +6,7 @@
     const daemonizeProcess = require('daemonize-process')
     const pidFileClass = require('../misc/pid-file')
     const md5 = require('md5')
-    const yaml = require('js-yaml')
+    const YAML = require('js-yaml')
     const {v4: uuidv4} = require('uuid')
 
     const yargs = require('yargs')
@@ -43,16 +43,49 @@
             description: 'Verbosity devel',
             type: 'string',
         })
-        .command('export', 'export', yargs => {
+        .command('clusters', 'List of clusters', yargs => {
             command = function (clusterduck) {
                 return new Promise(async (resolve, reject) => {
-                    const [remote, d] = await clusterduck.jayson.client()
-                    const res = await remote.export();//.catch(reject)
-                    process.stdout.write(yaml.dump(res));
-                    d.end()
+                    const client = await clusterduck.jayson.client()
+
+                    const {error, result} = await client.request('clusters', [])
+                    process.stdout.write(YAML.dump(result))
                 })
             }
         })
+        .command(
+            'insert-node [cluster] [node]',
+            'Insert a new [node] into [cluster]',
+            yargs => {
+                yargs
+                    .positional('cluster', {
+                        describe: 'cluster name',
+                        demandOption: true
+                    })
+                    .positional('node', {
+                        describe: 'node (yaml/json)',
+                        demandOption: true
+                    })
+            },
+            yargs => {
+                command = function (clusterduck) {
+                    return new Promise(async (resolve, reject) => {
+                        const client = await clusterduck.jayson.client()
+
+                        const args = [
+                            yargs.cluster,
+                            YAML.load(yargs.node)
+                        ]
+                        const {error, result} = await client.request('insertNode', args)
+                        if (error) {
+                            console.error(argv.verbose ? error : error.message)
+                            return
+                        }
+                        process.stdout.write(YAML.dump(result))
+                    })
+                }
+            }
+        )
         .command('stop', 'stop the server', yargs => {
         }, (argv) => {
             command = (clusterduck) => {
@@ -74,7 +107,7 @@
     const argv = parser.parse()
 
     try {
-        process.on('SIGTERM',  () => process.emit('exit', 'SIGTERM'))
+        process.on('SIGTERM', () => process.emit('exit', 'SIGTERM'))
 
         const clusterduck = new ClusterDuck(argv)
         if (command) {

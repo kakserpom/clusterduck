@@ -1,9 +1,15 @@
 {
   "name": "clusterduck",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck",
-  "keywords": ["clustering", "monitoring", "balancing", "balancer", "raft"],
+  "keywords": [
+    "clustering",
+    "monitoring",
+    "balancing",
+    "balancer",
+    "raft"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -32,7 +38,6 @@
     "shell-quote": "^1.7.2",
     "tmp-promise": "^3.0.2",
     "uuid": "^8.3.2",
-    "yaml": "^1.10.0",
     "yargs": "^16.2.0"
   }
 }

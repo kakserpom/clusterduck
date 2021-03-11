@@ -83,7 +83,7 @@ class ClusterDuck extends emitter {
      * API
      * @returns {{export: (function(): Promise<unknown>)}}
      */
-    api() {
+    api(jayson) {
         return {
             /**
              *
@@ -91,12 +91,32 @@ class ClusterDuck extends emitter {
              * @param callback
              * @returns {Promise<void>}
              */
-            export: async (args, callback) => {
-                let clusters = {}
-                const res = this.clusters.forEach(cluster => {
-                    clusters[cluster.name] = cluster.active_nodes.map(node => node.addr)
-                });
-                callback(null, clusters)
+            clusters: args => {
+                return new Promise((resolve, reject) => {
+                    let clusters = {}
+                    const res = this.clusters.forEach(cluster => {
+                        clusters[cluster.name] = cluster.active_nodes.map(node => node.addr)
+                    });
+                    resolve(clusters)
+                })
+            },
+
+            /**
+             *
+             * @param args
+             * @param callback
+             * @returns {Promise<void>}
+             */
+            insertNode: (args) => {
+                return new Promise((resolve, reject) => {
+                    const [clusterName, addr] = args
+                    const cluster = this.clusters.get(clusterName)
+                    if (!cluster) {
+                        reject(jayson.error('test', 'Cluster not found'))
+                        return
+                    }
+                    resolve([])
+                })
             },
         }
     }
@@ -145,7 +165,7 @@ class ClusterDuck extends emitter {
                 if (!cluster) {
                     throw new Error('cluster ' + JSON.stringify(params.cluster) + ' not found')
                 }
-                    cluster
+                cluster
                     .nodes
                     .get(params.node)
                     .state = params.state
