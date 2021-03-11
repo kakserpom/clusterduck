@@ -30,7 +30,7 @@ class PidFile {
 
     stop() {
         if (!this.running) {
-            throw new Error('[WARN] server does not seem to be running')
+            throw new Error('Daemon does not seem to be running')
         }
 
         process.kill(this.pid)
@@ -42,22 +42,27 @@ class PidFile {
                 return false
             }
             try {
-                fs.writeFileSync(this.path, process.pid, {flag: 'wx+'})
-                const _this = this;
-                process.on('exit', function () {
-                    fs.unlinkSync(_this.path)
+                fs.writeFileSync(this.path, process.pid.toString(), {flag: 'wx+'})
+                process.on('exit',  () => {
+                    fs.unlinkSync(this.path)
                 })
                 return true
             } catch (e) {
-                fs.unlinkSync(this.path)
+                if (e.code === 'EACCES') {
+                    throw e
+                }
+                if (this.running) {
+                    return false
+                }
+                fs.existsSync(this.path) && fs.unlinkSync(this.path)
             }
         }
-        throw new Error('[ERROR] something went wrong')
+        throw new Error('Something went wrong')
     }
 
     acquireOrThrow() {
         if (!this.acquire()) {
-            throw new Error('[ERROR] An instance seems to be running already (' + this.path + ')')
+            throw new Error('An instance seems to be running already (' + this.path + ')')
         }
         return true
     }

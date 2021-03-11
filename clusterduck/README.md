@@ -1,9 +1,8 @@
 # clusterduck
 
-*The project is new and in the stage of extensive development.*
-
-
 `clusterduck` is a humble take on fault-tolerant cluster __monitoring__ and __balancing__ service implemented in Javascript.
+
+*The project is new and in the stage of extensive development.*
 
 - __[Raft] consensus algorithm for high availability.__
   [liferaft] is running over an encrypted TCP/IP transport. Ducks love them rafts 😉

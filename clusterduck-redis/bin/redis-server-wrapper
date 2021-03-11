@@ -38,7 +38,7 @@ const Yargs = yargs(hideBin(process.argv)).strict()
         type: 'string',
     })
     .option('pid-file', {
-        default: '/var/run/redis/redis-server-%d.pid',
+        default: '/var/run/redis-wrapper/redis-server-%d.pid',
         description: 'Pid file path pattern',
         type: 'string',
     })
@@ -82,8 +82,13 @@ const Yargs = yargs(hideBin(process.argv)).strict()
 
                 const pidFile = new pidFileClass(util.format(yargs.pidFile, port))
 
-                if (!pidFile.acquire()) {
-                    resolve(false)
+                try {
+                    if (!pidFile.acquire()) {
+                        resolve(false)
+                        return
+                    }
+                } catch (e) {
+                    reject(e)
                     return
                 }
 
@@ -97,8 +102,8 @@ const Yargs = yargs(hideBin(process.argv)).strict()
                     (err, stdout, stderr) => {
                     })
 
-                process.on('SIGTERM',  () => process.emit('exit', 'SIGTERM'))
-                process.on('exit',  () => redis.kill())
+                process.on('SIGTERM', () => process.emit('exit', 'SIGTERM'))
+                process.on('exit', () => redis.kill())
 
                 redis.stdout.on('data', data => {
                     console.log(data)
@@ -121,9 +126,10 @@ const Yargs = yargs(hideBin(process.argv)).strict()
                 }
                 yargs.daemonize && daemonizeProcess()
 
-                redis.stdout.on('data', () => {})
+                redis.stdout.on('data', () => {
+                })
             } catch (e) {
-                console.log(e)
+                console.log(e.message)
             }
         } else {
             let redis
@@ -134,11 +140,17 @@ const Yargs = yargs(hideBin(process.argv)).strict()
                     if (redis) {
                         break
                     }
-                } catch (e) {}
+                } catch (e) {
+                    if (e.code === 'EACCES') {
+                        console.log(e.message)
+                        return
+                    }
+                }
             }
             if (redis) {
                 yargs.daemonize && daemonizeProcess()
-                redis.stdout.on('data', () => {})
+                redis.stdout.on('data', () => {
+                })
             }
         }
 

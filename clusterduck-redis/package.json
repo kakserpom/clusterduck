@@ -14,6 +14,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+    "redis-server-wrapper": "./bin/redis-server-wrapper"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/kakserpom/clusterduck"

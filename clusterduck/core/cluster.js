@@ -112,6 +112,8 @@ class Cluster extends emitter {
 
         this.balancers.forEach(balancer => balancer.start())
 
+        process.on('exit', () => this.balancers.forEach(balancer => balancer.stop()))
+
 
         this.health_checks = new Collection('id', entry => {
             return entry

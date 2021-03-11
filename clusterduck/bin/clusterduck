@@ -9,29 +9,29 @@
     const yaml = require('js-yaml')
     const {v4: uuidv4} = require('uuid')
 
-    const yargs = require('yargs');
+    const yargs = require('yargs')
 
     let command;
 
     const parser = yargs
         .option('daemonize', {
-        alias: 'd',
-        description: 'Daemonize',
-        type: 'boolean',
-    })
+            alias: 'd',
+            description: 'Daemonize',
+            type: 'boolean',
+        })
         .option('config-file', {
             alias: 'c',
             default: '/etc/clusterduck.yaml',
-            description: 'Daemonize',
+            description: 'Configuration file',
             type: 'string',
         });
-        parser.option('pid-file', {
-            description: 'Pid-file',
-            default: function () {
-                return '/var/run/clusterduck/clusterduck-' + md5(parser.parse().configFile) + '.pid'
-            },
-            type: 'string',
-        })
+    parser.option('pid-file', {
+        description: 'Pid-file',
+        default: function () {
+            return '/var/run/clusterduck/clusterduck-' + md5(parser.parse().configFile) + '.pid'
+        },
+        type: 'string',
+    })
         .strict()
         .option('experimental', {
             description: 'Allow using experimental modules',
@@ -43,7 +43,7 @@
             description: 'Verbosity devel',
             type: 'string',
         })
-        .command('export', 'export', (yargs) => {
+        .command('export', 'export', yargs => {
             command = function (clusterduck) {
                 return new Promise(async (resolve, reject) => {
                     const [remote, d] = await clusterduck.jayson.client()
@@ -53,7 +53,7 @@
                 })
             }
         })
-        .command('stop', 'stop the server', (yargs) => {
+        .command('stop', 'stop the server', yargs => {
         }, (argv) => {
             command = (clusterduck) => {
                 new Promise((resolve, reject) => {
@@ -74,29 +74,31 @@
     const argv = parser.parse()
 
     try {
-        if (argv.daemonize && !Duckling.isDuckling) {
-            const pid = new pidFileClass(argv.pidFile);
-            pid.acquireOrThrow()
-            daemonizeProcess()
-            if (argv.verbose) {
-                console.log('[INFO] An instance has just started. PID: ' + process.pid)
-            }
-        }
-        const clusterduck = new ClusterDuck(argv)
-        if (Duckling.isDuckling) {
-            clusterduck.runDuckling()
-        } else {
-            clusterduck.id = uuidv4()
-            clusterduck.set_config(require('../misc/config')(argv.configFile))
+        process.on('SIGTERM',  () => process.emit('exit', 'SIGTERM'))
 
-            if (command) {
-                await command(clusterduck);
+        const clusterduck = new ClusterDuck(argv)
+        if (command) {
+            await command(clusterduck);
+        } else {
+            if (argv.daemonize && !Duckling.isDuckling) {
+                const pid = new pidFileClass(argv.pidFile);
+                pid.acquireOrThrow()
+                daemonizeProcess()
+                if (argv.verbose) {
+                    console.log('[INFO] An instance has just started. PID: ' + process.pid)
+                }
+            }
+            if (Duckling.isDuckling) {
+                clusterduck.runDuckling()
             } else {
+                clusterduck.id = uuidv4()
+                clusterduck.set_config(require('../misc/config')(argv.configFile))
+
                 await clusterduck.run()
             }
         }
     } catch (err) {
         console.error(argv.verbose ? err : err.message)
-        process.exit(1);
+        process.exit(1)
     }
 })()

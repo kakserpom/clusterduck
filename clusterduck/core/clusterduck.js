@@ -16,7 +16,7 @@ class ClusterDuck extends emitter {
     constructor(argv) {
         super()
         this.argv = argv
-        this.verbose = ![null, false].includes(this.argv.verbose)
+        this.verbose = ![null, false, undefined].includes(this.argv.verbose)
     }
 
     /**
@@ -154,6 +154,11 @@ class ClusterDuck extends emitter {
             Duckling.notifyParent('ready')
         })
         Duckling.events.listen()
+    }
+
+    panic(err) {
+        console.error(this.verbose ? err : err.message)
+        process.exit(1)
     }
 
     /**

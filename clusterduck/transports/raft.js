@@ -1,5 +1,6 @@
 const md5 = require('md5')
 const msg = require('axon')
+const fs = require('fs')
 const CryptoBox = require('../misc/cryptobox')
 const Transport = require('../core/transport')
 const Liferaft = require('liferaft')
@@ -118,12 +119,20 @@ class RaftTransport extends Transport {
                 }
             }
 
+            const logPath = this.path || '/var/lib/clusterduck/db-' + md5(this.clusterduck.argv.pidFile)
+            try {
+                fs.mkdirSync(logPath, '0755', true)
+            } catch (e) {
+                this.clusterduck.panic(e)
+                return
+            }
+
             const raft = this.raft = new DuckRaft(this.address, {
                 'election min': this.election_min || 2000,
                 'election max': this.election_max || 5000,
                 'heartbeat': this.heartbeat || 1000,
                 Log: require(this.log_module || 'liferaft/log'),
-                path: this.path || '/var/run/clusterduck/db-' + md5(this.clusterduck.argv.pidFile)
+                path: logPath
             })
 
             raft.on('heartbeat timeout', function () {
