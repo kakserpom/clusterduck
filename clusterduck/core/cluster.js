@@ -1,5 +1,4 @@
 const ClusterNode = require('./cluster_node')
-const Duckling = require('./duckling')
 const Balancer = require('./balancer')
 const emitter = require('events').EventEmitter
 const Collection = require('../misc/collection')
@@ -8,12 +7,13 @@ const debug = require('diagnostics')('cluster')
 
 const Commit = require('./commit')
 const UpdateNode = require('./commands/update-node')
+const ClusterNodes = require("./collections/cluster_nodes")
 
 /**
  * Cluster model
  *
  * @abstract
- * @event node:state
+ * @event node:changed
  * @event node:passed
  * @event node:failed
  */
@@ -42,47 +42,40 @@ class Cluster extends emitter {
     set_config(config) {
         this.config = config
 
-        this.last_state_propagation = -1
-        this.last_state_change = 0
-
-
-        // @TODO: refactor with proxy eventemitter
-        this.removeAllListeners()
-
-        this.on('node:passed', node => {
-            this.clusterduck.commit([
-                (new UpdateNode).target(node).attr({available: true, checked: true})
-            ])
+        this.nodes = new ClusterNodes('addr', node => {
+            if (node.constructor.name === 'ClusterNode') {
+                return node
+            }
+            return new ClusterNode(node, this)
         })
 
-        this.on('node:failed', (node, error) => {
-            this.clusterduck.commit([
-                (new UpdateNode).target(node).attr({available: false, checked: true})
-            ])
+        this.nodes.on('inserted', node => {
+            node.emit('inserted', node)
+
+            node.on('changed', (node, state) => {
+                this.nodes.emit('changed', node, state)
+                this.nodes.emit('active', this.active)
+            })
+                .on('passed', node => {
+                    this.clusterduck.commit([
+                        (new UpdateNode).target(node).attr({available: true, checked: true})
+                    ])
+                })
+                .on('failed', (node, error) => {
+                    this.clusterduck.commit([
+                        (new UpdateNode).target(node).attr({available: false, checked: true})
+                    ])
+                })
+
+            debug(`${this.name}: INSERTED NODE: `, node.toObject())
+            this.nodes.emit('active', this.nodes.active)
+
+        }).on('deleted', node => {
+            node.emit('deleted', node)
+
+            debug(`${this.name}: DELETED NODE: `, node.toObject())
+            this.nodes.emit('active', this.nodes.active)
         })
-
-        this.nodes = new Collection('addr', node => {
-            return (new ClusterNode(node, this))
-                .on('node:state', (node, state) => {
-                    this.touch_state()
-                    this.emit('node:state', node, state)
-                    this.propagate()
-                })
-                .on('node:inserted', node => {
-                    this.touch_state()
-                    this.emit('node:inserted', node)
-                    this.propagate()
-                })
-                .on('node:deleted', node => {
-                    this.touch_state()
-                    this.emit('node:deleted', node)
-                    this.propagate()
-                })
-        })
-
-        this.nodes.on('added', node => node.emit('node:inserted', node))
-        this.nodes.on('removed', node => node.emit('node:deleted', node))
-
 
         this.nodes.addFromArray(this.config.nodes || [])
 
@@ -91,21 +84,8 @@ class Cluster extends emitter {
         this.balancers = new Collection('name', config => Balancer.factory(config, this))
         this.balancers.addFromObject(this.config.balancers || {})
 
-        if (Duckling.isDuckling) {
-            return
-        }
-
-        this.on('node:state', (node, state) => {
-
-            debug('node:state: %s', node.addr, state)
-            this.clusterduck.ducklings.forEach(duckling => {
-                duckling.notify('node:state', {
-                    cluster: this.name,
-                    node: node.addr,
-                    state: state
-                })
-            })
-            this.propagate()
+        this.nodes.on('changed', (node, state) => {
+            debug('nodes.changed: %s', node.addr, state)
         })
 
         this.balancers.forEach(balancer => balancer.start())
@@ -121,32 +101,28 @@ class Cluster extends emitter {
         this.triggers = new Collection('id')
         this.triggers.addFromArray(this.config.triggers || [])
         this.triggers.forEach(trigger => {
-            this.on(trigger.on, function (nodes) {
-                (trigger.do || []).forEach(function (cfgAction) {
+            const [prop, event] = trigger.on;
+
+            let getProp
+
+            if (prop === 'nodes') {
+                getProp = variable => {
+                    if (variable === 'nodes_active_addrs') {
+                        return JSON.stringify(this.nodes.active.map(node => node.addr))
+                    }
+                }
+            } else {
+                getProp = variable => {}
+            }
+            this[prop].on(event,  () => {
+                (trigger.do || []).forEach((cfgAction) => {
                     const action = new (require('../actions/' + cfgAction.type))(cfgAction)
-                    action.invoke({
-                        nodes: nodes
-                    })
+                    action.invoke(getProp)
                 })
 
             });
         })
 
-    }
-
-    propagate() {
-        if (this.last_state_propagation >= this.last_state_change) {
-            return
-        }
-        this.last_state_propagation = Date.now()
-        this.emit('nodes:active', this.active_nodes)
-    }
-
-    /**
-     * Change last_state_change
-     */
-    touch_state() {
-        this.last_state_change = Date.now()
     }
 
     /**
@@ -164,16 +140,6 @@ class Cluster extends emitter {
         }
 
         return hc
-    }
-
-    /**
-     * Get an array of the alive nodes in the cluster
-     * @returns {*}
-     */
-    get active_nodes() {
-        return this.nodes.map(node => {
-            return node.active ? node : false
-        }).filter(item => item)
     }
 
     /**
@@ -196,13 +162,9 @@ class Cluster extends emitter {
             if (!nodeChecks.length) {
                 return
             }
-            const allNodeChecks = Promise.all(nodeChecks).then(list => {
-                node.emit('node:passed', node)
-                cluster.emit('node:passed', node)
-            }).catch(error => {
-                node.emit('node:failed', node, error)
-                cluster.emit('node:failed', node, error)
-            })
+            const allNodeChecks = Promise.all(nodeChecks)
+                .then(list => node.emit('passed', node))
+                .catch(error => node.emit('failed', node, error))
             clusterChecks.push(allNodeChecks)
         })
 

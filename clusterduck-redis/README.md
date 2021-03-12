@@ -99,7 +99,7 @@ For debugging purposes use `DEBUG` environmental variable:
 Event               | Description
 --------------------|------------------------------------------------------
 `nodes`             | Set of nodes has changed
-`nodes:active`      | Set of active nodes has changed
+`active`      | Set of active nodes has changed
 
 ## Node events
 

@@ -20,10 +20,8 @@ class ShellAction {
      * @param params
      * @returns {Promise<void>}
      */
-    async invoke(params) {
-        const commands = this._prepare_commands(this.config.commands, {
-            addrs: params.nodes.map(node => node.addr)
-        });
+    async invoke(callback) {
+        const commands = this._prepare_commands(this.config.commands, callback || (() => {}));
 
         debug('Triggering shell:', commands)
 
@@ -43,16 +41,15 @@ class ShellAction {
      * @returns {*}
      * @private
      */
-    _prepare_commands(commands, params) {
+    _prepare_commands(commands, callback) {
         return commands.map(function (command) {
-            return command.replace(/\$(nodes_addr_list)/, function (match, variable) {
-                if (variable === 'nodes_addr_list') {
-                    return quote([
-                        JSON.stringify(
-                            params.addrs
-                        )
-                    ])
+            return command.replace(/\$(nodes_active_addrs)/, function (match, variable) {
+
+                const value = callback(variable)
+                if (value !== undefined) {
+                    return quote([value])
                 }
+
                 return match
             })
         })
@@ -76,4 +73,5 @@ class ShellAction {
     }
 
 }
+
 return module.exports = ShellAction

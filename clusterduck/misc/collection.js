@@ -32,7 +32,7 @@ class Collection extends emitter {
             const key = this.extractKey(object)
             if (!this._map.has(key)) {
                 this._map.set(key, object)
-                this.emit('added', object)
+                this.emit('inserted', object)
             }
         }
         return this
@@ -43,14 +43,7 @@ class Collection extends emitter {
      * @returns {Collection}
      */
     remove() {
-        for (let i = 0; i < arguments.length; ++i) {
-            const object = this.get(arguments[i])
-            if (object) {
-                this._map.delete(this.extractKey(object))
-                this.emit('removed', object)
-            }
-        }
-        return this
+        return this.delete(...arguments)
     }
 
     /**
@@ -58,7 +51,14 @@ class Collection extends emitter {
      * @returns {Collection}
      */
     delete() {
-        return this.remove(...arguments)
+        for (let i = 0; i < arguments.length; ++i) {
+            const object = this.get(arguments[i])
+            if (object) {
+                this._map.delete(this.extractKey(object))
+                this.emit('deleted', object)
+            }
+        }
+        return this
     }
 
     /**
@@ -116,13 +116,14 @@ class Collection extends emitter {
      * @returns {[]}
      */
     filter(callback) {
-        const values = []
+        const {constructor} = this
+        const collection = new constructor(this.key, this.hydrate)
         this._map.forEach((value, key) => {
             if (callback(value, key, this)) {
-                values.push(value)
+                collection.add(value)
             }
         })
-        return values
+        return collection
     }
 
     /**

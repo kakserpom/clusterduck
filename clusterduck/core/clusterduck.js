@@ -1,8 +1,9 @@
 const emitter = require('events').EventEmitter
 
+const YAML = require('js-yaml')
+const fs = require('fs')
 const Collection = require('../misc/collection')
 const Transport = require('./transport')
-const Duckling = require('./duckling')
 const Cluster = require('./cluster')
 const Commit = require("./commit")
 const InsertNode = require("./commands/insert-node")
@@ -31,10 +32,6 @@ class ClusterDuck extends emitter {
 
         this.clusters = (new Collection('name', config => Cluster.factory(config, this)))
             .addFromObject(this.config.clusters || {})
-
-        this.ducklings = new Collection()
-        this.ducklings.addRangeChangeListener(plus => plus
-            .map(duckling => duckling.on('disconnect', () => this.ducklings.delete(duckling))))
     }
 
 
@@ -53,32 +50,6 @@ class ClusterDuck extends emitter {
             }
         })
         return ptr
-    }
-
-    /**
-     * Spawn a duckling
-     * @param callback
-     */
-    duckling(callback) {
-        new Duckling(duckling => {
-            duckling.notify('bootstrap', {
-                id: this.id,
-                config: this.config,
-            })
-            duckling.on('ready', () => {
-                this.ducklings.add(duckling)
-                this.clusters.forEach(cluster => {
-                    cluster.nodes.forEach(node => {
-                        duckling.notify('node:state', {
-                            cluster: cluster.name,
-                            node: node.addr,
-                            state: node.state
-                        })
-                    })
-                })
-                callback(duckling)
-            })
-        })
     }
 
     /**
@@ -101,7 +72,7 @@ class ClusterDuck extends emitter {
                 return new Promise((resolve, reject) => {
                     let clusters = {}
                     const res = this.clusters.forEach(cluster => {
-                        clusters[cluster.name] = cluster.active_nodes.map(node => node.addr)
+                        clusters[cluster.name] = cluster.nodes.active.map(node => node.addr)
                     });
                     resolve(clusters)
                 })
@@ -184,49 +155,6 @@ class ClusterDuck extends emitter {
         )
     }
 
-    /**
-     * Main function for a duckling
-     */
-    runDuckling() {
-
-        process.on('unhandledRejection', e => {
-            this.emit('unhandled-rejection:' + e.name, e)
-            if (!e.hide) {
-                console.error('Uncaught rejection', e)
-            }
-        });
-
-
-        Duckling.events.on('bootstrap', payload => {
-            this.id = payload.id
-            this.set_config(payload.config)
-
-            Duckling.events.on('run-balancer', params => {
-                const cluster = this.clusters.get(params.cluster)
-                if (!cluster) {
-                    throw new Error('cluster ' + JSON.stringify(params.cluster) + ' not found')
-                }
-                cluster
-                    .balancers
-                    .get(params.balancer)
-                    .listen()
-            })
-            Duckling.events.on('node:state', params => {
-                const cluster = this.clusters.get(params.cluster)
-                if (!cluster) {
-                    throw new Error('cluster ' + JSON.stringify(params.cluster) + ' not found')
-                }
-                cluster
-                    .nodes
-                    .get(params.node)
-                    .state = params.state
-            })
-
-            Duckling.notifyParent('ready')
-        })
-        Duckling.events.listen()
-    }
-
     panic(err) {
         console.error(this.verbose ? err : err.message)
         process.exit(1)
@@ -237,6 +165,18 @@ class ClusterDuck extends emitter {
      * @returns {Promise<void>}
      */
     async run() {
+
+        this.on('config:changed', () => {
+            const yaml = YAML.dump(this.config)
+            const tempPath = this.argv.configFile + '~' + Date.now()
+            fs.writeFile(tempPath, yaml, {flag: 'w'}, () => {
+                fs.rename(tempPath, this.argv.configFile, () => {
+                    console.log('Config written')
+                    this.emit('config:written')
+                })
+            })
+        })
+
         this.transports = (new Collection('type', config => Transport.factory(config, this)))
             .addFromArray(this.config.transports || [])
         this.transports.forEach(transport => transport.doListen())

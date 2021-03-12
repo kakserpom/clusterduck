@@ -71,6 +71,7 @@ const start = (yargs, port) => {
 
             if (data.match(/\* Ready to accept connections/)) {
 
+                process.title = 'redis-server-wrapper: ' + port
                 exec(yargs.startTrigger.replace('$CD_OPTS', process.env.CD_OPTS || ''), {
                     env: Object.assign(process.env, {
                         'NODE': JSON.stringify({addr: yargs.addr + ':' + port})

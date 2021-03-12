@@ -33,7 +33,7 @@ class BasicBalancer extends Balancer {
      */
     start() {
 
-        this.cluster.on('nodes:active', () => {
+        this.cluster.nodes.on('changed', () => {
             this.listen()
         })
 
@@ -71,7 +71,7 @@ class BasicBalancer extends Balancer {
         }
 
         // Let's make the list of active nodes
-        const endpoints = this.cluster.active_nodes.map(node => {
+        const endpoints = this.cluster.nodes.active.map(node => {
             return {
                 endpoint: {
                     address: address(node.addr, 6379)

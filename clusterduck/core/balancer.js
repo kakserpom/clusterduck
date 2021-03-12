@@ -1,5 +1,4 @@
 const Collection = require('../misc/collection')
-const Duckling = require('./duckling')
 const debug = require('diagnostics')('balancer')
 
 /**
@@ -16,9 +15,6 @@ class Balancer {
     constructor(config, cluster) {
         this.name = config.name
         this.cluster = cluster
-        this.ducklings = new Collection()
-        this.ducklings.addRangeChangeListener(plus => plus
-            .forEach(duckling => duckling.on('disconnect', () => this.ducklings.delete(duckling))))
 
         this.set_config(config)
 
@@ -33,17 +29,17 @@ class Balancer {
          * @type {HashRing}
          */
         this.ring = new HashRing(
-            this._nodes_config(this.cluster.active_nodes),
+            this._nodes_config(this.cluster.nodes.active),
             this.config.algo || 'md5',
             {
                 'max cache size': this.config.cache_size || 10000
             });
 
 
-        this.cluster.on('node:deleted', node => this.ring.remove(node.addr))
+        this.cluster.nodes.on('deleted', node => this.ring.remove(node.addr))
 
         // Let's keep HashRing always up-to-date
-        this.cluster.on('node:state', node => {
+        this.cluster.nodes.on('changed', node => {
             if (node.active) {
                 this.ring.add(this._nodes_config([node]))
             } else {
@@ -93,16 +89,6 @@ class Balancer {
     }
 
     start() {
-    }
-
-    spawnDucklings(number) {
-        debug('%s: Spawning %s duckling(s)', this.name, number);
-        for (let i = 0; i < number; ++i) {
-            this.cluster.clusterduck.duckling(duckling => {
-                this.ducklings.add(duckling)
-                duckling.notify('run-balancer', {cluster: this.cluster.name, balancer: this.name})
-            })
-        }
     }
 }
 

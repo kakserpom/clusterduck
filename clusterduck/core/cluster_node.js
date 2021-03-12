@@ -4,15 +4,14 @@ const Entity = require('../misc/entity')
 /**
  * Cluster node representation
  *
- * @event node:state
- * @event node:passed
- * @event node:failed
+ * @event changed
+ * @event passed
+ * @event failed
  */
 class ClusterNode extends Entity {
     constructor(entry, cluster) {
         super()
         this.cluster = cluster
-        this.last_state_change = 0
         this.available = false
         this.active = false
         this.spare = false
@@ -26,10 +25,18 @@ class ClusterNode extends Entity {
         }
     }
 
+    /**
+     *
+     * @returns {*}
+     */
     path() {
         return this.cluster.path().concat(['nodes', this.addr])
     }
 
+    /**
+     *
+     * @returns {{}}
+     */
     get state() {
         let state = {}
         ClusterNode.volatile.forEach(key => {
@@ -38,7 +45,19 @@ class ClusterNode extends Entity {
         return state
     }
 
-
+    /**
+     *
+     * @returns {{}}
+     */
+    toObject() {
+        const obj = {}
+        for (const [key, value] of Object.entries(this)) {
+            if (!key.match(/^_/) && key !== 'cluster') {
+                obj[key] = value
+            }
+        }
+        return obj
+    }
 }
 
 ClusterNode.volatile = ['available', 'active', 'spare']

@@ -13,12 +13,12 @@ clusters:
             - [ 'SET', 'x', 'y' ]
 
     triggers:
-      - on: [ nodes:active ]
+      - on: [ changed ]
         do:
           - type: shell
             cwd: /tmp
             commands:
-              - echo $nodes_addr_list > nodes_list
+              - echo $nodes_active_addrs > nodes_list
 
 transports:
   - type: http

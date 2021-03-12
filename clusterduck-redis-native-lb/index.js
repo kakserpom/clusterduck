@@ -48,9 +48,7 @@ class NativeBalancer extends Balancer {
      * Start a balancer
      */
     start() {
-        if (!Duckling.isDuckling) {
-            this.spawnDucklings(require('os').cpus().length)
-        }
+      this.listen()
     }
 
     /**

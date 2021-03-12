@@ -98,12 +98,12 @@ Now let's live export the list of active nodes:
 
 ```yaml
     triggers:
-      - on: [ nodes:active ]
+      - on: [ active ]
         do:
           - type: shell
             cwd: /tmp
             commands:
-              - "echo $nodes_addr_list > active_nodes.json"
+              - "echo $nodes_active_addrs > active_nodes.json"
 ```
 *This will make sure that `/tmp/nodes_list` always contains a current list of alive nodes*.
 
@@ -112,8 +112,7 @@ Now let's live export the list of active nodes:
 
 Event               | Description
 --------------------|------------------------------------------------------
-`nodes`             | Set of nodes has changed
-`nodes:active`      | Set of active nodes has changed
+`changed`             | Set of nodes has changed
 
 ### Node events
 

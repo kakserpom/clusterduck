@@ -72,8 +72,7 @@ class UpdateNode extends Command {
         }
 
         if (changed) {
-            node.last_state_change = this.timestamp
-            node.emit('node:state', node, node.state)
+            node.emit('changed', node, node.state)
         }
     }
 

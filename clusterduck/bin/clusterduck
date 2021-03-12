@@ -2,7 +2,6 @@
 (async function () {
 
     const ClusterDuck = require('../core/clusterduck')
-    const Duckling = require('../core/duckling')
     const daemonizeProcess = require('daemonize-process')
     const pidFileClass = require('../misc/pid-file')
     const md5 = require('md5')
@@ -100,29 +99,25 @@
         if (clusterduck._command) {
             await clusterduck._command()
         } else {
-            if (Duckling.isDuckling) {
-                clusterduck.runDuckling()
-            } else {
-                const pid = new pidFileClass(argv.pidFile)
+            const pid = new pidFileClass(argv.pidFile)
 
-                if (pid.running) {
-                    console.error('An instance is already running. Abort.')
-                    return
-                }
-
-                if (argv.daemonize) {
-                    pid.acquireOrThrow()
-                    daemonizeProcess()
-                    if (argv.verbose) {
-                        console.log('[INFO] An instance has just started. PID: ' + process.pid)
-                    }
-                }
-
-                clusterduck.id = uuidv4()
-                clusterduck.set_config(require('../misc/config')(argv.configFile))
-
-                await clusterduck.run()
+            if (pid.running) {
+                console.error('An instance is already running. Abort.')
+                return
             }
+
+            if (argv.daemonize) {
+                pid.acquireOrThrow()
+                daemonizeProcess()
+                if (argv.verbose) {
+                    console.log('[INFO] An instance has just started. PID: ' + process.pid)
+                }
+            }
+
+            clusterduck.id = uuidv4()
+            clusterduck.set_config(require('../misc/config')(argv.configFile))
+
+            await clusterduck.run()
         }
     } catch (err) {
         console.error(argv.verbose ? err : err.message)
