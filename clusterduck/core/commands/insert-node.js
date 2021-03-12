@@ -67,18 +67,19 @@ InsertNode.cliCommand = (yargs, clusterduck) => {
         yargs => {
             clusterduck._command = () => {
                 return new Promise(async (resolve, reject) => {
-                    const client = await clusterduck.jayson.client()
-
-                    const args = [
-                        yargs.cluster,
-                        YAML.load(yargs.node)
-                    ]
-                    const {error, result} = await client.request('insertNode', args)
-                    if (error) {
-                        console.error(clusterduck.argv.verbose ? error : error.message)
-                        return
+                    try {
+                        const client = await clusterduck.jayson.client()
+                        const {error, result} = await client.request('insertNode', [
+                            yargs.cluster,
+                            YAML.load(yargs.node)
+                        ])
+                        if (error) {
+                            throw error
+                        }
+                        process.stdout.write(YAML.dump(result))
+                    } catch (e) {
+                        console.error(clusterduck.verbose ? e : e.message)
                     }
-                    process.stdout.write(YAML.dump(result))
                 })
             }
         }

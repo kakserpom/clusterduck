@@ -9,7 +9,6 @@ const {hideBin} = require('yargs/helpers')
 const tcpPortUsed = require('tcp-port-used')
 const fs = require('fs')
 
-
 const start = (yargs, port) => {
     return new Promise(async (resolve, reject) => {
         const inUse = await tcpPortUsed.check(port)
@@ -47,6 +46,10 @@ const start = (yargs, port) => {
 
         const redis = spawn(yargs.redisServerBin,
             args)
+
+        redis.on('error', err => {
+            console.error(err)
+        })
 
         process.on('SIGTERM', () => {
 

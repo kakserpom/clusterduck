@@ -31,7 +31,12 @@
     yargs.option('pid-file', {
         description: 'Pid-file',
         default: function () {
-            return '/var/run/clusterduck/clusterduck-' + md5(yargs.parse().configFile) + '.pid'
+            const configFile = yargs.parse().configFile
+            if (configFile === '/etc/clusterduck.yaml') {
+                return '/var/run/clusterduck/clusterduck.pid'
+            } else {
+                return '/var/run/clusterduck/clusterduck-' + md5(configFile) + '.pid'
+            }
         },
         type: 'string',
     })
@@ -57,7 +62,7 @@
         yargs
             .command('stop', 'stop the server', yargs => {
             }, (argv) => {
-                clusterduck._command  = () => {
+                clusterduck._command = () => {
                     new Promise((resolve, reject) => {
                         if (argv.verbose) console.info(`stop server`)
                         const pid = new pidFileClass(argv.pidFile)
@@ -95,17 +100,24 @@
         if (clusterduck._command) {
             await clusterduck._command()
         } else {
-            if (argv.daemonize && !Duckling.isDuckling) {
-                const pid = new pidFileClass(argv.pidFile);
-                pid.acquireOrThrow()
-                daemonizeProcess()
-                if (argv.verbose) {
-                    console.log('[INFO] An instance has just started. PID: ' + process.pid)
-                }
-            }
             if (Duckling.isDuckling) {
                 clusterduck.runDuckling()
             } else {
+                const pid = new pidFileClass(argv.pidFile)
+
+                if (pid.running) {
+                    console.error('An instance is already running. Abort.')
+                    return
+                }
+
+                if (argv.daemonize) {
+                    pid.acquireOrThrow()
+                    daemonizeProcess()
+                    if (argv.verbose) {
+                        console.log('[INFO] An instance has just started. PID: ' + process.pid)
+                    }
+                }
+
                 clusterduck.id = uuidv4()
                 clusterduck.set_config(require('../misc/config')(argv.configFile))
 

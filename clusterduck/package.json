@@ -1,6 +1,6 @@
 {
   "name": "clusterduck",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck",
   "keywords": [
@@ -24,6 +24,7 @@
   "license": "LGPL-3.0-or-later",
   "dependencies": {
     "axon": "^2.0.3",
+    "chalk": "^4.1.0",
     "daemonize-process": "^3.0.0",
     "diagnostics": "^2.0.2",
     "express": "^4.17.1",
@@ -32,6 +33,7 @@
     "js-yaml": "^4.0.0",
     "liferaft": "github:bergos/liferaft",
     "md5": "^2.3.0",
+    "ora": "^5.3.0",
     "parse-duration": "^0.4.4",
     "sha3": "^2.1.4",
     "shell-quote": "^1.7.2",
