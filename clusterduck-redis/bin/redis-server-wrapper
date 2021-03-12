@@ -3,11 +3,90 @@
 const util = require('util')
 const daemonizeProcess = require('daemonize-process')
 const pidFileClass = require('clusterduck/misc/pid-file')
-const execFile = require('child_process').execFile
+const {spawn, exec} = require('child_process')
 const yargs = require('yargs/yargs')
 const {hideBin} = require('yargs/helpers')
 const tcpPortUsed = require('tcp-port-used')
 const fs = require('fs')
+
+
+const start = (yargs, port) => {
+    return new Promise(async (resolve, reject) => {
+        const inUse = await tcpPortUsed.check(port)
+        if (inUse) {
+            resolve(false)
+            return
+        }
+        const dir = util.format(yargs.dataDir, port)
+
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, '0755', true);
+        }
+
+        const pidFile = new pidFileClass(util.format(yargs.pidFile, port))
+
+        try {
+            if (!pidFile.acquire()) {
+                resolve(false)
+                return
+            }
+        } catch (e) {
+            reject(e)
+            return
+        }
+
+        let args = [
+            '--dir', dir,
+            '--port', port,
+        ]
+        if (yargs.bind) {
+            args = args.concat([
+                '--bind', yargs.bind
+            ]);
+        }
+
+        const redis = spawn(yargs.redisServerBin,
+            args)
+
+        process.on('SIGTERM', () => {
+
+            exec(yargs.stopTrigger.replace('$CD_OPTS', process.env.CD_OPTS || ''), {
+                env: Object.assign(process.env, {
+                    'NODE': JSON.stringify({addr: yargs.addr + ':' + port})
+                })
+            }, (error, stdout, stderr) => {
+                console.log(stdout, stderr)
+            })
+            setTimeout(() => {
+                process.emit('exit', 'SIGTERM')
+            }, 5000)
+        })
+        process.on('exit', () => redis.kill())
+
+        redis.stdout.on('data', data => {
+            data = data.toString()
+
+            if (data.match(/\* Ready to accept connections/)) {
+
+                exec(yargs.startTrigger.replace('$CD_OPTS', process.env.CD_OPTS || ''), {
+                    env: Object.assign(process.env, {
+                        'NODE': JSON.stringify({addr: yargs.addr + ':' + port})
+                    })
+                }, (error, stdout, stderr) => {
+                    console.log(stdout, stderr)
+                })
+
+                resolve(redis)
+            }
+            console.log(data)
+        })
+
+        redis.stderr.on('data', data => {
+            data = data.toString()
+            console.error(data)
+        })
+    })
+}
 
 const Yargs = yargs(hideBin(process.argv)).strict()
     .option('daemonize', {
@@ -20,6 +99,11 @@ const Yargs = yargs(hideBin(process.argv)).strict()
         description: 'Port range',
         type: 'string',
         default: '6379,6479',
+    })
+    .option('addr', {
+        description: 'Addr',
+        type: 'string',
+        default: '127.0.0.1',
     })
     .option('config-file', {
         alias: 'c',
@@ -40,6 +124,16 @@ const Yargs = yargs(hideBin(process.argv)).strict()
     .option('pid-file', {
         default: '/var/run/redis-wrapper/redis-server-%d.pid',
         description: 'Pid file path pattern',
+        type: 'string',
+    })
+    .option('start-trigger', {
+        default: 'clusterduck $CD_OPTS insert-node $CLUSTER $NODE',
+        description: 'Command to run on start',
+        type: 'string',
+    })
+    .option('stop-trigger', {
+        default: 'clusterduck $CD_OPTS  delete-node $CLUSTER $NODE',
+        description: 'Command to run before stopping',
         type: 'string',
     })
     .command('stop [port]', 'stop an instance', yargs => {
@@ -67,77 +161,27 @@ const Yargs = yargs(hideBin(process.argv)).strict()
                 default: 0
             })
     }, async yargs => {
-        const start = port => {
-            return new Promise(async (resolve, reject) => {
-                const inUse = await tcpPortUsed.check(port)
-                if (inUse) {
-                    resolve(false)
-                    return
-                }
-                const dir = util.format(yargs.dataDir, port)
+        yargs.daemonize && daemonizeProcess()
 
-                if (!fs.existsSync(dir)) {
-                    fs.mkdirSync(dir, '0755', true);
-                }
-
-                const pidFile = new pidFileClass(util.format(yargs.pidFile, port))
-
-                try {
-                    if (!pidFile.acquire()) {
-                        resolve(false)
-                        return
-                    }
-                } catch (e) {
-                    reject(e)
-                    return
-                }
-
-
-                console.log(`Starting Redis on port ${port}`)
-                const redis = execFile(yargs.redisServerBin,
-                    [
-                        '--dir', dir,
-                        '--port', port,
-                    ],
-                    (err, stdout, stderr) => {
-                    })
-
-                process.on('SIGTERM', () => process.emit('exit', 'SIGTERM'))
-                process.on('exit', () => redis.kill())
-
-                redis.stdout.on('data', data => {
-                    console.log(data)
-                })
-
-                redis.stderr.on('data', data => {
-                    console.error(data)
-                })
-
-                resolve(redis)
-            })
-        }
-
+        let redis, port
         if (yargs.port) {
             try {
-                const redis = await start(yargs.port)
+                redis = await start(yargs, yargs.port)
+                port = yargs.port
                 if (!redis) {
                     console.error(`Cannnot start a Redis instance on port ${yargs.port}`)
                     return
                 }
-                yargs.daemonize && daemonizeProcess()
-
-                redis.stdout.on('data', () => {
-                })
             } catch (e) {
                 console.log(e.message)
             }
         } else {
-            let redis
             const [minPort, maxPort] = yargs.portRange.split(',', 2).map(str => parseInt(str))
             for (let tryPort = minPort; tryPort <= maxPort; ++tryPort) {
                 try {
-                    redis = await start(tryPort)
+                    redis = await start(yargs, tryPort)
                     if (redis) {
+                        port = tryPort
                         break
                     }
                 } catch (e) {
@@ -147,13 +191,10 @@ const Yargs = yargs(hideBin(process.argv)).strict()
                     }
                 }
             }
-            if (redis) {
-                yargs.daemonize && daemonizeProcess()
-                redis.stdout.on('data', () => {
-                })
-            }
         }
-
+        if (redis) {
+            console.log('Started Redis at ' + port)
+        }
     })
     .strict()
     .demandCommand()

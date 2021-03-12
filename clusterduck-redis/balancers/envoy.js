@@ -5,7 +5,8 @@ const parseAddr = require('clusterduck/misc/addr')
 const fs = require('fs')
 const util = require('util')
 const tmp = require('tmp-promise')
-
+const quote = require('shell-quote').quote
+const {spawn} = require('child_process')
 const debug = require('diagnostics')('envoy')
 const debugDeep = require('diagnostics')('envoy-deep')
 
@@ -154,9 +155,6 @@ class BasicBalancer extends Balancer {
             return new Promise((resolve, reject) => {
 
                 const run = () => {
-                    const quote = require('shell-quote').quote
-                    const spawn = require('child_process').execFile
-
                     args = [
                         '--config-yaml', JSON.stringify(this.envoy()),
                         '--restart-epoch', this.restart_epoch,
@@ -168,6 +166,7 @@ class BasicBalancer extends Balancer {
                     this.process = spawn(this.config.envoy_bin || 'envoy', args)
 
                     this.process.stderr.on('data', data => {
+                        data = data.toString()
                         debugDeep(data.split("\n").map(
                             line => `[cluster=${this.cluster.name} balancer=${this.name} epoch=${this.restart_epoch}] ${line}`
                         ))
