@@ -7,6 +7,8 @@ class Collection extends emitter {
         this._map = new Map()
         this.key = key
         this.hydrate = hydrate || (entry => entry)
+
+        this.on('changed', () => this.emit('all'))
     }
 
     /**
@@ -22,6 +24,7 @@ class Collection extends emitter {
         return entry[this.key]
     }
 
+
     /**
      * @param ...entries
      * @returns {Collection}
@@ -35,6 +38,7 @@ class Collection extends emitter {
                 this.emit('inserted', object)
             }
         }
+        this.emit('all')
         return this
     }
 
@@ -58,6 +62,7 @@ class Collection extends emitter {
                 this.emit('deleted', object)
             }
         }
+        this.emit('all')
         return this
     }
 
@@ -108,6 +113,23 @@ class Collection extends emitter {
             values.push(callback(value, key, this))
         })
         return values
+    }
+
+    /**
+     *
+     * @param callback
+     * @returns {[]}
+     */
+    mapObj(callback) {
+        const obj = {}
+        this._map.forEach((value, key) => {
+            const ret = callback(value, key, this)
+            if (ret) {
+                const [key, value] = ret
+                obj[key] = value
+            }
+        })
+        return obj
     }
 
     /**

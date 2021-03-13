@@ -68,7 +68,7 @@ class PidFile {
             try {
                 fs.writeFileSync(this.path, process.pid.toString(), {flag: 'wx+'})
                 process.on('exit',  () => {
-                    fs.unlinkSync(this.path)
+                    fs.existsSync(this.path) && fs.unlinkSync(this.path)
                 })
                 return true
             } catch (e) {

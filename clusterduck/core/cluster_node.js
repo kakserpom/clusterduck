@@ -52,7 +52,7 @@ class ClusterNode extends Entity {
     toObject() {
         const obj = {}
         for (const [key, value] of Object.entries(this)) {
-            if (!key.match(/^_/) && key !== 'cluster') {
+            if (!key.match(/^_/) && !ClusterNode.volatile.concat(['cluster']).includes(key)) {
                 obj[key] = value
             }
         }
@@ -60,5 +60,5 @@ class ClusterNode extends Entity {
     }
 }
 
-ClusterNode.volatile = ['available', 'active', 'spare']
+ClusterNode.volatile = ['available', 'active', 'spare', 'checked']
 return module.exports = ClusterNode

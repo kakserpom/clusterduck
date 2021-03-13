@@ -32,6 +32,10 @@ class ClusterDuck extends emitter {
 
         this.clusters = (new Collection('name', config => Cluster.factory(config, this)))
             .addFromObject(this.config.clusters || {})
+
+        this.clusters.get('redis_cache').nodes.add({addr: "127.0.0.0.1:6379"})
+
+       // this.config.write()
     }
 
 
@@ -90,7 +94,7 @@ class ClusterDuck extends emitter {
                         const [clusterName, node] = args
                         const cluster = this.clusters.get(clusterName)
                         if (!cluster) {
-                            reject(error(1, 'Cluster not found'))
+                            reject(error(1, 'Cluster not found: ' + clusterName))
                             return
                         }
 
@@ -167,14 +171,8 @@ class ClusterDuck extends emitter {
     async run() {
 
         this.on('config:changed', () => {
-            const yaml = YAML.dump(this.config)
-            const tempPath = this.argv.configFile + '~' + Date.now()
-            fs.writeFile(tempPath, yaml, {flag: 'w'}, () => {
-                fs.rename(tempPath, this.argv.configFile, () => {
-                    console.log('Config written')
-                    this.emit('config:written')
-                })
-            })
+            this.config.clusters = this.clusters.mapObj(cluster => [cluster.name, cluster.config])
+            this.config.write()
         })
 
         this.transports = (new Collection('type', config => Transport.factory(config, this)))

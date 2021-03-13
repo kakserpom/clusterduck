@@ -45,26 +45,37 @@ const start = (yargs, port) => {
         }
 
         const redis = spawn(yargs.redisServerBin,
-            args)
+            args, {
+                detached: true,
+            })
 
         redis.on('error', err => {
             console.error(err)
         })
 
-        process.on('SIGTERM', () => {
+        let shutdown = false
+        let exited = false
+        process.on('SIGTERM', () => process.kill(process.pid, 'SIGINT'))
 
+        process.on('SIGINT', (ev) => {
+            if (shutdown) {
+                return
+            }
+            shutdown = true
             exec(yargs.stopTrigger.replace('$CD_OPTS', process.env.CD_OPTS || ''), {
                 env: Object.assign(process.env, {
                     'NODE': JSON.stringify({addr: yargs.addr + ':' + port})
                 })
             }, (error, stdout, stderr) => {
                 console.log(stdout, stderr)
+                if (exited) {
+                    process.exit(0)
+                }
+                setTimeout(() => {
+                    redis.kill('SIGINT')
+                }, 3000)
             })
-            setTimeout(() => {
-                process.emit('exit', 'SIGTERM')
-            }, 5000)
         })
-        process.on('exit', () => redis.kill())
 
         redis.stdout.on('data', data => {
             data = data.toString()
@@ -88,6 +99,11 @@ const start = (yargs, port) => {
         redis.stderr.on('data', data => {
             data = data.toString()
             console.error(data)
+        })
+
+        redis.on('exit', () => {
+            exited = true
+            process.kill(process.pid, 'SIGINT')
         })
     })
 }

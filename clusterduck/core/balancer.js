@@ -90,6 +90,10 @@ class Balancer {
 
     start() {
     }
+
+    toObject() {
+
+    }
 }
 
 Balancer.factory = (config, cluster) => {
