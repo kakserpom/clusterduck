@@ -25,13 +25,15 @@
   "dependencies": {
     "axon": "^2.0.3",
     "chalk": "^4.1.0",
+    "clone-deep": "^4.0.1",
     "daemonize-process": "^3.0.0",
     "diagnostics": "^2.0.2",
     "express": "^4.17.1",
     "hashring": "^3.2.0",
     "jayson": "^3.4.4",
     "js-yaml": "^4.0.0",
-    "liferaft": "github:bergos/liferaft",
+    "json-to-pretty-yaml": "github:kakserpom/json-to-pretty-yaml",
+    "liferaft": "github:kakserpom/liferaft",
     "md5": "^2.3.0",
     "ora": "^5.3.0",
     "parse-duration": "^0.4.4",
@@ -39,6 +41,7 @@
     "shell-quote": "^1.7.2",
     "tmp-promise": "^3.0.2",
     "uuid": "^8.3.2",
+    "write-file-atomic": "^3.0.3",
     "yargs": "^16.2.0"
   }
 }

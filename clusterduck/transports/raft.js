@@ -132,7 +132,8 @@ class RaftTransport extends Transport {
                 'election max': this.election_max || 5000,
                 'heartbeat': this.heartbeat || 1000,
                 Log: require(this.log_module || 'liferaft/log'),
-                path: logPath
+                path: logPath,
+                state: DuckRaft.STOPPED
             })
 
             raft.on('heartbeat timeout', function () {
@@ -144,12 +145,17 @@ class RaftTransport extends Transport {
             }).on('leader change', function (to, from) {
                 debug('NEW LEADER: %s (prior was %s)', to, from || 'unknown')
             }).on('state change', function (to, from) {
+                transport.clusterduck.updateProcessTitle({RAFT: DuckRaft.states[to]})
                 debug('STATE CHANGE: %s (prior from %s)', DuckRaft.states[to], DuckRaft.states[from])
             });
 
 
             raft.on('commit', command => {
-                transport.emit('commit', command)
+               try {
+                   transport.emit('commit', command)
+               } catch (e) {
+                   console.log(e)
+               }
             })
 
             raft.on('leader', () => {
@@ -162,7 +168,7 @@ class RaftTransport extends Transport {
                 debug('----------------------------------');
                 debug('I am starting as candidate');
                 debug('----------------------------------');
-            });
+            })
 
             for (const addr of (this.bootstrap || [])) {
                 debug('join ' + addr)

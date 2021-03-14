@@ -1,6 +1,6 @@
 const YAML = require('js-yaml')
 
-const PrettyYaml = require('./pretty-yaml')
+const PrettyYaml = require('json-to-pretty-yaml')
 const writeFileAtomic = require('write-file-atomic')
 const cloneDeep = require('clone-deep')
 const fs = require('fs')

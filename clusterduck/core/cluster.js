@@ -69,6 +69,7 @@ class Cluster extends emitter {
 
             })
             .on('deleted', node => {
+                this.nodes.emit('changed', node, false)
                 debug(`${this.name}: DELETED NODE: `, node.toObject())
             })
             .on('changed', (node, state) => {

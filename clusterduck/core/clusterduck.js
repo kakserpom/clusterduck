@@ -20,6 +20,19 @@ class ClusterDuck extends emitter {
         super()
         this.argv = argv
         this.verbose = ![null, false, undefined].includes(this.argv.verbose)
+
+        this.statuses = {}
+        this.updateProcessTitle()
+    }
+
+    updateProcessTitle(update) {
+        this.statuses = Object.assign(this.statuses, update || {})
+        const statuses = Object.values(this.statuses).filter(x => x !== null)
+        const title = 'clusterduck: '
+            + this.argv.configFile
+            + (statuses.length ? ' (' + statuses.join(', ') + ')' : '')
+
+        //process.title = title
     }
 
     /**
@@ -32,10 +45,6 @@ class ClusterDuck extends emitter {
 
         this.clusters = (new Collection('name', config => Cluster.factory(config, this)))
             .addFromObject(this.config.clusters || {})
-
-        this.clusters.get('redis_cache').nodes.add({addr: "127.0.0.0.1:6379"})
-
-       // this.config.write()
     }
 
 

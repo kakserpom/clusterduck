@@ -15,13 +15,15 @@ class UpdateNode extends Command {
             return
         }
 
+        this.set = {}
         this.command = 'update-node'
         this.once('beforeCommit', () => {
-            Array.prototype.includesAny = function () {
+            Array.prototype.includesAny = () => {
                 for (let i = 0; i < arguments.length; ++i) {
                     if (this.includes(arguments[0])) {
                         return true
                     }
+
                 }
                 return false
             }
@@ -38,12 +40,15 @@ class UpdateNode extends Command {
      */
     target(node) {
         const command = this
+        this.node = node
         this._proxy = new Proxy(node, {
-            get: (target, property, receiver) => command.set[property] || target[property] || null
+            get: (target, property, receiver) => {
+                return command.set.hasOwnProperty(property) ? command.set.property : target[property]
+            }
         })
         this.path = node.path()
 
-        return this;
+        return this
     }
 
     /**
@@ -55,15 +60,12 @@ class UpdateNode extends Command {
 
         if (!node) {
             console.log(this.command + ': node ' + JSON.stringify(this.path) + ' not found')
-           // console.log(root.clusters.get('redis_cache').nodes.map(node => node.addr))
-            console.log({
-                6379: root.clusters.get('redis_cache').nodes.get({addr: '127.0.0.1:6379'}),
-                6380: root.clusters.get('redis_cache').nodes.get({addr: '127.0.0.1:6380'}),
-            })
             return
         }
+
         let changed = false
         for (const [key, value] of Object.entries(this.set)) {
+
             if (node[key] === value) {
                 continue
             }
@@ -82,14 +84,10 @@ class UpdateNode extends Command {
 
     attr(obj) {
         for (const [key, value] of Object.entries(obj)) {
-            if (this.hasOwnProperty(key)) {
-                if (this[key] === value) {
-                    continue
-                }
+            if (this._proxy[key] === value) {
+                continue
             }
-            if (!this.set) {
-                this.set = {}
-            }
+
             this.set[key] = value
         }
 
