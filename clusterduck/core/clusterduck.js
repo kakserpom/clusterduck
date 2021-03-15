@@ -202,6 +202,11 @@ class ClusterDuck extends emitter {
         });
     }
 
+    /**
+     *
+     * @param commands
+     * @param callback
+     */
     commit(commands, callback) {
         const commit = new Commit(commands)
 

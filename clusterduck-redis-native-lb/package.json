@@ -1,0 +1,35 @@
+{
+  "name": "clusterduck-redis-native-lb",
+  "version": "0.1.0",
+  "description": "",
+  "homepage": "https://npmjs.com/package/clusterduck-redis-native-lb",
+  "keywords": [
+    "clustering",
+    "monitoring",
+    "balancing",
+    "balancer",
+    "redis",
+    "clusterduck"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "redis-server-wrapper": "./bin/redis-server-wrapper"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kakserpom/clusterduck"
+  },
+  "author": "Vasily Zorin",
+  "license": "LGPL-3.0-or-later",
+  "dependencies": {
+    "diagnostics": "^2.0.2",
+    "hashring": "^3.2.0",
+    "ioredis": "^4.23.0",
+    "ioredis-conn-pool": "^1.0.0",
+    "redis-parser": "^3.0.0",
+    "redis-protocol": "^0.1.10",
+    "shell-quote": "^1.7.2"
+  }
+}

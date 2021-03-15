@@ -3,7 +3,16 @@ const parseAddr = require('clusterduck/misc/addr')
 
 class RedisCluster extends Cluster {
     require(what) {
-        return require(what)
+        what = Array.isArray(what) ? what : [what]
+        let error
+        for (let i = 0; i < what.length; ++i) {
+            try {
+                return require(what[i])
+            } catch (e) {
+                error = e
+            }
+        }
+        throw error
     }
 
     ioredis_config(node) {
