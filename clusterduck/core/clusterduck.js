@@ -109,9 +109,9 @@ class ClusterDuck extends emitter {
 
                         this.commit([
                             (new InsertNode).target(cluster).define(node)
-                        ])
-
-                        resolve(node)
+                        ], commit => {
+                            resolve(node)
+                        })
                     } catch (e) {
                         console.log(e)
                         reject(error(1, e.message))
@@ -202,9 +202,18 @@ class ClusterDuck extends emitter {
         });
     }
 
-    commit(commands) {
+    commit(commands, callback) {
         const commit = new Commit(commands)
+
+        if (commit.length === 0) {
+            return
+        }
+
         const raft = this.transports.get('raft')
+
+        if (callback) {
+            this.once('commit:' + commit.id, callback)
+        }
 
         // Non-Raft mode
         if (!raft) {

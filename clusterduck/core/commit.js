@@ -1,12 +1,19 @@
 const Command = require('./commands/command')
+const {v4: uuidv4} = require('uuid')
 class Commit {
 
     /**
      *
      */
-    constructor(commands) {
+    constructor(commands, id) {
+
         this.commands = []
         this.add(...(commands || []))
+        this.id = id || uuidv4()
+    }
+
+    get length() {
+        return this.commands.length
     }
 
     /**
@@ -28,6 +35,7 @@ class Commit {
      */
     bundle() {
         return {
+            id: this.id,
             commands: this.commands.map(command => Command.dehydrate(command)).filter(x => x)
         }
     }
@@ -37,12 +45,13 @@ class Commit {
      * @param root
      */
     run(root) {
+        root.emit('commit:' + this.id, this)
         this.commands.map(command => command.run(root))
     }
 
 }
 Commit.fromBundle = bundle => {
-    const commit = new Commit
+    const commit = new Commit(null, bundle.id)
     bundle.commands.map(entry => {
         commit.add(Command.hydrate(entry))
     })

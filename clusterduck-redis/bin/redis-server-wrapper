@@ -73,7 +73,7 @@ const start = (yargs, port) => {
                 }
                 setTimeout(() => {
                     redis.kill('SIGINT')
-                }, 3000)
+                }, 1000)
             })
         })
 

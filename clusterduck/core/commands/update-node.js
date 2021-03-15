@@ -18,12 +18,11 @@ class UpdateNode extends Command {
         this.set = {}
         this.command = 'update-node'
         this.once('beforeCommit', () => {
-            Array.prototype.includesAny = () => {
+            Array.prototype.includesAny = function() {
                 for (let i = 0; i < arguments.length; ++i) {
-                    if (this.includes(arguments[0])) {
+                    if (this.includes(arguments[i])) {
                         return true
                     }
-
                 }
                 return false
             }
@@ -43,7 +42,7 @@ class UpdateNode extends Command {
         this.node = node
         this._proxy = new Proxy(node, {
             get: (target, property, receiver) => {
-                return command.set.hasOwnProperty(property) ? command.set.property : target[property]
+                return command.set.hasOwnProperty(property) ? command.set[property] : target[property]
             }
         })
         this.path = node.path()

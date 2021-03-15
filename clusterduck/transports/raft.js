@@ -32,8 +32,12 @@ class RaftTransport extends Transport {
             this.raft.command(commit.bundle())
         } else if (this.raft.state === Liferaft.CANDIDATE) {
             commit.run(this.clusterduck)
-        } else {
+        } else if (this.raft.state === Liferaft.FOLLOWER) {
             this.command(commit.bundle())
+        } else {
+            this.once('state change', () => {
+                this.commit(commit)
+            })
         }
     }
 
@@ -145,6 +149,7 @@ class RaftTransport extends Transport {
             }).on('leader change', function (to, from) {
                 debug('NEW LEADER: %s (prior was %s)', to, from || 'unknown')
             }).on('state change', function (to, from) {
+                transport.emit('state change')
                 transport.clusterduck.updateProcessTitle({RAFT: DuckRaft.states[to]})
                 debug('STATE CHANGE: %s (prior from %s)', DuckRaft.states[to], DuckRaft.states[from])
             });
@@ -160,13 +165,20 @@ class RaftTransport extends Transport {
 
             raft.on('leader', () => {
                 debug('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
-                debug('I am elected as leader');
+                debug('I am elected as LEADER');
                 debug('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
             });
 
             raft.on('candidate', () => {
                 debug('----------------------------------');
-                debug('I am starting as candidate');
+                debug('I am starting as CANDIDATE');
+                debug('----------------------------------');
+            })
+
+
+            raft.on('follower', () => {
+                debug('----------------------------------');
+                debug('I am starting as FOLLOWER');
                 debug('----------------------------------');
             })
 
