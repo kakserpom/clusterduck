@@ -1,4 +1,6 @@
 const Balancer = require('clusterduck/core/balancer')
+const Collection = require("clusterduck/misc/collection");
+const {Worker, isMainThread} = require('worker_threads')
 
 /**
  *
@@ -10,27 +12,57 @@ class NativeBalancer extends Balancer {
      */
     init() {
 
-        if (!this.cluster.clusterduck.args.experimental) {
+        if (!this.cluster.clusterduck.argv.experimental) {
             throw new Error('clusterduck-redis: the native balancer is EXPERIMENTAL, --experimental is required')
         }
 
-        this.cluster.nodes.on('deleted', node => this.ring.remove(node.addr))
-
         // Let's keep HashRing always up-to-date
-        this.cluster.nodes.on('changed', node => {
-            if (node.active) {
-                this.ring.add(this._nodes_config([node]))
+        this.cluster.nodes.on('changed', (node, state) => {
+
+            if (state && state.active) {
+
+                this.workers.forEach(worker => worker.postMessage(
+                    ['addNode', node.toObject(true)]
+                ))
             } else {
-                this.ring.remove(node.addr)
+                this.workers.forEach(worker => worker.postMessage(
+                    ['removeNode', node.toObject(true)]
+                ))
             }
         })
+
+        this.workers = new Collection()
     }
+
 
     /**
      * Start a balancer
      */
     start() {
+        this.startWorker()
+    }
 
+    startWorker() {
+        const worker = new Worker(__dirname + '/bin/redis-native-lb.js', {
+            workerData: {}
+        })
+
+        worker.on('message', message => {
+            console.log(message)
+        });
+        worker.on('error', error => {
+            console.error(error)
+        });
+        worker.on('exit', (code) => {
+            console.log('exit ' + code)
+        });
+
+        this.cluster.nodes.active.map(node => worker.postMessage(['addNode', node]))
+
+        worker.postMessage(
+            ['listen', this.config.listen]
+        )
+        this.workers.add(worker)
     }
 }
 
