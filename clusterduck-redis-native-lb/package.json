@@ -1,6 +1,6 @@
 {
   "name": "clusterduck-redis-native-lb",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck-redis-native-lb",
   "keywords": [
