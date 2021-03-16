@@ -39,7 +39,6 @@ class UpdateNode extends Command {
      */
     target(node) {
         const command = this
-        this.node = node
         this._proxy = new Proxy(node, {
             get: (target, property, receiver) => {
                 return command.set.hasOwnProperty(property) ? command.set[property] : target[property]

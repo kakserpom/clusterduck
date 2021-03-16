@@ -28,6 +28,10 @@ class RaftTransport extends Transport {
         })
     }
 
+    /**
+     *
+     * @param commit Commit
+     */
     commit(commit) {
         if (this.raft.state === Liferaft.LEADER) {
             this.raft.command(commit.bundle())

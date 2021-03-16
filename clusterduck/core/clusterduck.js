@@ -214,6 +214,10 @@ class ClusterDuck extends emitter {
             return
         }
 
+        /**
+         *
+         * @type RaftTransport
+         */
         const raft = this.transports.get('raft')
 
         if (callback) {
