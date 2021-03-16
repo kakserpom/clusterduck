@@ -1,10 +1,10 @@
 const md5 = require('md5')
-const msg = require('axon')
+const msg = require('axon-tls')
 const fs = require('fs')
-const CryptoBox = require('../misc/cryptobox')
 const Transport = require('../core/transport')
 const Liferaft = require('liferaft')
-const Commit = require("../core/commit");
+const Commit = require('../core/commit')
+const util = require('util')
 const debug = require('diagnostics')('raft')
 const debugDeep = require('diagnostics')('raft-deep')
 
@@ -48,8 +48,6 @@ class RaftTransport extends Transport {
     doListen() {
         const transport = this
         return new Promise((resolve, reject) => {
-            const cryptoBox = this.secret ? new CryptoBox(this.secret) : false
-
             class DuckRaft extends Liferaft {
 
                 /**
@@ -75,14 +73,16 @@ class RaftTransport extends Transport {
                         )
                     }
 
-                    const socket = this.socket = msg.socket('rep');
+                    const tlsOptions = {}
+                    if (transport.tls) {
+                        tlsOptions.key = fs.readFileSync(util.format(transport.tls, 'key'))
+                        tlsOptions.cert = fs.readFileSync(util.format(transport.tls, 'cert'))
+                    }
+
+                    const socket = this.socket = msg.socket('rep', tlsOptions);
 
                     socket.bind(this.address);
                     socket.on('message', (data, fn) => {
-                        if (cryptoBox) {
-                            const decrypted = cryptoBox.decrypt(data)
-                            data = JSON.parse(decrypted)
-                        }
                         this.emit('data', data, fn)
                     })
 
@@ -114,9 +114,6 @@ class RaftTransport extends Transport {
                         })
                     }
                     debugDeep('sending a packet %s', this.address)
-                    if (cryptoBox) {
-                        packet = cryptoBox.encrypt(JSON.stringify(packet))
-                    }
                     this.socket.send(packet, (data) => {
                         fn(undefined, data);
                     })

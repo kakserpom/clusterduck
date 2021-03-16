@@ -57,6 +57,13 @@
 
         const clusterduck = new ClusterDuck(argv)
 
+
+        yargs.command('gen-tls', 'generate TLS certificates', yargs => {
+
+            const shell = 'openssl req -new -newkey rsa:4096 -days 365 -nodes -x509' +
+                ' -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=clusterduck"' +
+                ' -keyout clusterduck.key  -out clusterduck.cert'
+        })
         yargs
             .command('stop', 'stop the server', yargs => {
             }, (argv) => {

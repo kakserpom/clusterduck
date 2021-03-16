@@ -49,10 +49,10 @@ class ClusterNode extends Entity {
      *
      * @returns {{}}
      */
-    toObject() {
+    toObject(withState) {
         const obj = {}
         for (const [key, value] of Object.entries(this)) {
-            if (!key.match(/^_/) && !ClusterNode.volatile.concat(['cluster']).includes(key)) {
+            if (!key.match(/^_/) && key !== 'cluster' && (withState || !ClusterNode.volatile.includes(key))) {
                 obj[key] = value
             }
         }

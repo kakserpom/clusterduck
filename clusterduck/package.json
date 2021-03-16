@@ -1,6 +1,6 @@
 {
   "name": "clusterduck",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck",
   "keywords": [
@@ -23,7 +23,7 @@
   "author": "Vasily Zorin",
   "license": "LGPL-3.0-or-later",
   "dependencies": {
-    "axon": "^2.0.3",
+    "axon-tls": "^2.2.1",
     "chalk": "^4.1.0",
     "clone-deep": "^4.0.1",
     "daemonize-process": "^3.0.0",
