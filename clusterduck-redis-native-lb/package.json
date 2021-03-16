@@ -28,7 +28,7 @@
     "ioredis": "^4.23.0",
     "ioredis-conn-pool": "^1.0.0",
     "redis-parser": "^3.0.0",
-    "redis-protocol": "^0.1.10",
-    "shell-quote": "^1.7.2"
+    "shell-quote": "^1.7.2",
+    "tcp-port-used": "^1.0.2"
   }
 }

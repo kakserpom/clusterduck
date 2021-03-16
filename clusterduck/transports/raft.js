@@ -5,6 +5,7 @@ const Transport = require('../core/transport')
 const Liferaft = require('liferaft')
 const Commit = require('../core/commit')
 const util = require('util')
+const path = require('path')
 const debug = require('diagnostics')('raft')
 const debugDeep = require('diagnostics')('raft-deep')
 
@@ -74,10 +75,21 @@ class RaftTransport extends Transport {
                     }
 
                     const tlsOptions = {}
+
                     if (transport.tls) {
-                        tlsOptions.key = fs.readFileSync(util.format(transport.tls, 'key'))
-                        tlsOptions.cert = fs.readFileSync(util.format(transport.tls, 'cert'))
+                        if (transport.tls === true) {
+
+                            tlsOptions.key = fs.readFileSync(path.dirname(transport.clusterduck.argv.configFile)
+                                + '/clusterduck.key')
+
+                            tlsOptions.cert = fs.readFileSync(path.dirname(transport.clusterduck.argv.configFile)
+                                + '/clusterduck.cert')
+                        } else if (typeof transport.tls === 'string') {
+                            tlsOptions.key = fs.readFileSync(util.format(transport.tls, 'key'))
+                            tlsOptions.cert = fs.readFileSync(util.format(transport.tls, 'cert'))
+                        }
                     }
+
 
                     const socket = this.socket = msg.socket('rep', tlsOptions);
 

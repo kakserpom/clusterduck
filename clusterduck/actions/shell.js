@@ -1,4 +1,4 @@
-const quote = require('shell-quote').quote
+const {quote} = require('shell-quote')
 const exec = require('child_process').exec
 const debug = require('diagnostics')('triggers')
 

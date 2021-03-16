@@ -41,6 +41,12 @@ cd clusterduck
 node link
 ```
 
+### TLS
+
+If you want to enable TLS for Raft, run this to generate certificates:
+
+`clusterduck gen-tls`
+
 ## Command-line interface
 
 Run the  `clusterduck` command to see if it all works for you.
@@ -131,7 +137,7 @@ transports:
 ```yaml
   - type: raft
     address: tcp://127.0.0.1:9911
-    secret: your-secret-passphrase
+    tls: true
     bootstrap: [ tcp://127.0.0.1:9910 ]
 ```
 
@@ -165,7 +171,7 @@ Parameter           | Description
 
 ### Raft
 - [liferaft](https://www.npmjs.com/package/liferaft) — Raft protocol implementation (kudos to 3d-Eden and @bergos)
-- [axon](https://www.npmjs.com/package/axon) — Transport library
+- [axon-tls](https://www.npmjs.com/package/axon-tls) — Transport library
 - [leveldown](https://www.npmjs.com/package/leveldown) — DB for log persistence
 
 ### Misc

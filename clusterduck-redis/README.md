@@ -4,7 +4,7 @@
 
 - Health checks
 - Balancer running on [Envoy] with seamless [hot restarting].
-- Native Redis balancer *(EXPERIMENTAL)*
+- Native Redis balancer *(EXPERIMENTAL)*: [clusterduck-redis-native-lb]
 
 ## Table Of Contents
 
@@ -99,7 +99,7 @@ For debugging purposes use `DEBUG` environmental variable:
 Event               | Description
 --------------------|------------------------------------------------------
 `nodes`             | Set of nodes has changed
-`active`      | Set of active nodes has changed
+`active`            | Set of active nodes has changed
 
 ## Node events
 
@@ -111,14 +111,6 @@ Event               | Description
 
 - [clusterduck]
 - [ioredis](https://www.npmjs.com/package/ioredis-conn-pool)
-
-### Native balancer
-
-- [ioredis-conn-pool](https://www.npmjs.com/package/ioredis-conn-pool)
-- [hashring](https://www.npmjs.com/package/hashring)
-- [redis-parser](https://www.npmjs.com/package/hashring)
-- [redis-protocol](https://www.npmjs.com/package/hashring)
-- [shell-quote](https://www.npmjs.com/package/hashring)
 
 ### Envoy balancer
 

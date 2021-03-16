@@ -10,6 +10,10 @@
     const YAML = require('js-yaml')
     const {v4: uuidv4} = require('uuid')
 
+    const {exec} = require('child_process')
+    const {quote} = require('shell-quote')
+    const path = require('path')
+
     const Yargs = require('yargs')
 
     const InsertNode = require("../core/commands/insert-node")
@@ -58,28 +62,34 @@
         const clusterduck = new ClusterDuck(argv)
 
 
-        yargs.command('gen-tls', 'generate TLS certificates', yargs => {
+        yargs.command('gen-tls', 'generate TLS certificates', yargs =>
+            clusterduck._command = () => new Promise((resolve, reject) => {
+                const keyFile = path.dirname(argv.configFile) + '/clusterduck.key'
+                const certFile = path.dirname(argv.configFile) + '/clusterduck.cert'
 
-            const shell = 'openssl req -new -newkey rsa:4096 -days 365 -nodes -x509' +
-                ' -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=clusterduck"' +
-                ' -keyout clusterduck.key  -out clusterduck.cert'
-        })
+
+                const p = exec('openssl req -new -newkey rsa:4096 -days 365 -nodes -x509' +
+                    ' -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=clusterduck"' +
+                    ` -keyout ${quote([keyFile])} -out ${quote([certFile])}`, {stdio: 'inherit'})
+                p.stderr.on('data', data => process.stdout.write(data))
+                p.on('exit', resolve)
+            })
+        )
         yargs
             .command('stop', 'stop the server', yargs => {
-            }, (argv) => {
-                clusterduck._command = () => {
-                    new Promise((resolve, reject) => {
-                        if (argv.verbose) console.info(`stop server`)
-                        const pid = new pidFileClass(argv.pidFile)
-                        try {
-                            pid.stop()
-                        } catch (err) {
-                            console.error(argv.verbose ? err : err.message)
-                        }
-                        resolve()
-                    });
-                };
-            })
+                }, (argv) =>
+                    clusterduck._command = () =>
+                        new Promise((resolve, reject) => {
+                            if (argv.verbose) console.info(`stop server`)
+                            const pid = new pidFileClass(argv.pidFile)
+                            try {
+                                pid.stop()
+                            } catch (err) {
+                                console.error(argv.verbose ? err : err.message)
+                            }
+                            resolve()
+                        })
+            )
 
 
         InsertNode.cliCommand(yargs, clusterduck)
