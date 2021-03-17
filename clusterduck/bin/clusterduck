@@ -9,7 +9,6 @@
     const md5 = require('md5')
     const YAML = require('js-yaml')
     const PrettyYaml = require('json-to-pretty-yaml')
-    const {v4: uuidv4} = require('uuid')
 
     const {exec} = require('child_process')
     const {quote} = require('shell-quote')
@@ -162,7 +161,6 @@
             daemonizeProcess()
         }
 
-        clusterduck.id = uuidv4()
         clusterduck.set_config(new ConfigFile(argv.configFile))
 
         await clusterduck.run()

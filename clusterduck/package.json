@@ -10,7 +10,6 @@
     "balancer",
     "raft"
   ],
-
   "scripts": {
     "test": "./node_modules/.bin/uvu tests"
   },
@@ -29,6 +28,7 @@
     "clone-deep": "^4.0.1",
     "daemonize-process": "^3.0.0",
     "diagnostics": "^2.0.2",
+    "dot-prop": "github:kakserpom/dot-prop",
     "express": "^4.17.1",
     "hashring": "^3.2.0",
     "jayson": "^3.4.4",

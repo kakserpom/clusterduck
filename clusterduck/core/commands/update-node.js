@@ -1,4 +1,5 @@
 const Command = require('./command')
+const dotProp = require('dot-prop')
 
 /**
  *
@@ -18,7 +19,7 @@ class UpdateNode extends Command {
         this.set = {}
         this.command = 'update-node'
         this.once('beforeCommit', () => {
-            Array.prototype.includesAny = function() {
+            Array.prototype.includesAny = function () {
                 for (let i = 0; i < arguments.length; ++i) {
                     if (this.includes(arguments[i])) {
                         return true
@@ -49,6 +50,7 @@ class UpdateNode extends Command {
         return this
     }
 
+
     /**
      *
      * @param root
@@ -57,18 +59,27 @@ class UpdateNode extends Command {
         try {
             const node = root.resolveEntityPath(this.path)
 
-            let changed = false
+            let changed = false, changed_ss = false
             for (const [key, value] of Object.entries(this.set)) {
 
-                if (node[key] === value) {
+                if (dotProp.get(node, key, null) === value) {
                     continue
                 }
-                node[key] = value
-                changed = true
+                dotProp.set(node, key, value)
+
+                if (!key.match(/^shared_state\./)) {
+                    changed = true
+                } else {
+                    changed_ss = true
+                }
             }
 
             if (changed) {
                 node.emit('changed', node, node.state)
+            }
+
+            if (changed_ss) {
+                node.emit('changed_shared_state', node)
             }
         } catch (e) {
             console.log(e.message)
@@ -77,10 +88,35 @@ class UpdateNode extends Command {
 
     }
 
+    /**
+     *
+     * @returns {boolean}
+     */
     get skip() {
         return Object.keys(this.set || {}).length === 0
     }
 
+    /**
+     *
+     * @param id
+     * @param state
+     * @returns {UpdateNode}
+     */
+    setSharedState(id, state) {
+        const attr = {}
+        id = dotProp.escape(id)
+        state.ts = Date.now()
+        attr[`shared_state.${id}`] = state
+        this.attr(attr)
+
+        return this
+    }
+
+    /**
+     *
+     * @param obj
+     * @returns {UpdateNode}
+     */
     attr(obj) {
         for (const [key, value] of Object.entries(obj)) {
             if (this._proxy[key] === value) {

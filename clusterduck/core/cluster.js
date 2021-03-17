@@ -7,6 +7,7 @@ const debug = require('diagnostics')('cluster')
 const UpdateNode = require('./commands/update-node')
 const ClusterNodes = require("./collections/cluster_nodes")
 const Entity = require("../misc/entity")
+const Majority = require("../misc/majority")
 
 /**
  * Cluster model
@@ -59,6 +60,9 @@ class Cluster extends Entity {
     set_config(config) {
         this.config = config
 
+
+        this.shared_state_timeout = 30e3
+
         /**
          *
          * @type {ClusterNodes}
@@ -69,18 +73,44 @@ class Cluster extends Entity {
             }
             return new ClusterNode(node, this)
         })
+
         this.nodes
             .on('inserted', node => {
-                node.on('changed', (node, state) => this.nodes.emit('changed', node, state))
+                node
+                    .on('changed_shared_state', node => {
+
+                        let tsThreshold = Date.now() - this.shared_state_timeout
+                        let available = new Majority()
+                         Object.values(node.shared_state).forEach(opinion => {
+                            if (opinion.ts < tsThreshold) {
+                                return
+                            }
+                            available.feed(opinion.available)
+                        })
+
+                        this.clusterduck.commit([
+                            (new UpdateNode).target(node).attr({
+                                available: available.value(),
+                                checked: true
+                            })
+                        ])
+                    })
+                    .on('changed', (node, state) => this.nodes.emit('changed', node, state))
 
                     .on('passed', node => {
                         this.clusterduck.commit([
-                            (new UpdateNode).target(node).attr({available: true, checked: true})
+                            (new UpdateNode).target(node).setSharedState(this.clusterduck.id, {
+                                available: true,
+                                checked: true,
+                            })
                         ])
                     })
                     .on('failed', (node, error) => {
                         this.clusterduck.commit([
-                            (new UpdateNode).target(node).attr({available: false, checked: true})
+                            (new UpdateNode).target(node).setSharedState(this.clusterduck.id, {
+                                available: false,
+                                checked: true,
+                            })
                         ])
                     })
 

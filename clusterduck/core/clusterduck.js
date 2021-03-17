@@ -8,7 +8,7 @@ const Cluster = require('./cluster')
 const Commit = require("./commit")
 const InsertNode = require("./commands/insert-node")
 const DeleteNode = require("./commands/delete-node")
-
+const {v4: uuidv4} = require('uuid')
 /**
  * Main class
  */
@@ -20,7 +20,6 @@ class ClusterDuck extends emitter {
         super()
         this.argv = argv
         this.verbose = ![null, false, undefined].includes(this.argv.verbose)
-
         this.statuses = {}
         this.updateProcessTitle()
     }
@@ -221,6 +220,15 @@ class ClusterDuck extends emitter {
         this.transports = (new Collection('type', config => Transport.factory(config, this)))
             .addFromArray(this.config.transports || [])
         this.transports.forEach(transport => transport.doListen())
+
+
+        /**
+         *
+         * @type RaftTransport
+         */
+        const raft = this.transports.get('raft')
+
+        this.id = raft ? raft.address : null
 
 
         this.clusters.forEach(cluster => cluster.run_health_checks())
