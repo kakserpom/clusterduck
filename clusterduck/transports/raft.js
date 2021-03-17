@@ -111,6 +111,10 @@ class RaftTransport extends Transport {
 
                     socket.on('message', (data, fn) => {
                         if (data.peers) {
+                            if (!Array.isArray(data.peers)) {
+                                debug(`'peers' is not array`, data.peers)
+                                return
+                            }
                             data.peers.forEach(addr => join(addr))
                             fn({
                                 peers: peers.keys()

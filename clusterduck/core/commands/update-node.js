@@ -54,26 +54,27 @@ class UpdateNode extends Command {
      * @param root
      */
     run(root) {
-        const node = root.resolveEntityPath(this.path)
+        try {
+            const node = root.resolveEntityPath(this.path)
 
-        if (!node) {
-            console.log(this.command + ': node ' + JSON.stringify(this.path) + ' not found')
-            return
-        }
+            let changed = false
+            for (const [key, value] of Object.entries(this.set)) {
 
-        let changed = false
-        for (const [key, value] of Object.entries(this.set)) {
-
-            if (node[key] === value) {
-                continue
+                if (node[key] === value) {
+                    continue
+                }
+                node[key] = value
+                changed = true
             }
-            node[key] = value
-            changed = true
+
+            if (changed) {
+                node.emit('changed', node, node.state)
+            }
+        } catch (e) {
+            console.log(e.message)
+            console.log(this.command + ': ' + JSON.stringify(this.path) + ' failed')
         }
 
-        if (changed) {
-            node.emit('changed', node, node.state)
-        }
     }
 
     get skip() {

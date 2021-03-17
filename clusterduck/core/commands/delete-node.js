@@ -34,9 +34,14 @@ class DeleteNode extends Command {
      * @param root
      */
     run(root) {
-        const node = root.resolveEntityPath(this.path)
-        if (node) {
-            node.cluster.nodes.remove(node)
+        try {
+            const node = root.resolveEntityPath(this.path)
+            if (node) {
+                node.cluster.nodes.remove(node)
+            }
+        } catch (e) {
+            console.error(e.message)
+            console.error(this.command + ': ' + JSON.stringify(this.path) + ' failed')
         }
     }
 }

@@ -74,11 +74,12 @@ class Cluster extends Entity {
                     })
 
                 debug(`${this.name}: INSERTED NODE: `, node.export())
+                this.nodes.emit('changed', node, node.state)
 
             })
             .on('deleted', node => {
-                this.nodes.emit('changed', node, false)
                 debug(`${this.name}: DELETED NODE: `, node.export())
+                this.nodes.emit('changed', node, false)
             })
             .on('changed', (node, state) => {
                 debug('nodes.changed: %s', node.addr, state)
