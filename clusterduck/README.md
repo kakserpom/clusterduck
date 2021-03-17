@@ -3,14 +3,14 @@ clusterduck [![total downloads of clusterduck](https://img.shields.io/npm/dt/clu
 [![clusterduck's License](https://img.shields.io/npm/l/clusterduck.svg)](https://www.npmjs.com/package/clusterduck)
 [![latest version of clusterduck](https://img.shields.io/npm/v/clusterduck.svg)](https://www.npmjs.com/package/clusterduck)
 
-__A humble take on fault-tolerant monitoring and balancing service__.
+__A humble take on a fault-tolerant monitoring and balancing service__.
 
 *The project is new and in the stage of active development.*
 
 - __[Raft] consensus algorithm for high availability.__
   [liferaft] is running over an encrypted TCP/IP transport. Ducks love them rafts 😉
 - __Easy to use and extend.__
-  Given its modular architecture you can hack up your own plugin under an hour.
+  Given its modular architecture you can hack up your own plugin in under an hour.
   
 ### Featured extensions
 

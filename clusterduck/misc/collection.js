@@ -57,7 +57,20 @@ class Collection extends emitter {
         }
         return entry[this.key]
     }
+    /**
+     *
+     * @param key
+     * @param value
+     * @returns {Collection}
+     */
+    set(key, value) {
+        this._map.set(key, value)
+        return this
+    }
 
+    keys() {
+        return Array.from(this._map.keys())
+    }
 
     /**
      * @param ...entries

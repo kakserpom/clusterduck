@@ -6,6 +6,7 @@ const Liferaft = require('liferaft')
 const Commit = require('../core/commit')
 const util = require('util')
 const path = require('path')
+const Collection = require("../misc/collection");
 const debug = require('diagnostics')('raft')
 const debugDeep = require('diagnostics')('raft-deep')
 
@@ -52,6 +53,9 @@ class RaftTransport extends Transport {
      */
     doListen() {
         const transport = this
+        const peers = new Collection()
+
+        let join
         return new Promise((resolve, reject) => {
             class DuckRaft extends Liferaft {
 
@@ -62,7 +66,7 @@ class RaftTransport extends Transport {
                  * @api private
                  */
                 initialize(options) {
-                    debug('binding socket: %s', this.address);
+                    debug('binding socket: %s', this.address)
 
                     transport.command = async bundle => {
                         const when = () => {
@@ -97,9 +101,24 @@ class RaftTransport extends Transport {
 
                     const socket = this.socket = msg.socket('rep', tlsOptions);
 
-                    socket.bind(this.address);
+                    socket.bind(this.address)
+
+                    socket.on('connect', conn => { ///  unused
+                        const peer = (tlsOptions ? 'tls' : 'tcp')
+                            + '://'
+                            + conn.remoteAddress + ':' + conn.remotePort
+                    })
+
                     socket.on('message', (data, fn) => {
-                        this.emit('data', data, fn)
+                        if (data.peers) {
+                            data.peers.forEach(addr => join(addr))
+                            fn({
+                                peers: peers.keys()
+                            })
+                        } else {
+                            join(data.address)
+                            this.emit('data', data, fn)
+                        }
                     })
 
                     this.on('rpc', packet => {
@@ -111,6 +130,7 @@ class RaftTransport extends Transport {
                     socket.on('error', () => {
                         debug('failed to initialize on port: ', this.address);
                     })
+
                 }
 
                 /**
@@ -123,15 +143,22 @@ class RaftTransport extends Transport {
                 write(packet, fn) {
                     if (!this.socket) {
                         this.socket = msg.socket('req')
-
                         this.socket.connect(this.address)
-                        this.socket.on('error', function err() {
-                            console.error('failed to write to: %s', this.address)
+                        peers.set(this.address, this.socket)
+                        this.socket.on('connect', () => {
+                            this.socket.send({
+                                peers: peers.keys()
+                            }, response => {
+                                response.peers.forEach(addr => join(addr))
+                            })
+                        })
+                        this.socket.on('error', err => {
+                            console.error('failed to write to: %s: %s', this.address, err)
                         })
                     }
                     debugDeep('sending a packet %s', this.address)
-                    this.socket.send(packet, (data) => {
-                        fn(undefined, data);
+                    this.socket.send(packet, data => {
+                        fn(undefined, data)
                     })
                 }
             }
@@ -153,27 +180,27 @@ class RaftTransport extends Transport {
                 state: DuckRaft.STOPPED
             })
 
-            raft.on('heartbeat timeout', function () {
+
+            raft.on('heartbeat timeout', () => {
                 debug('heart beat timeout, starting election')
             })
 
-            raft.on('term change', function (to, from) {
+            raft.on('term change', (to, from) => {
                 debugDeep('were now running on term %s -- was %s', to, from)
-            }).on('leader change', function (to, from) {
+            }).on('leader change', (to, from) => {
                 debug('NEW LEADER: %s (prior was %s)', to, from || 'unknown')
-            }).on('state change', function (to, from) {
+            }).on('state change', (to, from) => {
                 transport.emit('state change')
                 transport.clusterduck.updateProcessTitle({RAFT: DuckRaft.states[to]})
                 debug('STATE CHANGE: %s (prior from %s)', DuckRaft.states[to], DuckRaft.states[from])
-            });
-
+            })
 
             raft.on('commit', command => {
-               try {
-                   transport.emit('commit', command)
-               } catch (e) {
-                   console.log(e)
-               }
+                try {
+                    transport.emit('commit', command)
+                } catch (e) {
+                    console.log(e)
+                }
             })
 
             raft.on('leader', () => {
@@ -188,19 +215,29 @@ class RaftTransport extends Transport {
                 debug('----------------------------------');
             })
 
-
             raft.on('follower', () => {
                 debug('----------------------------------');
                 debug('I am starting as FOLLOWER');
                 debug('----------------------------------');
             })
 
-            for (const addr of (this.bootstrap || [])) {
-                debug('join ' + addr)
-                if (addr === this.address) {
-                    continue;
+            raft.on('join', node => {
+                debug('joined: ', node.address)
+            })
+
+            raft.on('leave', addr => {
+                delete peers[node.address]
+                debug('left: ', node.address)
+            })
+
+            join = addr => {
+                if (!peers.has(addr)) {
+                    peers.set(addr, true)
+                    raft.join(addr)
                 }
-                raft.join(addr)
+            }
+            for (const addr of (this.bootstrap || [])) {
+                join(addr)
             }
 
             resolve()
