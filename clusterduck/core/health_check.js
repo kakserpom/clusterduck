@@ -9,11 +9,12 @@ const promiseWithTimeout = require('../misc/promise-with-timeout')
  * @type {((str: string, format?: Units) => (number | null)) | {readonly default: (str: string, format?: Units) => (number | null)}}
  */
 const parseDuration = require('parse-duration')
+const Entity = require("../misc/entity")
 
 /**
  * HealthCheck model
  */
-class HealthCheck {
+class HealthCheck extends Entity {
     /**
      * Constructor
      * @param node
@@ -21,6 +22,7 @@ class HealthCheck {
      * @param execuet
      */
     constructor(node, config, execute) {
+        super()
         this.node = node
         this.config = config
         this.execute = execute

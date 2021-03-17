@@ -50,8 +50,7 @@ class InsertNode extends Command {
 }
 
 InsertNode.cliCommand = (yargs, clusterduck) => {
-    yargs.command(
-        'insert-node [cluster] [node]',
+    yargs.command('insert-node [cluster] [node]',
         'Insert a new [node] into [cluster]',
         yargs => {
             yargs
@@ -60,30 +59,27 @@ InsertNode.cliCommand = (yargs, clusterduck) => {
                     demandOption: true
                 })
                 .positional('node', {
-                    describe: 'node (yaml/json)',
+                    describe: 'Node definition (YAML/JSON)',
                     demandOption: true
                 })
         },
-        yargs => {
-            clusterduck._command = () => {
-                return new Promise(async (resolve, reject) => {
-                    try {
-                        const client = await clusterduck.jayson.client()
-                        const {error, result} = await client.request('insertNode', [
-                            yargs.cluster,
-                            YAML.load(yargs.node)
-                        ])
-                        if (error) {
-                            throw error
-                        }
-                        process.stdout.write(YAML.dump(result))
-                    } catch (e) {
-                        console.error(clusterduck.verbose ? e : e.message)
-                    }
-                })
+        async argv => {
+            try {
+                const client = await clusterduck.jayson.client()
+                const {error, result} = await client.request('insertNode', [
+                    argv.cluster,
+                    YAML.load(argv.node)
+                ])
+                if (error) {
+                    throw error
+                }
+                process.stdout.write(YAML.dump(result))
+            } catch (e) {
+                console.error(clusterduck.verbose ? e : e.message)
+            } finally {
+                process.exit(0)
             }
-        }
-    )
+        })
 }
 
 return module.exports = InsertNode

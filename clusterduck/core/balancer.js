@@ -1,11 +1,11 @@
-const Collection = require('../misc/collection')
+const Entity = require('../misc/entity')
 const debug = require('diagnostics')('balancer')
 
 /**
  * Abstract balancer
  * @abstract
  */
-class Balancer {
+class Balancer extends Entity {
 
     /**
      *
@@ -13,6 +13,7 @@ class Balancer {
      * @param cluster
      */
     constructor(config, cluster) {
+        super()
         this.name = config.name
         this.cluster = cluster
 
@@ -42,8 +43,13 @@ class Balancer {
     start() {
     }
 
-    toObject() {
+    stop() {
+    }
 
+    _exportable(key, withState) {
+        return super._exportable(key, withState)
+            && key !== 'cluster'
+            && key !== 'name'
     }
 }
 

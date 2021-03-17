@@ -1,6 +1,10 @@
-# clusterduck-redis
+clusterduck-redis [![total downloads of clusterduck-redis](https://img.shields.io/npm/dt/clusterduck-redis.svg)](https://www.npmjs.com/package/clusterduck-redis)
+=======
+[![clusterduck-redis's License](https://img.shields.io/npm/l/clusterduck-redis.svg)](https://www.npmjs.com/package/clusterduck-redis)
+[![latest version of clusterduck-redis](https://img.shields.io/npm/v/clusterduck-redis.svg)](https://www.npmjs.com/package/clusterduck-redis)
 
-`clusterduck-redis` is a [Redis] extension for [Clusterduck] which includes:
+
+__A [Redis] extension for [Clusterduck] which includes:__
 
 - Health checks
 - Balancer running on [Envoy] with seamless [hot restarting].

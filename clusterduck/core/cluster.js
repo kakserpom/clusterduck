@@ -6,6 +6,7 @@ const HealthCheck = require("./health_check");
 const debug = require('diagnostics')('cluster')
 const UpdateNode = require('./commands/update-node')
 const ClusterNodes = require("./collections/cluster_nodes")
+const Entity = require("../misc/entity")
 
 /**
  * Cluster model
@@ -15,7 +16,7 @@ const ClusterNodes = require("./collections/cluster_nodes")
  * @event node:passed
  * @event node:failed
  */
-class Cluster extends emitter {
+class Cluster extends Entity {
 
     /**
      *
@@ -31,6 +32,13 @@ class Cluster extends emitter {
 
     path() {
         return ['clusters', this.name]
+    }
+
+    _exportable(key, withState) {
+        return super._exportable(key, withState)
+            && key !== 'clusterduck'
+            && key !== 'config'
+            && key !== 'name'
     }
 
     /**
@@ -65,18 +73,18 @@ class Cluster extends emitter {
                         ])
                     })
 
-                debug(`${this.name}: INSERTED NODE: `, node.toObject())
+                debug(`${this.name}: INSERTED NODE: `, node.export())
 
             })
             .on('deleted', node => {
                 this.nodes.emit('changed', node, false)
-                debug(`${this.name}: DELETED NODE: `, node.toObject())
+                debug(`${this.name}: DELETED NODE: `, node.export())
             })
             .on('changed', (node, state) => {
                 debug('nodes.changed: %s', node.addr, state)
             })
             .on('all', () => {
-                this.config.nodes = this.nodes.map(node => node.toObject())
+                this.config.nodes = this.nodes.map(node => node.export())
                 this.clusterduck.emit('config:changed')
             })
             .addFromArray(this.config.nodes || [])
@@ -122,6 +130,8 @@ class Cluster extends emitter {
             });
         })
 
+
+        this.export()
     }
 
     /**

@@ -1,6 +1,6 @@
 {
   "name": "clusterduck-redis",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck-redis",
   "keywords": [
@@ -29,6 +29,7 @@
     "hashring": "^3.2.0",
     "ioredis": "^4.23.0",
     "shell-quote": "^1.7.2",
+    "tcp-port-used": "^1.0.2",
     "tmp-promise": "^3.0.2",
     "yargs": "^16.2.0"
   }

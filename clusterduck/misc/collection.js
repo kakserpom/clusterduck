@@ -1,3 +1,4 @@
+const Entity = require('./entity')
 const {SHAKE} = require('sha3');
 const emitter = require('events').EventEmitter
 
@@ -8,7 +9,40 @@ class Collection extends emitter {
         this.key = key
         this.hydrate = hydrate || (entry => entry)
 
+        this._exportMode = 'object'
+
         this.on('changed', () => this.emit('all'))
+    }
+
+    setExportMode(mode) {
+        if (!['array', 'object'].includes(mode)) {
+            throw new Error('setExportMode(): illegal argument')
+        }
+        this._exportMode = mode
+    }
+
+    export(withState) {
+
+        if (this._exportMode === 'array') {
+            return this.map(value =>
+                typeof value === 'object' && value instanceof Entity
+                    ? value.export(withState)
+                    : value
+            )
+        } else {
+            const obj = {}
+
+            this.forEach((value, key) => {
+                if (typeof value === 'object') {
+                    const entry = value instanceof Entity ? value.export(withState) : value
+                    delete entry[this.key]
+                    obj[key] = entry
+                } else {
+                    obj[key] = value
+                }
+            })
+            return obj
+        }
     }
 
     /**

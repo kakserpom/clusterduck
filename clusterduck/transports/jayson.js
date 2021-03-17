@@ -15,7 +15,7 @@ class JaysonTransport extends Transport {
      */
     constructor() {
         super(...arguments)
-        
+
         this.address = this.listen || this.clusterduck.argv.pidFile.replace(/\.pid$/, '.sock')
     }
 

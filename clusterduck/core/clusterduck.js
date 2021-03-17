@@ -45,8 +45,8 @@ class ClusterDuck extends emitter {
 
         this.clusters = (new Collection('name', config => Cluster.factory(config, this)))
             .addFromObject(this.config.clusters || {})
+        this.clusters.setExportMode('object')
     }
-
 
     /**
      *
@@ -55,11 +55,21 @@ class ClusterDuck extends emitter {
      */
     resolveEntityPath(path) {
         let ptr = this
-        path.map(key => {
-            if (typeof ptr === 'object' && ptr instanceof Collection) {
+        path.forEach(key => {
+
+            const forceProp = key.match(/^:/);
+            if (forceProp) {
+                key = key.slice(1)
+            }
+            if (!forceProp && typeof ptr === 'object' && ptr instanceof Collection) {
                 ptr = ptr.get(key)
-            } else {
+                if (ptr === null) {
+                    throw new Error(key + ' not found')
+                }
+            } else if (forceProp || ptr.hasOwnProperty(key)) {
                 ptr = ptr[key]
+            } else {
+                throw new Error(key + ' not found')
             }
         })
         return ptr
@@ -71,9 +81,11 @@ class ClusterDuck extends emitter {
      */
     api(jayson) {
 
+        const clusterduck = this
         const error = (code, message) => {
             return {code: code, message: message}
         }
+
         return {
             /**
              *
@@ -81,13 +93,26 @@ class ClusterDuck extends emitter {
              * @param callback
              * @returns {Promise<void>}
              */
-            clusters: args => {
+            ls(paths) {
                 return new Promise((resolve, reject) => {
-                    let clusters = {}
-                    const res = this.clusters.forEach(cluster => {
-                        clusters[cluster.name] = cluster.nodes.active.map(node => node.addr)
-                    });
-                    resolve(clusters)
+                    try {
+                        resolve(paths.map(path => {
+                            const split = path.split('/')
+
+                            try {
+                                const entity = clusterduck.resolveEntityPath(split)
+                                if (typeof entity.export === 'function') {
+                                    return entity.export(true)
+                                } else {
+                                    return entity
+                                }
+                            } catch (e) {
+                                return e.message
+                            }
+                        }))
+                    } catch (error) {
+                        reject(error(1, error.message))
+                    }
                 })
             },
 
@@ -97,17 +122,22 @@ class ClusterDuck extends emitter {
              * @param callback
              * @returns {Promise<void>}
              */
-            insertNode: args => {
+            insertNode(args) {
                 return new Promise((resolve, reject) => {
                     try {
                         const [clusterName, node] = args
-                        const cluster = this.clusters.get(clusterName)
+                        console.log(args)
+                        if (typeof clusterName !== 'string') {
+                            reject(error(1, 'Invalid cluster name'))
+                            return
+                        }
+                        const cluster = clusterduck.clusters.get(clusterName)
                         if (!cluster) {
                             reject(error(1, 'Cluster not found: ' + clusterName))
                             return
                         }
 
-                        this.commit([
+                        clusterduck.commit([
                             (new InsertNode).target(cluster).define(node)
                         ], commit => {
                             resolve(node)
@@ -126,11 +156,11 @@ class ClusterDuck extends emitter {
              * @param callback
              * @returns {Promise<void>}
              */
-            deleteNode: args => {
+            deleteNode(args) {
                 return new Promise((resolve, reject) => {
                     try {
                         const [clusterName, addr] = args
-                        const cluster = this.clusters.get(clusterName)
+                        const cluster = clusterduck.clusters.get(clusterName)
                         if (!cluster) {
                             reject(error(1, 'Cluster not found'))
                             return
@@ -142,7 +172,7 @@ class ClusterDuck extends emitter {
                             return
                         }
 
-                        this.commit([
+                        clusterduck.commit([
                             (new DeleteNode).target(node)
                         ])
 

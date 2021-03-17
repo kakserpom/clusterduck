@@ -8,6 +8,7 @@
     const pidFileClass = require('../misc/pid-file')
     const md5 = require('md5')
     const YAML = require('js-yaml')
+    const PrettyYaml = require('json-to-pretty-yaml')
     const {v4: uuidv4} = require('uuid')
 
     const {exec} = require('child_process')
@@ -54,87 +55,117 @@
             description: 'Verbosity devel',
             type: 'string',
         })
-    const argv = yargs.parse()
+    let argv = yargs.parse()
 
     try {
-        process.on('SIGTERM', () => process.emit('exit', 'SIGTERM'))
+        process.on('SIGTERM', () => {
+            process.emit('exit', 'SIGTERM')
+            setTimeout(() => {
+                process.exit()
+            }, 200)
+        })
 
         const clusterduck = new ClusterDuck(argv)
 
+        yargs.command('gen-tls', 'generate TLS certificates', yargs => {
+            const keyFile = path.dirname(argv.configFile) + '/clusterduck.key'
+            const certFile = path.dirname(argv.configFile) + '/clusterduck.cert'
 
-        yargs.command('gen-tls', 'generate TLS certificates', yargs =>
-            clusterduck._command = () => new Promise((resolve, reject) => {
-                const keyFile = path.dirname(argv.configFile) + '/clusterduck.key'
-                const certFile = path.dirname(argv.configFile) + '/clusterduck.cert'
+            const p = exec('openssl req -new -newkey rsa:4096 -days 365 -nodes -x509' +
+                ' -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=clusterduck"' +
+                ` -keyout ${quote([keyFile])} -out ${quote([certFile])}`, {stdio: 'inherit'})
+            p.stderr.on('data', data => process.stdout.write(data))
+        })
 
+        yargs.command('stop', 'stop the server', yargs => {
+        }, argv => {
 
-                const p = exec('openssl req -new -newkey rsa:4096 -days 365 -nodes -x509' +
-                    ' -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=clusterduck"' +
-                    ` -keyout ${quote([keyFile])} -out ${quote([certFile])}`, {stdio: 'inherit'})
-                p.stderr.on('data', data => process.stdout.write(data))
-                p.on('exit', resolve)
-            })
-        )
-        yargs
-            .command('stop', 'stop the server', yargs => {
-                }, (argv) =>
-                    clusterduck._command = () =>
-                        new Promise((resolve, reject) => {
-                            if (argv.verbose) console.info(`stop server`)
-                            const pid = new pidFileClass(argv.pidFile)
-                            try {
-                                pid.stop()
-                            } catch (err) {
-                                console.error(argv.verbose ? err : err.message)
-                            }
-                            resolve()
-                        })
-            )
+            if (argv.verbose) console.info(`stop server`)
+            const pid = new pidFileClass(argv.pidFile)
+            try {
+                pid.stop()
+            } catch (err) {
+                console.error(argv.verbose ? err : err.message)
+            }
+        })
 
 
         InsertNode.cliCommand(yargs, clusterduck)
         DeleteNode.cliCommand(yargs, clusterduck)
 
-        yargs.command('clusters', 'List of clusters', yargs => {
-            clusterduck._command = () => {
-                return new Promise(async (resolve, reject) => {
+        const jaysonRequest = (cmd, ...args) => {
+            return new Promise(async (resolve, reject) => {
+                try {
                     const client = await clusterduck.jayson.client()
+                    const {error, result} = await client.request(cmd, ...args)
+                    if (error) {
+                        reject(error)
+                    } else {
+                        resolve(result)
+                    }
+                } catch (err) {
+                    console.error('Either clusterduck is not running or the jayson transport is not enabled')
+                    console.error(argv.verbose ? err : err.message)
+                }
+            })
+        }
 
-                    const {error, result} = await client.request('clusters', [])
-                    process.stdout.write(YAML.dump(result))
+        yargs.command({
+            command: 'ls [paths..]',
+            desc: 'List of entities',
+            handler: async argv => {
+
+                if (!argv.paths) {
+                    return
+                }
+
+                const response = await jaysonRequest('ls', argv.paths)
+                    .catch(err => console.error(argv.verbose ? err : err.message))
+
+                const treeify = require('treeify')
+
+                response.forEach(result => {
+                    // console.log(result)
+                    // process.stdout.write(treeify.asTree(result, true))
+
+                    treeify.asLines(result, true, true, line => {
+                        console.log(line)
+                    })
                 })
             }
-        });
+        })
 
-        yargs
+        argv = yargs
             .help()
             .alias('help', 'h')
             .parse()
 
 
-        if (clusterduck._command) {
-            await clusterduck._command()
-        } else {
-            const pid = new pidFileClass(argv.pidFile)
-
-            if (pid.running) {
-                console.error('An instance is already running. Abort.')
-                return
-            }
-
-            if (argv.daemonize) {
-                pid.acquireOrThrow()
-                daemonizeProcess()
-                if (argv.verbose) {
-                    console.log('[INFO] An instance has just started. PID: ' + process.pid)
-                }
-            }
-
-            clusterduck.id = uuidv4()
-            clusterduck.set_config(new ConfigFile(argv.configFile))
-
-            await clusterduck.run()
+        if (argv._.length > 0) {
+            return
         }
+
+
+        const pid = new pidFileClass(argv.pidFile)
+
+        if (pid.running) {
+            console.error('An instance is already running. Abort.')
+            return
+        }
+
+        pid.acquireOrThrow()
+
+        if (argv.daemonize) {
+            if (argv.verbose) {
+                console.log('[INFO] An instance has just started. PID: ' + process.pid)
+            }
+            daemonizeProcess()
+        }
+
+        clusterduck.id = uuidv4()
+        clusterduck.set_config(new ConfigFile(argv.configFile))
+
+        await clusterduck.run()
     } catch (err) {
         console.error(argv.verbose ? err : err.message)
         process.exit(1)

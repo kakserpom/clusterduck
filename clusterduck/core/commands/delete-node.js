@@ -42,7 +42,6 @@ class DeleteNode extends Command {
 }
 
 
-
 DeleteNode.cliCommand = (yargs, clusterduck) => {
     yargs.command(
         'delete-node [cluster] [addr]',
@@ -58,23 +57,19 @@ DeleteNode.cliCommand = (yargs, clusterduck) => {
                     demandOption: true
                 })
         },
-        yargs => {
-            clusterduck._command = () => {
-                return new Promise(async (resolve, reject) => {
-                    const client = await clusterduck.jayson.client()
+        async argv => {
+            const client = await clusterduck.jayson.client()
 
-                    const args = [
-                        yargs.cluster,
-                        YAML.load(yargs.addr)
-                    ]
-                    const {error, result} = await client.request('deleteNode', args)
-                    if (error) {
-                        console.error(clusterduck.argv.verbose ? error : error.message)
-                        return
-                    }
-                    process.stdout.write(YAML.dump(result))
-                })
+            const args = [
+                argv.cluster,
+                YAML.load(argv.addr)
+            ]
+            const {error, result} = await client.request('deleteNode', args)
+            if (error) {
+                console.error(clusterduck.argv.verbose ? error : error.message)
+                return
             }
+            process.stdout.write(YAML.dump(result))
         }
     )
 }

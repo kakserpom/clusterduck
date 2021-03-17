@@ -1,7 +1,9 @@
-# clusterduck-redis-native-lb
+clusterduck-redis-native-lb [![total downloads of clusterduck-redis-native-lb](https://img.shields.io/npm/dt/clusterduck-redis-native-lb.svg)](https://www.npmjs.com/package/clusterduck-redis-native-lb)
+=======
+[![clusterduck-redis-native-lb's License](https://img.shields.io/npm/l/clusterduck-redis-native-lb.svg)](https://www.npmjs.com/package/clusterduck-redis-native-lb)
+[![latest version of clusterduck-redis-native-lb](https://img.shields.io/npm/v/clusterduck-redis-native-lb.svg)](https://www.npmjs.com/package/clusterduck-redis-native-lb)
 
-`clusterduck-redis-native-lb` is an *EXPERIMENTAL* sub-extension for [clusterduck-redis] [Clusterduck] that implements
-a Redis balancer written in Javascript.
+__An *EXPERIMENTAL* sub-extension for [clusterduck-redis] [Clusterduck] that implements a native Redis balancer.__
 
 ## Dependencies
 

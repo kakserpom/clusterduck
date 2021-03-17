@@ -47,16 +47,12 @@ class ClusterNode extends Entity {
 
     /**
      *
-     * @returns {{}}
+     * @param key
+     * @returns {boolean}
+     * @private
      */
-    toObject(withState) {
-        const obj = {}
-        for (const [key, value] of Object.entries(this)) {
-            if (!key.match(/^_/) && key !== 'cluster' && (withState || !ClusterNode.volatile.includes(key))) {
-                obj[key] = value
-            }
-        }
-        return obj
+    _exportable(key, withState) {
+        return super._exportable(key, withState) && key !== 'cluster' && (withState || !ClusterNode.volatile.includes(key))
     }
 }
 

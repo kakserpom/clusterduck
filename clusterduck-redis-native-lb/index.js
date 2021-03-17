@@ -22,16 +22,20 @@ class NativeBalancer extends Balancer {
             if (state && state.active) {
 
                 this.workers.forEach(worker => worker.postMessage(
-                    ['addNode', node.toObject(true)]
+                    ['addNode', node.export(true)]
                 ))
             } else {
                 this.workers.forEach(worker => worker.postMessage(
-                    ['removeNode', node.toObject(true)]
+                    ['removeNode', node.export(true)]
                 ))
             }
         })
 
         this.workers = new Collection()
+    }
+
+    _exportable(key, withState) {
+        return super._exportable(key, withState) && key !== 'workers';
     }
 
 

@@ -1,8 +1,11 @@
-# clusterduck
+clusterduck [![total downloads of clusterduck](https://img.shields.io/npm/dt/clusterduck.svg)](https://www.npmjs.com/package/clusterduck)
+=======
+[![clusterduck's License](https://img.shields.io/npm/l/clusterduck.svg)](https://www.npmjs.com/package/clusterduck)
+[![latest version of clusterduck](https://img.shields.io/npm/v/clusterduck.svg)](https://www.npmjs.com/package/clusterduck)
 
-`clusterduck` is a humble take on fault-tolerant cluster __monitoring__ and __balancing__ service implemented in Javascript.
+__A humble take on fault-tolerant monitoring and balancing service__.
 
-*The project is new and in the stage of extensive development.*
+*The project is new and in the stage of active development.*
 
 - __[Raft] consensus algorithm for high availability.__
   [liferaft] is running over an encrypted TCP/IP transport. Ducks love them rafts 😉

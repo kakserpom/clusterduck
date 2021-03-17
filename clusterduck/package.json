@@ -1,6 +1,6 @@
 {
   "name": "clusterduck",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck",
   "keywords": [
@@ -40,6 +40,7 @@
     "sha3": "^2.1.4",
     "shell-quote": "^1.7.2",
     "tmp-promise": "^3.0.2",
+    "treeify": "^1.1.0",
     "uuid": "^8.3.2",
     "write-file-atomic": "^3.0.3",
     "yargs": "^16.2.0"

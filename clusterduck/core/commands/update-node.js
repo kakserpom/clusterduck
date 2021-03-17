@@ -93,5 +93,4 @@ class UpdateNode extends Command {
     }
 }
 
-
 return module.exports = UpdateNode
