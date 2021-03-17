@@ -1,6 +1,9 @@
 const emitter = require('events').EventEmitter
 const debug = require('diagnostics')('transport')
 
+/**
+ *
+ */
 class Transport extends emitter {
 
     /**
@@ -22,6 +25,12 @@ class Transport extends emitter {
     }
 }
 
+/**
+ *
+ * @param config
+ * @param clusterduck
+ * @returns {*}
+ */
 Transport.factory = (config, clusterduck) => {
     const constructor = require('../transports/' + config.type)
     const transport = new constructor(config, clusterduck)

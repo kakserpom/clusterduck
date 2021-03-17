@@ -75,19 +75,6 @@ class Collection extends emitter {
 
     /**
      *
-     * @param key
-     * @returns {Collection}
-     */
-    unset(key) {
-        if (this._map.delete(key)) {
-            this.emit('deleted', key)
-            this.emit('all')
-        }
-        return this
-    }
-
-    /**
-     *
      * @returns {any[]}
      */
     keys() {

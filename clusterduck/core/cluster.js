@@ -30,10 +30,21 @@ class Cluster extends Entity {
         this.set_config(config)
     }
 
+    /**
+     *
+     * @returns {(string|*)[]}
+     */
     path() {
         return ['clusters', this.name]
     }
 
+    /**
+     *
+     * @param key
+     * @param withState
+     * @returns {*|boolean}
+     * @private
+     */
     _exportable(key, withState) {
         return super._exportable(key, withState)
             && key !== 'clusterduck'

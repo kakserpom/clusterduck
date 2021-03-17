@@ -198,6 +198,10 @@ class ClusterDuck extends emitter {
         )
     }
 
+    /**
+     *
+     * @param err
+     */
     panic(err) {
         console.error(this.verbose ? err : err.message)
         process.exit(1)

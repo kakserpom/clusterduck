@@ -243,7 +243,7 @@ class RaftTransport extends Transport {
             })
 
             raft.on('leave', addr => {
-                transport.peers.unset(addr)
+                transport.peers.delete(addr)
                 debug('left: ', node.address)
             })
 

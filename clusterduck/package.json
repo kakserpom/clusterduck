@@ -10,8 +10,9 @@
     "balancer",
     "raft"
   ],
+
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/uvu tests"
   },
   "repository": {
     "type": "git",
@@ -44,5 +45,8 @@
     "uuid": "^8.3.2",
     "write-file-atomic": "^3.0.3",
     "yargs": "^16.2.0"
+  },
+  "devDependencies": {
+    "uvu": "^0.5.1"
   }
 }
