@@ -18,7 +18,6 @@ class RaftTransport extends Transport {
      */
     constructor(config, clusterduck) {
         super(config, clusterduck)
-
         this.on('replicaCommit', bundle => {
             this.commit(Commit.fromBundle(bundle))
         })
@@ -27,6 +26,21 @@ class RaftTransport extends Transport {
             const commit = Commit.fromBundle(bundle)
             commit.run(clusterduck)
         })
+
+        this.peers = new Collection()
+
+        let saveTimeout
+        this.peers.on('all', () => {
+            if (saveTimeout) {
+                return
+            }
+            saveTimeout = setTimeout(() => {
+                config.bootstrap = this.peers.keys().filter(addr => addr !== config.address)
+                this.clusterduck.emit('config:changed')
+                saveTimeout = null
+            }, 1)
+        })
+
     }
 
     /**
@@ -53,7 +67,6 @@ class RaftTransport extends Transport {
      */
     doListen() {
         const transport = this
-        const peers = new Collection()
 
         let join
         return new Promise((resolve, reject) => {
@@ -117,7 +130,7 @@ class RaftTransport extends Transport {
                             }
                             data.peers.forEach(addr => join(addr))
                             fn({
-                                peers: peers.keys()
+                                peers: transport.peers.keys()
                             })
                         } else {
                             join(data.address)
@@ -148,10 +161,10 @@ class RaftTransport extends Transport {
                     if (!this.socket) {
                         this.socket = msg.socket('req')
                         this.socket.connect(this.address)
-                        peers.set(this.address, this.socket)
+                        transport.peers.set(this.address, this.socket)
                         this.socket.on('connect', () => {
                             this.socket.send({
-                                peers: peers.keys()
+                                peers: transport.peers.keys()
                             }, response => {
                                 response.peers.forEach(addr => join(addr))
                             })
@@ -230,13 +243,13 @@ class RaftTransport extends Transport {
             })
 
             raft.on('leave', addr => {
-                delete peers[node.address]
+                transport.peers.unset(addr)
                 debug('left: ', node.address)
             })
 
             join = addr => {
-                if (!peers.has(addr)) {
-                    peers.set(addr, true)
+                if (!transport.peers.has(addr)) {
+                    transport.peers.set(addr, true)
                     raft.join(addr)
                 }
             }

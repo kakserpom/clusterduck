@@ -64,10 +64,32 @@ class Collection extends emitter {
      * @returns {Collection}
      */
     set(key, value) {
+        const has = this._map.has(key)
         this._map.set(key, value)
+        if (!has) {
+            this.emit('inserted', value, key)
+            this.emit('all')
+        }
         return this
     }
 
+    /**
+     *
+     * @param key
+     * @returns {Collection}
+     */
+    unset(key) {
+        if (this._map.delete(key)) {
+            this.emit('deleted', key)
+            this.emit('all')
+        }
+        return this
+    }
+
+    /**
+     *
+     * @returns {any[]}
+     */
     keys() {
         return Array.from(this._map.keys())
     }
@@ -237,10 +259,10 @@ class Collection extends emitter {
      * @param listener
      */
     addRangeChangeListener(listener) {
-        this.on('added', entry => {
+        this.on('inserted', entry => {
             listener([entry], [])
         })
-        this.on('removed', entry => {
+        this.on('deleted', entry => {
             listener([], [entry])
         })
     }
