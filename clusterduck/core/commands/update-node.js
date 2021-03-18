@@ -82,7 +82,7 @@ class UpdateNode extends Command {
                 node.emit('changed_shared_state', node)
             }
         } catch (e) {
-            console.log(e.message)
+            console.log(e)
             console.log(this.command + ': ' + JSON.stringify(this.path) + ' failed')
         }
 
@@ -108,7 +108,6 @@ class UpdateNode extends Command {
         state.ts = Date.now()
         attr[`shared_state.${id}`] = state
         this.attr(attr)
-
         return this
     }
 

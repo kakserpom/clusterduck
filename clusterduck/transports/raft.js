@@ -49,7 +49,8 @@ class RaftTransport extends Transport {
      */
     commit(commit) {
         if (this.raft.state === Liferaft.LEADER) {
-            this.raft.command(commit.bundle())
+            const bundle = commit.bundle()
+            this.raft.command(bundle)
         } else if (this.raft.state === Liferaft.CANDIDATE) {
             commit.run(this.clusterduck)
         } else if (this.raft.state === Liferaft.FOLLOWER) {
@@ -63,12 +64,33 @@ class RaftTransport extends Transport {
 
     /**
      *
+     * @returns {boolean}
+     */
+    isLeader() {
+        return this.raft.state === Liferaft.LEADER
+    }
+
+    /**
+     *
+     * @returns {boolean}
+     */
+    isCandidate() {
+        return this.raft.state === Liferaft.CANDIDATE
+    }
+
+    join(addr) {
+        if (!this.peers.has(addr)) {
+            this.peers.set(addr, true)
+            this.raft.join(addr)
+        }
+    }
+    /**
+     *
      * @returns {Promise<unknown>}
      */
     doListen() {
         const transport = this
 
-        let join
         return new Promise((resolve, reject) => {
             class DuckRaft extends Liferaft {
 
@@ -128,12 +150,12 @@ class RaftTransport extends Transport {
                                 debug(`'peers' is not array`, data.peers)
                                 return
                             }
-                            data.peers.forEach(addr => join(addr))
+                            data.peers.forEach(addr => transport.join(addr))
                             fn({
                                 peers: transport.peers.keys()
                             })
                         } else {
-                            join(data.address)
+                            transport.join(data.address)
                             this.emit('data', data, fn)
                         }
                     })
@@ -166,7 +188,7 @@ class RaftTransport extends Transport {
                             this.socket.send({
                                 peers: transport.peers.keys()
                             }, response => {
-                                response.peers.forEach(addr => join(addr))
+                                response.peers.forEach(addr => transport.join(addr))
                             })
                         })
                         this.socket.on('error', err => {
@@ -221,18 +243,21 @@ class RaftTransport extends Transport {
             })
 
             raft.on('leader', () => {
+                transport.emit('leader')
                 debug('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
                 debug('I am elected as LEADER');
                 debug('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
             });
 
             raft.on('candidate', () => {
+                transport.emit('candidate')
                 debug('----------------------------------');
                 debug('I am starting as CANDIDATE');
                 debug('----------------------------------');
             })
 
             raft.on('follower', () => {
+                transport.emit('follower')
                 debug('----------------------------------');
                 debug('I am starting as FOLLOWER');
                 debug('----------------------------------');
@@ -247,14 +272,8 @@ class RaftTransport extends Transport {
                 debug('left: ', node.address)
             })
 
-            join = addr => {
-                if (!transport.peers.has(addr)) {
-                    transport.peers.set(addr, true)
-                    raft.join(addr)
-                }
-            }
             for (const addr of (this.bootstrap || [])) {
-                join(addr)
+                transport.join(addr)
             }
 
             resolve()

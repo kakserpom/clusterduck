@@ -41,10 +41,6 @@ class ClusterDuck extends emitter {
     set_config(config) {
 
         this.config = config
-
-        this.clusters = (new Collection('name', config => Cluster.factory(config, this)))
-            .addFromObject(this.config.clusters || {})
-        this.clusters.setExportMode('object')
     }
 
     /**
@@ -79,7 +75,6 @@ class ClusterDuck extends emitter {
      * @returns {{export: (function(): Promise<unknown>)}}
      */
     api(jayson) {
-
         const clusterduck = this
         const error = (code, message) => {
             return {code: code, message: message}
@@ -212,10 +207,6 @@ class ClusterDuck extends emitter {
      */
     async run() {
 
-        this.on('config:changed', () => {
-            this.config.clusters = this.clusters.mapObj(cluster => [cluster.name, cluster.config])
-            this.config.write()
-        })
 
         this.transports = (new Collection('type', config => Transport.factory(config, this)))
             .addFromArray(this.config.transports || [])
@@ -230,6 +221,17 @@ class ClusterDuck extends emitter {
 
         this.id = raft ? raft.address : null
 
+
+
+        this.clusters = (new Collection('name', config => Cluster.factory(config, this)))
+            .addFromObject(this.config.clusters || {})
+        this.clusters.setExportMode('object')
+
+
+        this.on('config:changed', () => {
+            this.config.clusters = this.clusters.mapObj(cluster => [cluster.name, cluster.config])
+            this.config.write()
+        })
 
         this.clusters.forEach(cluster => cluster.run_health_checks())
         setInterval(() => {

@@ -21,7 +21,7 @@ class Entity extends emitter {
             if (!this._exportable(key, withState)) {
                 continue
             }
-            if (typeof value.export === 'function') {
+            if (typeof value === 'object' && typeof value.export === 'function') {
                 obj[key] = value.export(true)
             } else {
                 obj[key] = value

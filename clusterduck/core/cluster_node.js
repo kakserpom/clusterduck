@@ -15,6 +15,7 @@ class ClusterNode extends Entity {
         this.available = false
         this.active = false
         this.spare = false
+        this.shared_state = {}
 
         for (const [key, value] of Object.entries(entry)) {
             if (ClusterNode.volatile.includes(key)) {

@@ -74,14 +74,30 @@ class Cluster extends Entity {
             return new ClusterNode(node, this)
         })
 
+
+        /**
+         *
+         * @type RaftTransport
+         */
+        const raft = this.clusterduck.transports.get('raft')
+
+        if (raft) {
+            raft.on('leader', () => this.nodes.forEach(node => node.emit('changed_shared_state', node)))
+            raft.on('candidate', () => this.nodes.forEach(node => node.emit('changed_shared_state', node)))
+        }
+
         this.nodes
             .on('inserted', node => {
                 node
                     .on('changed_shared_state', node => {
+                        if (raft && !raft.isLeader() && !raft.isCandidate()) {
+                            // We are a non-leader instance, let the leader handle this
+                            return
+                        }
 
                         let tsThreshold = Date.now() - this.shared_state_timeout
                         let available = new Majority()
-                         Object.values(node.shared_state).forEach(opinion => {
+                        Object.values(node.shared_state).forEach(opinion => {
                             if (opinion.ts < tsThreshold) {
                                 return
                             }
