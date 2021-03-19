@@ -73,6 +73,7 @@ class RaftTransport extends Transport {
         } else if (this.raft.state === Liferaft.FOLLOWER) {
             this.messageLeader('rpc-commit', commit.bundle())
         } else {
+            this.setMaxListeners(1024)
             this.once('state change', () => {
                 this.commit(commit)
             })
@@ -273,7 +274,7 @@ class RaftTransport extends Transport {
             }).on('leader change', (to, from) => {
                 debug('NEW LEADER: %s (prior was %s)', to, from || 'unknown')
             }).on('state change', (to, from) => {
-                transport.emit('state change')
+                transport.emit('state change', to ,from)
                 transport.clusterduck.updateProcessTitle({RAFT: DuckRaft.states[to]})
                 debug('STATE CHANGE: %s (prior from %s)', DuckRaft.states[to], DuckRaft.states[from])
             })

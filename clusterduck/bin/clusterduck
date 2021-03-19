@@ -25,9 +25,6 @@
             description: 'Daemonize',
             type: 'boolean',
         })
-        .option('trace-warnings', {
-            type: 'boolean',
-        })
         .option('config-file', {
             alias: 'c',
             default: '/etc/clusterduck/clusterduck.yaml',
