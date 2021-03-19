@@ -66,14 +66,14 @@ InsertNode.cliCommand = (yargs, clusterduck) => {
         async argv => {
             try {
                 const client = await clusterduck.jayson.client()
-                const {error, result} = await client.request('insertNode', [
+                const response = await client.request('insertNode', [
                     argv.cluster,
                     YAML.load(argv.node)
                 ])
-                if (error) {
-                    throw error
+                if (response.error) {
+                    throw response.error
                 }
-                process.stdout.write(YAML.dump(result))
+                process.stdout.write(YAML.dump(response.result))
             } catch (e) {
                 console.error(clusterduck.verbose ? e : e.message)
             } finally {

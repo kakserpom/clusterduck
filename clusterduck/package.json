@@ -31,6 +31,7 @@
     "dot-prop": "github:kakserpom/dot-prop",
     "express": "^4.17.1",
     "hashring": "^3.2.0",
+    "is-obj": "^2.0.0",
     "jayson": "^3.4.4",
     "js-yaml": "^4.0.0",
     "json-to-pretty-yaml": "github:kakserpom/json-to-pretty-yaml",

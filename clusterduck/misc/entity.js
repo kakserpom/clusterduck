@@ -1,4 +1,5 @@
 const emitter = require('events').EventEmitter
+const isObj = require('is-obj')
 
 class Entity extends emitter {
 
@@ -21,7 +22,7 @@ class Entity extends emitter {
             if (!this._exportable(key, withState)) {
                 continue
             }
-            if (typeof value === 'object' && typeof value.export === 'function') {
+            if (isObj(value) && typeof value.export === 'function') {
                 obj[key] = value.export(true)
             } else {
                 obj[key] = value

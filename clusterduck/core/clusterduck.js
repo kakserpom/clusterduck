@@ -1,14 +1,12 @@
 const emitter = require('events').EventEmitter
 
-const YAML = require('js-yaml')
-const fs = require('fs')
 const Collection = require('../misc/collection')
 const Transport = require('./transport')
 const Cluster = require('./cluster')
-const Commit = require("./commit")
-const InsertNode = require("./commands/insert-node")
-const DeleteNode = require("./commands/delete-node")
-const {v4: uuidv4} = require('uuid')
+const Commit = require('./commit')
+const InsertNode = require('./commands/insert-node')
+const DeleteNode = require('./commands/delete-node')
+
 /**
  * Main class
  */
@@ -120,7 +118,6 @@ class ClusterDuck extends emitter {
                 return new Promise((resolve, reject) => {
                     try {
                         const [clusterName, node] = args
-                        console.log(args)
                         if (typeof clusterName !== 'string') {
                             reject(error(1, 'Invalid cluster name'))
                             return
@@ -222,7 +219,6 @@ class ClusterDuck extends emitter {
         this.id = raft ? raft.address : null
 
 
-
         this.clusters = (new Collection('name', config => Cluster.factory(config, this)))
             .addFromObject(this.config.clusters || {})
         this.clusters.setExportMode('object')
@@ -266,11 +262,16 @@ class ClusterDuck extends emitter {
 
         if (callback) {
             this.once('commit:' + commit.id, callback)
+
+            setTimeout(() => {
+                commit.execute(this)
+            }, 5e3)
+
         }
 
         // Non-Raft mode
         if (!raft) {
-            commit.run(this)
+            commit.execute(this)
             return
         }
 

@@ -17,14 +17,31 @@ class ClusterNode extends Entity {
         this.spare = false
         this.shared_state = {}
 
+        if (entry !== null) {
+            this.entry(entry)
+        }
+
+    }
+
+    /**
+     *
+     * @param entry
+     * @param skipCheck
+     */
+    entry(entry, skipCheck) {
         for (const [key, value] of Object.entries(entry)) {
-            if (ClusterNode.volatile.includes(key)) {
-                throw new Error('Property ' + JSON.stringify(key) + ' is volatile and cannot be set in constructor')
+            if (!skipCheck) {
+                if (ClusterNode.volatile.includes(key)) {
+                    throw new Error('Property ' + JSON.stringify(key) + ' is volatile and cannot be set in constructor')
+                }
             }
 
             this[key] = value
         }
+
+        return this
     }
+
 
     /**
      *

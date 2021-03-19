@@ -82,8 +82,8 @@ class UpdateNode extends Command {
                 node.emit('changed_shared_state', node)
             }
         } catch (e) {
-            console.log(e)
-            console.log(this.command + ': ' + JSON.stringify(this.path) + ' failed')
+            console.error(e.message)
+            console.error(this.command + ': ' + JSON.stringify(this.path) + ' failed')
         }
 
     }

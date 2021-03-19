@@ -43,7 +43,7 @@ class ShellAction {
      */
     _prepare_commands(commands, callback) {
         return commands.map(function (command) {
-            return command.replace(/\$(nodes_active_addrs)/, function (match, variable) {
+            return command.replace(/\$(\w+)/, function (match, variable) {
 
                 const value = callback(variable)
                 if (value !== undefined) {

@@ -18,13 +18,23 @@ class RaftTransport extends Transport {
      */
     constructor(config, clusterduck) {
         super(config, clusterduck)
-        this.on('replicaCommit', bundle => {
-            this.commit(Commit.fromBundle(bundle))
+
+        this.commitMode = this.commitMode || 'rpc'
+
+        this.on('rpc-commit', bundle => {
+            const commit = Commit.fromBundle(bundle)
+            if (this.isLeader()) {
+                // As a leader we need to make to commit it
+                this.commit(commit)
+            } else {
+                // Just execute the transaction locally
+                commit.execute(this.clusterduck)
+            }
         })
 
         this.on('commit', bundle => {
             const commit = Commit.fromBundle(bundle)
-            commit.run(clusterduck)
+            commit.execute(clusterduck)
         })
 
         this.peers = new Collection()
@@ -49,12 +59,19 @@ class RaftTransport extends Transport {
      */
     commit(commit) {
         if (this.raft.state === Liferaft.LEADER) {
-            const bundle = commit.bundle()
-            this.raft.command(bundle)
+            if (this.commitMode === 'rpc') {
+                this.messageFollowers('rpc-commit', commit.bundle())
+                commit.execute(this.clusterduck)
+            } else if (this.commitMode === 'log') {
+                this.raft.command(commit.bundle())
+            } else {
+                this.clusterduck.panic(new Error('illegal raft.commitMode'))
+                return
+            }
         } else if (this.raft.state === Liferaft.CANDIDATE) {
-            commit.run(this.clusterduck)
+            commit.execute(this.clusterduck)
         } else if (this.raft.state === Liferaft.FOLLOWER) {
-            this.command(commit.bundle())
+            this.messageLeader('rpc-commit', commit.bundle())
         } else {
             this.once('state change', () => {
                 this.commit(commit)
@@ -84,6 +101,45 @@ class RaftTransport extends Transport {
             this.raft.join(addr)
         }
     }
+
+    async messageLeader(type, data) {
+        const when = () => {
+        }
+
+        const packet = await this.raft.packet(type, data)
+
+        this.raft.message(
+            Liferaft.LEADER,
+            packet,
+            when
+        )
+    }
+
+    async messageFollowers(type, data, when) {
+        const packet = await this.raft.packet(type, data)
+
+        this.raft.message(
+            Liferaft.FOLLOWER,
+            packet,
+            when || (() => {
+            })
+        )
+    }
+
+    async messageChild(address, type, data) {
+        const when = () => {
+        }
+
+        const packet = await this.raft.packet(type, data)
+
+        console.log(`emit ${type} to ${address}`)
+        this.raft.message(
+            address,
+            packet,
+            when
+        )
+    }
+
     /**
      *
      * @returns {Promise<unknown>}
@@ -102,20 +158,6 @@ class RaftTransport extends Transport {
                  */
                 initialize(options) {
                     debug('binding socket: %s', this.address)
-
-                    transport.command = async bundle => {
-                        const when = () => {
-                        }
-
-
-                        const packet = await this.packet('replicaCommit', bundle)
-
-                        this.message(
-                            Liferaft.LEADER,
-                            packet,
-                            when
-                        )
-                    }
 
                     const tlsOptions = {}
 
@@ -161,8 +203,10 @@ class RaftTransport extends Transport {
                     })
 
                     this.on('rpc', packet => {
-                        if (packet.type === 'replicaCommit') {
-                            transport.emit('replicaCommit', packet.data)
+                        if (packet.type === 'rpc-commit') {
+                            transport.emit('rpc-commit', packet.data)
+                        } else if (packet.type === 'new-follower') {
+                            transport.emit('new-follower', packet.data)
                         }
                     })
 
@@ -243,24 +287,30 @@ class RaftTransport extends Transport {
             })
 
             raft.on('leader', () => {
-                transport.emit('leader')
                 debug('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
                 debug('I am elected as LEADER');
                 debug('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
+
+                transport.emit('leader')
             });
 
             raft.on('candidate', () => {
-                transport.emit('candidate')
                 debug('----------------------------------');
                 debug('I am starting as CANDIDATE');
                 debug('----------------------------------');
+
+                transport.emit('candidate')
             })
 
             raft.on('follower', () => {
-                transport.emit('follower')
                 debug('----------------------------------');
                 debug('I am starting as FOLLOWER');
                 debug('----------------------------------');
+
+                transport.emit('follower')
+                setTimeout(() => {
+                    transport.messageLeader('new-follower', raft.address)
+                }, 300)
             })
 
             raft.on('join', node => {

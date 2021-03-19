@@ -14,6 +14,10 @@ class Collection extends emitter {
         this.on('changed', () => this.emit('all'))
     }
 
+    /**
+     *
+     * @param mode
+     */
     setExportMode(mode) {
         if (!['array', 'object'].includes(mode)) {
             throw new Error('setExportMode(): illegal argument')
@@ -70,6 +74,32 @@ class Collection extends emitter {
             this.emit('inserted', value, key)
             this.emit('all')
         }
+        return this
+    }
+
+    /**
+     *
+     * @returns {number}
+     */
+    get size() {
+        return this._map.size
+    }
+
+    /**
+     *
+     * @returns {number}
+     */
+    get length() {
+        return this._map.size
+    }
+
+    /**
+     *
+     * @returns {Collection}
+     */
+    clear() {
+        this._map.clear()
+
         return this
     }
 

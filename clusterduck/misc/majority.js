@@ -26,10 +26,11 @@ class Majority {
      *
      * @returns {any}
      */
-    value() {
+    value(defaultValue) {
         for (const [value, votes] of this.values) {
             return value
         }
+        return defaultValue
     }
 }
 return module.exports = Majority

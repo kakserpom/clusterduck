@@ -10,6 +10,7 @@ class Commit {
         this.commands = []
         this.add(...(commands || []))
         this.id = id || uuidv4()
+        this.executed = false
     }
 
     get length() {
@@ -44,7 +45,11 @@ class Commit {
      *
      * @param root
      */
-    run(root) {
+    execute(root) {
+        if (this.executed) {
+            return
+        }
+        this.executed = true
         root.emit('commit:' + this.id, this)
         this.commands.map(command => command.run(root))
     }

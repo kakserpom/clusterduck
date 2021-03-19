@@ -8,6 +8,8 @@ const UpdateNode = require('./commands/update-node')
 const ClusterNodes = require("./collections/cluster_nodes")
 const Entity = require("../misc/entity")
 const Majority = require("../misc/majority")
+const SetClusterState = require("./commands/set-cluster-state");
+const Commit = require("./commit");
 
 /**
  * Cluster model
@@ -84,6 +86,14 @@ class Cluster extends Entity {
         if (raft) {
             raft.on('leader', () => this.nodes.forEach(node => node.emit('changed_shared_state', node)))
             raft.on('candidate', () => this.nodes.forEach(node => node.emit('changed_shared_state', node)))
+            raft.on('new-follower', follower => {
+                console.log('new follower event: ', follower)
+
+                const commit = new Commit([
+                    (new SetClusterState).target(this).addNodesFromCollection(this.nodes)
+                ])
+                raft.messageChild(follower, 'rpc-commit', commit.bundle())
+            })
         }
 
         this.nodes
@@ -106,7 +116,7 @@ class Cluster extends Entity {
 
                         this.clusterduck.commit([
                             (new UpdateNode).target(node).attr({
-                                available: available.value(),
+                                available: available.value(false),
                                 checked: true
                             })
                         ])
@@ -173,6 +183,8 @@ class Cluster extends Entity {
                 getProp = variable => {
                     if (variable === 'nodes_active_addrs') {
                         return JSON.stringify(this.nodes.active.map(node => node.addr))
+                    } else if (variable === 'nodes_active_count') {
+                        return JSON.stringify(this.nodes.active.length)
                     }
                 }
             } else {

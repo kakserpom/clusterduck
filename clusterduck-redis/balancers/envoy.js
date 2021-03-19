@@ -52,6 +52,9 @@ class BasicBalancer extends Balancer {
          * @returns {{mode: number, path: string}|{address: string, port_value: number}}
          */
         const address = (address, default_port) => {
+            if (typeof address === 'number') {
+                address = '0.0.0.0:' + address
+            }
             const addr = parseAddr(address, default_port)
             if (addr.path) {
                 return {
