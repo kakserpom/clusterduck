@@ -6,8 +6,8 @@ const pidFileClass = require('clusterduck/misc/pid-file')
 const {spawn, exec} = require('child_process')
 const yargs = require('yargs/yargs')
 const {hideBin} = require('yargs/helpers')
-const tcpPortUsed = require('tcp-port-used')
 const fs = require('fs')
+const tcpPortUsed = require('tcp-port-used')
 
 const start = (yargs, port) => {
     return new Promise(async (resolve, reject) => {
@@ -35,8 +35,11 @@ const start = (yargs, port) => {
         }
 
         let args = [
+            yargs.configFile,
             '--dir', dir,
             '--port', port,
+            '--daemonize', 'no',
+            '--logfile', ''
         ]
         if (yargs.bind) {
             args = args.concat([
@@ -44,6 +47,7 @@ const start = (yargs, port) => {
             ]);
         }
 
+        console.log(JSON.stringify([yargs.redisServerBin, ...args]) + "\n")
         const redis = spawn(yargs.redisServerBin,
             args, {
                 detached: true,
@@ -79,8 +83,11 @@ const start = (yargs, port) => {
 
         redis.stdout.on('data', data => {
             data = data.toString()
+            console.log(data)
 
-            if (data.match(/\* Ready to accept connections/)) {
+            if (data.match(/bind: Address already in use/)) {
+                resolve(false)
+            } else if (data.match(/\* Ready to accept connections/)) {
 
                 process.title = 'redis-server-wrapper: ' + port
                 exec(yargs.startTrigger.replace('$CD_OPTS', process.env.CD_OPTS || ''), {
@@ -90,10 +97,8 @@ const start = (yargs, port) => {
                 }, (error, stdout, stderr) => {
                     console.log(stdout, stderr)
                 })
-
                 resolve(redis)
             }
-            console.log(data)
         })
 
         redis.stderr.on('data', data => {

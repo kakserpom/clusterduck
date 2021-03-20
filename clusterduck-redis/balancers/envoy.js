@@ -190,22 +190,30 @@ class EnvoyBalancer extends Balancer {
 
                     debug('[%s] %s', this.restart_epoch, quote(args))
 
-                    this.process = spawn(this.config.envoy_bin || 'envoy', args)
+                    try {
+                        this.process = spawn(this.config.envoy_bin || 'envoy', args)
 
-                    this.process.stderr.on('data', data => {
-                        data = data.toString()
-                        debugDeep(data.split("\n").map(
-                            line => `[cluster=${this.cluster.name} balancer=${this.name} epoch=${this.restart_epoch}] ${line}`
-                        ))
+                        this.process.stderr.on('data', data => {
+                            data = data.toString()
+                            debugDeep(data.split("\n").map(
+                                line => `[cluster=${this.cluster.name} balancer=${this.name} epoch=${this.restart_epoch}] ${line}`
+                            ))
 
-                        if (data.match(/previous envoy process is still initializing/)) {
-                            setTimeout(() => {
-                                run()
-                            }, 200)
-                        } else if (data.match(/\] starting main dispatch loop/)) {
-                            resolve()
-                        }
-                    })
+                            if (data.match(/previous envoy process is still initializing/)) {
+                                setTimeout(() => {
+                                    run()
+                                }, 200)
+                            } else if (data.match(/\] starting main dispatch loop/)) {
+                                resolve()
+                            }
+                        })
+
+                        this.process.on('exit', e => {
+                            reject(e)
+                        })
+                    } catch (e) {
+                        reject(e)
+                    }
                 }
 
                 run()
