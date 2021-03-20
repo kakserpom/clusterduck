@@ -13,7 +13,7 @@ const debugDeep = require('diagnostics')('envoy-deep')
 /**
  *
  */
-class BasicBalancer extends Balancer {
+class EnvoyBalancer extends Balancer {
 
 
     /**
@@ -33,9 +33,22 @@ class BasicBalancer extends Balancer {
      */
     start() {
 
-        this.cluster.nodes.on('changed', () => {
+        const throttleEvent = callback => {
+            let timeout
+            return (...args) => {
+                if (timeout) {
+                    return
+                }
+                timeout = setTimeout(() => {
+                    timeout = null
+                    callback(...args)
+                }, 1)
+            }
+        }
+
+        this.cluster.nodes.on('changed', throttleEvent(() => {
             this.listen()
-        })
+        }))
 
     }
 
@@ -84,10 +97,17 @@ class BasicBalancer extends Balancer {
 
         // Envoy cluster definition
         const cluster = {
+
+            // Unique cluster name
             name: this.cluster.name + '__' + this.name,
+
+            // Connect timeout
             connect_timeout: this.config.connect_timeout || '1s',
             type: this.config.dns_type || 'strict_dns',
+
+            // Load balancing polocy
             lb_policy: this.config.lb_policy || 'MAGLEV',
+
             load_assignment: {
                 cluster_name: this.cluster.name,
                 endpoints: [
@@ -98,6 +118,7 @@ class BasicBalancer extends Balancer {
             }
         }
 
+        // Redis listener
         const listener = {
             name: cluster.name + '__listener',
             address: address(this.config.listen),
@@ -127,10 +148,12 @@ class BasicBalancer extends Balancer {
         // Now we make the final object
         let envoy = {}
 
+        // Administrative interface config
         if (this.config.admin) {
             envoy.admin = this.config.admin
         }
 
+        // Let's group up static resources
         envoy.static_resources = {
             listeners: [
                 listener
@@ -139,6 +162,7 @@ class BasicBalancer extends Balancer {
                 cluster
             ]
         }
+
         return envoy
     }
 
@@ -207,4 +231,4 @@ class BasicBalancer extends Balancer {
     }
 }
 
-return module.exports = BasicBalancer
+return module.exports = EnvoyBalancer

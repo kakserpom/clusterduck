@@ -3,12 +3,12 @@ clusterduck-redis [![total downloads of clusterduck-redis](https://img.shields.i
 [![clusterduck-redis's License](https://img.shields.io/npm/l/clusterduck-redis.svg)](https://www.npmjs.com/package/clusterduck-redis)
 [![latest version of clusterduck-redis](https://img.shields.io/npm/v/clusterduck-redis.svg)](https://www.npmjs.com/package/clusterduck-redis)
 
-
 __A [Redis] extension for [Clusterduck] which includes:__
 
 - Health checks
-- Balancer running on [Envoy] with seamless [hot restarting].
-- Native Redis balancer *(EXPERIMENTAL)*: [clusterduck-redis-native-lb]
+- Balancer: [Envoy] integration with seamless [hot restarting].
+- [Native Redis balancer](https://npmjs.com/package/cluster-redis-native-lb) *(EXPERIMENTAL)*
+- [Redis server wrapper](#redis-server-wrapper)
 
 ## Table Of Contents
 
@@ -17,6 +17,7 @@ __A [Redis] extension for [Clusterduck] which includes:__
     - [Nodes](#nodes)
     - [Health checks](#health-checks)
     - [Envoy balancer](#envoy-balancer)
+- [Redis server wrapper](#redis-server-wrapper)
 - [Dependencies](#dependencies)
 - [License](#license)
 
@@ -25,7 +26,7 @@ __A [Redis] extension for [Clusterduck] which includes:__
 [Clusterduck] is required.
 
 ```
-npm -g clusterduck-redis
+npm i -g clusterduck-redis
 ```
 
 ## Configuration
@@ -91,7 +92,22 @@ Let's write up a config:
 ``` 
 
 > *Note:* `clusterduck` will run  `envoy` with an according configuration.
-> [Hot restarting] works out-of-box so the `envoy` is always kept in __sync__ with `clusterduck`. It requires no middleware or additional configuration.
+> [Hot restarting] works out-of-box so that `envoy` is always kept in __sync__ with `clusterduck`. It requires no middleware or additional configuration.
+
+## Redis server wrapper
+
+If you want to run multiple Redis instances you can use `redis-server-wrapper` to make life easier.
+
+Let's start a Redis instance:
+
+```shell
+CLUSTER=redis_cache redis-server-wrapper start -d
+```
+
+It will pick an unused port from the range, spawn a Redis instance, and add the address to your Clusterduck cluster.
+
+If you want to stop a Redis instance, just run `clusterduck stop [port]` and it will remove it from the cluster first,
+then wait a bit, so the traffic is off the instance and then gracefully shutdown Redis.
 
 ## Debug
 

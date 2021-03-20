@@ -211,6 +211,9 @@ const Yargs = yargs(hideBin(process.argv)).strict()
                     }
                 }
             }
+            if (!redis) {
+                console.error('Unable to start Redis. Your port range might be depleted.')
+            }
         }
         if (redis) {
             console.log('Started Redis at ' + port)

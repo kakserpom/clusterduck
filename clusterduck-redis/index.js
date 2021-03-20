@@ -9,6 +9,9 @@ class RedisCluster extends Cluster {
             try {
                 return require(what[i])
             } catch (e) {
+                if (e.code !== 'MODULE_NOT_FOUND') {
+                    throw e
+                }
                 error = e
             }
         }
