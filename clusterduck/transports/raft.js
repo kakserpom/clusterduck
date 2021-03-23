@@ -192,6 +192,7 @@ class RaftTransport extends Transport {
                             })
                         } else {
                             transport.join(data.address)
+                            debugDeep('caught ' + JSON.stringify(data.type) + ' packet from %s', data.address)
                             this.emit('data', data, fn)
                         }
                     })
@@ -233,7 +234,8 @@ class RaftTransport extends Transport {
                             console.error('failed to write to: %s: %s', this.address, err)
                         })
                     }
-                    debugDeep('sending a packet %s', this.address)
+                    debugDeep('sending ' + JSON.stringify(packet.type) + ' packet %s', this.address)
+
                     this.socket.send(packet, data => {
                         fn(undefined, data)
                     })
@@ -256,6 +258,8 @@ class RaftTransport extends Transport {
                 path: logPath,
                 state: DuckRaft.STOPPED
             })
+
+            console.log(logPath)
 
 
             raft.on('heartbeat timeout', () => {

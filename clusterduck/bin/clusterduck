@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-(async function () {
+(async () => {
 
     const ConfigFile = require("../misc/config")
     const ClusterDuck = require('../core/clusterduck')
@@ -11,6 +11,7 @@
     const {exec} = require('child_process')
     const {quote} = require('shell-quote')
     const path = require('path')
+    const fs = require('fs')
 
     const Yargs = require('yargs')
 
@@ -51,6 +52,10 @@
             alias: 'v',
             description: 'Verbosity devel',
             type: 'string',
+        })
+        .option('log-dir', {
+            type: 'string',
+            default: '/var/log/clusterduck',
         })
     let argv = yargs.parse()
 
@@ -150,14 +155,32 @@
             return
         }
 
-        pid.acquireOrThrow()
+        const debugStream = fs.createWriteStream(argv.logDir + '/debug.log', {flags: 'a'})
+            , errorStream = fs.createWriteStream(argv.logDir + '/error.log', {flags: 'a'});
+
+        process.stdout.writeReal = process.stdout.write
+        process.stdout.write = data => {
+            debugStream.write(data)
+            process.stdout.writeReal(data)
+        }
+
+        process.stderr.writeReal = process.stderr.write
+        process.stderr.write = data => {
+            debugStream.write(data)
+            errorStream.write(data)
+            process.stderr.writeReal(data)
+        }
 
         if (argv.daemonize) {
+
             if (argv.verbose) {
                 console.log('[INFO] An instance has just started. PID: ' + process.pid)
             }
             daemonizeProcess()
+
         }
+
+        pid.acquireOrThrow()
 
         clusterduck.set_config(new ConfigFile(argv.configFile))
 
