@@ -1,6 +1,6 @@
 {
   "name": "clusterduck",
-  "version": "0.1.12",
+  "version": "0.1.17",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck",
   "keywords": [
@@ -11,7 +11,8 @@
     "raft"
   ],
   "scripts": {
-    "test": "./node_modules/.bin/uvu tests"
+    "test": "./node_modules/.bin/uvu tests",
+    "postinstall": "patch-package"
   },
   "repository": {
     "type": "git",
@@ -28,17 +29,18 @@
     "clone-deep": "^4.0.1",
     "daemonize-process": "^3.0.0",
     "diagnostics": "^2.0.2",
-    "dot-prop": "github:kakserpom/dot-prop",
+    "dot-prop": "^6.0.1",
     "express": "^4.17.1",
     "hashring": "^3.2.0",
     "is-obj": "^2.0.0",
     "jayson": "^3.4.4",
     "js-yaml": "^4.0.0",
-    "json-to-pretty-yaml": "github:kakserpom/json-to-pretty-yaml",
+    "json-to-pretty-yaml": "^1.2.2",
     "liferaft": "github:kakserpom/liferaft",
     "md5": "^2.3.0",
     "ora": "^5.3.0",
     "parse-duration": "^0.4.4",
+    "patch-package": "^6.4.7",
     "sha3": "^2.1.4",
     "shell-quote": "^1.7.2",
     "tmp-promise": "^3.0.2",

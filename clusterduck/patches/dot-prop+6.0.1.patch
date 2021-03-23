@@ -1,0 +1,14 @@
+diff --git a/node_modules/dot-prop/index.js b/node_modules/dot-prop/index.js
+index aa9c5bb..57a49b5 100644
+--- a/node_modules/dot-prop/index.js
++++ b/node_modules/dot-prop/index.js
+@@ -134,5 +134,9 @@ module.exports = {
+ 		}
+ 
+ 		return true;
++	},
++
++	escape(prop) {
++		return prop.replace(/\./g, '\\.')
+ 	}
+ };

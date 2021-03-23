@@ -134,7 +134,7 @@ class RaftTransport extends Transport {
 
         const packet = await this.raft.packet(type, data)
 
-        console.log(`emit ${type} to ${address}`)
+        debugDeep(`emit ${type} to ${address}`)
         this.raft.message(
             address,
             packet,
@@ -251,16 +251,13 @@ class RaftTransport extends Transport {
             }
 
             const raft = this.raft = new DuckRaft(this.address, {
-                'election min': this.election_min || 2000,
-                'election max': this.election_max || 5000,
-                'heartbeat': this.heartbeat || 1000,
+                'election min': this.election_min || 6000,
+                'election max': this.election_max || 15000,
+                'heartbeat': this.heartbeat || 5000,
                 Log: require(this.log_module || 'liferaft/log'),
                 path: logPath,
                 state: DuckRaft.STOPPED
             })
-
-            console.log(logPath)
-
 
             raft.on('heartbeat timeout', () => {
                 debug('heart beat timeout, starting election')
