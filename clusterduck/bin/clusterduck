@@ -7,8 +7,6 @@
     const daemonizeProcess = require('daemonize-process')
     const pidFileClass = require('../misc/pid-file')
     const md5 = require('md5')
-    const YAML = require('js-yaml')
-    const PrettyYaml = require('json-to-pretty-yaml')
 
     const {exec} = require('child_process')
     const {quote} = require('shell-quote')

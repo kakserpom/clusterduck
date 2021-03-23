@@ -3,9 +3,9 @@ clusterduck [![total downloads of clusterduck](https://img.shields.io/npm/dt/clu
 [![clusterduck's License](https://img.shields.io/npm/l/clusterduck.svg)](https://www.npmjs.com/package/clusterduck)
 [![latest version of clusterduck](https://img.shields.io/npm/v/clusterduck.svg)](https://www.npmjs.com/package/clusterduck)
 
-__A humble take on a fault-tolerant monitoring and balancing service__.
-
-*The project is new and in the stage of active development.*
+> __A humble take on a fault-tolerant monitoring and balancing service.__
+> 
+> *The project is new and in the stage of active development.*
 
 - __[Raft] consensus algorithm for high availability.__
   [liferaft] is running over an encrypted TCP/IP transport. Ducks love them rafts 😉
@@ -34,7 +34,7 @@ __A humble take on a fault-tolerant monitoring and balancing service__.
 *Node 15.x is recommended.*
 
 ```bash
-npm -g clusterduck
+npm i -g clusterduck
 ```
 
 Alternatively, you can clone the repo and link the dependencies which is useful for development purposes:
@@ -63,7 +63,7 @@ For debugging purposes use `DEBUG` environmental variable:
 
 ## Configuration
 
-The default config file path is `/etc/clusterduck.yaml`
+The default config file path is `/etc/clusterduck/clusterduck.yaml`
 
 ### Clusters
 Let's define a Redis cluster named `my_redis_cluster`:
@@ -139,32 +139,30 @@ transports:
 
 ```yaml
   - type: raft
-    address: tcp://127.0.0.1:9911
-    tls: true
-    bootstrap: [ tcp://127.0.0.1:9910 ]
+    address: tls://127.0.0.1:9911
+    bootstrap: [ tls://127.0.0.1:9910 ]
 ```
 
 Parameter           | Description
 --------------------|------------------------------------------------------
-`address`           | Address to listen
-`secret`            | Encryption passphrase, same in all Clusterduck instances
+`address` *           | Address to listen
+`tls`               | Path pattern to key/cert files. Default is `clusterduck.%s` (relative to the config file directory)
 `bootstrap`         | List of node addresses to connect with. __For now it is crucial to declare all yours nodes on each server.__
+
+> Clusterduck instances will exchange peers and update `bootstrap` accordingly, but initial address is necessary.
 
 ### HTTP
 
 ```yaml
   - type: http
     listen: 8880
-    no_slave: true
 ```
 Parameter           | Description
 --------------------|------------------------------------------------------
 `listen`            | Port to listen
-`no_slave`          |
 
 ## Roadmap
 
-- Peer discovery/exchange
 - CLI
 - Live config updates (i.e. more Commands)
 - Web-interface with websocket

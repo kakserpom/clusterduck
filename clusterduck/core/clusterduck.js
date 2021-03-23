@@ -6,6 +6,7 @@ const Cluster = require('./cluster')
 const Commit = require('./commit')
 const InsertNode = require('./commands/insert-node')
 const DeleteNode = require('./commands/delete-node')
+const {v4: uuidv4} = require('uuid')
 
 /**
  * Main class
@@ -216,8 +217,7 @@ class ClusterDuck extends emitter {
          */
         const raft = this.transports.get('raft')
 
-        this.id = raft ? raft.address : null
-
+        this.id = raft ? raft.address : uuidv4()
 
         this.clusters = (new Collection('name', config => Cluster.factory(config, this)))
             .addFromObject(this.config.clusters || {})

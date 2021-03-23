@@ -9,6 +9,7 @@ const {quote} = require('shell-quote')
 const {spawn} = require('child_process')
 const debug = require('diagnostics')('envoy')
 const debugDeep = require('diagnostics')('envoy-deep')
+const array = require('ensure-array')
 
 /**
  *
@@ -86,15 +87,6 @@ class EnvoyBalancer extends Balancer {
             }
         }
 
-        // Let's make the list of active nodes
-        const endpoints = this.cluster.nodes.active.map(node => {
-            return {
-                endpoint: {
-                    address: address(node.addr, 6379)
-                }
-            }
-        })
-
         // Envoy cluster definition
         const cluster = {
 
@@ -112,55 +104,63 @@ class EnvoyBalancer extends Balancer {
                 cluster_name: this.cluster.name,
                 endpoints: [
                     {
-                        lb_endpoints: endpoints
+                        // Let's make the list of active nodes
+                        lb_endpoints: this.cluster.nodes.active.map(node => {
+                            return {
+                                endpoint: {
+                                    address: address(node.addr, 6379)
+                                }
+                            }
+                        })
                     }
                 ]
             }
         }
 
         // Redis listener
-        const listener = {
-            name: cluster.name + '__listener',
-            address: address(this.config.listen),
-            filter_chains: [
-                {
-                    filters: [
-                        {
-                            name: 'envoy.filters.network.redis_proxy',
-                            typed_config: {
-                                '@type': 'type.googleapis.com/envoy.extensions.filters.network.redis_proxy.v3.RedisProxy',
-                                stat_prefix: 'egress_redis',
-                                settings: {
-                                    op_timeout: this.config.op_timeout || '5s'
-                                },
-                                prefix_routes: {
-                                    catch_all_route: {
-                                        cluster: cluster.name
+        const listeners = array(this.config.listen).map((listen, i) => {
+            return {
+                name: cluster.name + '__listener_' + i,
+                address: address(listen),
+                filter_chains: [
+                    {
+                        filters: [
+                            {
+                                name: 'envoy.filters.network.redis_proxy',
+                                typed_config: {
+                                    '@type': 'type.googleapis.com/envoy.extensions.filters.network.redis_proxy.v3.RedisProxy',
+                                    stat_prefix: 'egress_redis',
+                                    settings: {
+                                        op_timeout: this.config.op_timeout || '5s'
+                                    },
+                                    prefix_routes: {
+                                        catch_all_route: {
+                                            cluster: cluster.name
+                                        }
                                     }
                                 }
                             }
-                        }
-                    ]
-                }
-            ]
-        }
+                        ]
+                    }
+                ]
+            }
+        })
 
         // Now we make the final object
-        let envoy = {}
+        let envoy = {
+
+            // Let's group up static resources
+            static_resources: {
+                listeners: listeners,
+                clusters: [
+                    cluster
+                ]
+            }
+        }
 
         // Administrative interface config
         if (this.config.admin) {
             envoy.admin = this.config.admin
-        }
-
-        // Let's group up static resources
-        envoy.static_resources = {
-            listeners: [
-                listener
-            ],
-            clusters: [
-                cluster
-            ]
         }
 
         return envoy
@@ -174,68 +174,66 @@ class EnvoyBalancer extends Balancer {
 
     /**
      *
-     * @returns {Promise<void>}
+     * @returns {Promise<unknown>}
      */
-    async listen() {
+    listen() {
 
-        const execute = args => {
-            return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
 
-                const run = () => {
-                    args = [
-                        '--config-yaml', JSON.stringify(this.envoy()),
-                        '--restart-epoch', this.restart_epoch,
-                        '--drain-strategy', this.config.drain_strategy || 'immediate',
-                    ].concat(args)
+            let args = [
+                '--config-yaml', JSON.stringify(this.envoy()),
+                '--drain-strategy', this.config.drain_strategy || 'immediate',
+            ]
+            let base_id_file
 
-                    debug('[%s] %s', this.restart_epoch, quote(args))
+            if (this.base_id) {
+                ++this.restart_epoch
+                args = args.concat([
+                    '--base-id', this.base_id,
+                    '--restart-epoch', this.restart_epoch
+                ])
+            } else {
+                base_id_file = await tmp.file();
+                args = args.concat([
+                    '--use-dynamic-base-id',
+                    '--base-id-path', base_id_file.path,
+                ])
 
-                    try {
-                        this.process = spawn(this.config.envoy_bin || 'envoy', args)
+            }
 
-                        this.process.stderr.on('data', data => {
-                            data = data.toString()
-                            debugDeep(data.split("\n").map(
-                                line => `[cluster=${this.cluster.name} balancer=${this.name} epoch=${this.restart_epoch}] ${line}`
-                            ))
+            debug('[%s] %s', this.restart_epoch, quote(args))
 
-                            if (data.match(/previous envoy process is still initializing/)) {
-                                setTimeout(() => {
-                                    run()
-                                }, 200)
-                            } else if (data.match(/\] starting main dispatch loop/)) {
-                                resolve()
-                            }
-                        })
+            try {
+                this.process = spawn(this.config.envoy_bin || 'envoy', args)
 
-                        this.process.on('exit', e => {
-                            reject(e)
-                        })
-                    } catch (e) {
-                        reject(e)
+                this.process.stderr.on('data', async data => {
+                    data = data.toString()
+                    debugDeep(data.split("\n").map(
+                        line => `[cluster=${this.cluster.name} balancer=${this.name} epoch=${this.restart_epoch}] ${line}`
+                    ))
+
+                    if (data.match(/previous envoy process is still initializing/)) {
+                        console.error(data)
+                    } else if (data.match(/\] starting main dispatch loop/)) {
+
+                        if (base_id_file) {
+                            this.base_id = parseInt((await fs.promises.readFile(base_id_file.path)).toString())
+
+                            debug('acquired base id: %s', this.base_id)
+
+                            await base_id_file.cleanup()
+                        }
+                        resolve()
                     }
-                }
+                })
 
-                run()
-            })
-        }
-
-        if (this.base_id) {
-            ++this.restart_epoch
-            await execute(['--base-id', this.base_id])
-        } else {
-            const base_id_file = await tmp.file();
-            await execute([
-                '--use-dynamic-base-id',
-                '--base-id-path', base_id_file.path,
-            ])
-
-            this.base_id = parseInt(await util.promisify(fs.readFile)(base_id_file.path))
-
-            debug('acquired base id: %s', this.base_id)
-
-            await base_id_file.cleanup()
-        }
+                this.process.on('error', () => {
+                    reject()
+                })
+            } catch (e) {
+                reject(e)
+            }
+        })
     }
 }
 

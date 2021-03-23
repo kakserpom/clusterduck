@@ -1,10 +1,8 @@
-const url = require('url')
-
 return module.exports = (addr, default_port) => {
     if (!addr.match(/^\/|:\/\//)) {
         addr = 'tcp://' + addr
     }
-    const u = url.parse(addr, true)
+    const u = new URL(addr)
     if (u.scheme === 'tcp') {
         u.port = u.port || default_port
     }

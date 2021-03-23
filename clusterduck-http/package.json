@@ -1,8 +1,8 @@
 {
-  "name": "clusterduck-redis",
-  "version": "0.1.10",
+  "name": "clusterduck-http",
+  "version": "0.1.1",
   "description": "",
-  "homepage": "https://npmjs.com/package/clusterduck-redis",
+  "homepage": "https://npmjs.com/package/clusterduck-http",
   "keywords": [
     "clustering",
     "monitoring",
@@ -14,9 +14,6 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "bin": {
-    "redis-server-wrapper": "./bin/redis-server-wrapper"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/kakserpom/clusterduck"
@@ -24,12 +21,11 @@
   "author": "Vasily Zorin",
   "license": "LGPL-3.0-or-later",
   "dependencies": {
-    "clusterduck": "^0.1",
+    "clusterduck": "^latest",
     "daemonize-process": "^3.0.0",
     "diagnostics": "^2.0.2",
     "ensure-array": "^1.0.0",
-    "hashring": "^3.2.0",
-    "ioredis": "^4.23.0",
+    "md5": "^2.3.0",
     "shell-quote": "^1.7.2",
     "tcp-port-used": "^1.0.2",
     "tmp-promise": "^3.0.2",

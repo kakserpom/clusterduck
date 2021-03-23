@@ -32,6 +32,9 @@ class Transport extends emitter {
  * @returns {*}
  */
 Transport.factory = (config, clusterduck) => {
+    if (config.disabled) {
+        return null
+    }
     const constructor = require('../transports/' + config.type)
     const transport = new constructor(config, clusterduck)
     if (typeof transport.doListen != 'function') {

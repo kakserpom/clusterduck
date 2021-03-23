@@ -225,7 +225,6 @@ class Cluster extends Entity {
      * Run health checks on the cluster
      */
     run_health_checks() {
-        const cluster = this
 
         let clusterChecks = []
 
@@ -238,9 +237,10 @@ class Cluster extends Entity {
                 }
             })
 
-            if (!nodeChecks.length) {
+            if (!nodeChecks.length && !this.config.pass_without_checks) {
                 return
             }
+
             const allNodeChecks = Promise.all(nodeChecks)
                 .then(list => node.emit('passed', node))
                 .catch(error => node.emit('failed', node, error))

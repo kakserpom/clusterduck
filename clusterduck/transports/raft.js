@@ -74,6 +74,7 @@ class RaftTransport extends Transport {
             this.messageLeader('rpc-commit', commit.bundle())
         } else {
             this.setMaxListeners(1024)
+
             this.once('state change', () => {
                 this.commit(commit)
             })
@@ -159,23 +160,15 @@ class RaftTransport extends Transport {
                  */
                 initialize(options) {
                     debug('binding socket: %s', this.address)
-
+                    const url = new URL(this.address)
                     const tlsOptions = {}
 
-                    if (transport.tls) {
-                        if (transport.tls === true) {
-
-                            tlsOptions.key = fs.readFileSync(path.dirname(transport.clusterduck.argv.configFile)
-                                + '/clusterduck.key')
-
-                            tlsOptions.cert = fs.readFileSync(path.dirname(transport.clusterduck.argv.configFile)
-                                + '/clusterduck.cert')
-                        } else if (typeof transport.tls === 'string') {
-                            tlsOptions.key = fs.readFileSync(util.format(transport.tls, 'key'))
-                            tlsOptions.cert = fs.readFileSync(util.format(transport.tls, 'cert'))
-                        }
+                    if (url.protocol === 'tls:') {
+                        const configDir = path.dirname(transport.clusterduck.argv.configFile)
+                        const pattern = (transport.tls === true ? false : transport.tls) || 'clusterduck.%s'
+                        tlsOptions.key = fs.readFileSync(path.resolve(configDir, util.format(pattern, 'key')))
+                        tlsOptions.cert = fs.readFileSync(path.resolve(configDir, util.format(pattern, 'cert')))
                     }
-
 
                     const socket = this.socket = msg.socket('rep', tlsOptions);
 
@@ -274,7 +267,7 @@ class RaftTransport extends Transport {
             }).on('leader change', (to, from) => {
                 debug('NEW LEADER: %s (prior was %s)', to, from || 'unknown')
             }).on('state change', (to, from) => {
-                transport.emit('state change', to ,from)
+                transport.emit('state change', to, from)
                 transport.clusterduck.updateProcessTitle({RAFT: DuckRaft.states[to]})
                 debug('STATE CHANGE: %s (prior from %s)', DuckRaft.states[to], DuckRaft.states[from])
             })
