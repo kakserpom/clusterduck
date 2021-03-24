@@ -160,7 +160,7 @@ class ClusterDuck extends emitter {
 
                         const node = cluster.nodes.get(addr)
                         if (!node) {
-                            reject(error(1, 'Node not found'))
+                            reject(error(1, 'Cannot delete ' + JSON.stringify(addr) + ': node not found'))
                             return
                         }
 

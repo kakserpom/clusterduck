@@ -87,12 +87,12 @@ class Cluster extends Entity {
             raft.on('leader', () => this.nodes.forEach(node => node.emit('changed_shared_state', node)))
             raft.on('candidate', () => this.nodes.forEach(node => node.emit('changed_shared_state', node)))
             raft.on('new-follower', follower => {
-                console.log('new follower event: ', follower)
+                debug('new follower event: ', follower)
 
                 const commit = new Commit([
                     (new SetClusterState).target(this).addNodesFromCollection(this.nodes)
                 ])
-                raft.messageChild(follower, 'rpc-commit', commit.bundle())
+                raft.messageChild(follower, 'initial-rpc-commit', commit.bundle())
             })
         }
 
@@ -175,7 +175,7 @@ class Cluster extends Entity {
         this.triggers = new Collection('id')
         this.triggers.addFromArray(this.config.triggers || [])
         this.triggers.forEach(trigger => {
-            const [prop, event] = trigger.on;
+            const [prop, event] = trigger.on
 
             let getProp
 
@@ -213,7 +213,7 @@ class Cluster extends Entity {
         const key = node.addr + '__' + config.id;
         let hc = this.nodesHealthChecks.get(key)
         if (!hc) {
-            hc = new HealthCheck(node, config, this.require('./health_checks/' + config.type))
+            hc = new HealthCheck(node, config, this.__dirname  + '/health_checks/' + config.type + '.js')
             hc.cluster = this
             this.nodesHealthChecks.set(key, hc)
         }
@@ -231,7 +231,7 @@ class Cluster extends Entity {
         this.nodes.forEach(node => {
             let nodeChecks = []
             this.health_checks.forEach(hc => {
-                const promise = this.health_check(node, hc).triggerIfDue();
+                const promise = this.health_check(node, hc).triggerIfDue()
                 if (promise != null) {
                     nodeChecks.push(promise)
                 }

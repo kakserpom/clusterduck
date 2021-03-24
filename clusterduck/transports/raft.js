@@ -2,7 +2,8 @@ const md5 = require('md5')
 const msg = require('axon-tls')
 const fs = require('fs')
 const Transport = require('../core/transport')
-const Liferaft = require('liferaft')
+const LIFERAFT_PKG = 'liferaft-patched'
+const Liferaft = require(LIFERAFT_PKG)
 const Commit = require('../core/commit')
 const util = require('util')
 const path = require('path')
@@ -149,6 +150,8 @@ class RaftTransport extends Transport {
     doListen() {
         const transport = this
 
+        let acceptCommits = false
+
         return new Promise((resolve, reject) => {
             class DuckRaft extends Liferaft {
 
@@ -198,7 +201,16 @@ class RaftTransport extends Transport {
                     })
 
                     this.on('rpc', packet => {
-                        if (packet.type === 'rpc-commit') {
+                        if (packet.type === 'initial-rpc-commit') {
+                            acceptCommits = true
+                            debugDeep('dropped a commit (acceptCommits = false)')
+                            transport.emit('rpc-commit', packet.data)
+                        }
+                        else if (packet.type === 'rpc-commit') {
+                            if (!acceptCommits) {
+                                // Drop the commit since the instance wasn't properly instantiated
+                                return
+                            }
                             transport.emit('rpc-commit', packet.data)
                         } else if (packet.type === 'new-follower') {
                             transport.emit('new-follower', packet.data)
@@ -254,7 +266,7 @@ class RaftTransport extends Transport {
                 'election min': this.election_min || 6000,
                 'election max': this.election_max || 15000,
                 'heartbeat': this.heartbeat || 5000,
-                Log: require(this.log_module || 'liferaft/log'),
+                Log: require(this.log_module || LIFERAFT_PKG + '/log'),
                 path: logPath,
                 state: DuckRaft.STOPPED
             })
@@ -268,6 +280,7 @@ class RaftTransport extends Transport {
             }).on('leader change', (to, from) => {
                 debug('NEW LEADER: %s (prior was %s)', to, from || 'unknown')
             }).on('state change', (to, from) => {
+                acceptCommits = to === Liferaft.LEADER
                 transport.emit('state change', to, from)
                 transport.clusterduck.updateProcessTitle({RAFT: DuckRaft.states[to]})
                 debug('STATE CHANGE: %s (prior from %s)', DuckRaft.states[to], DuckRaft.states[from])

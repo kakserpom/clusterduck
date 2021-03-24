@@ -1,6 +1,6 @@
 {
   "name": "clusterduck",
-  "version": "0.1.17",
+  "version": "0.1.19",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck",
   "keywords": [
@@ -36,7 +36,7 @@
     "jayson": "^3.4.4",
     "js-yaml": "^4.0.0",
     "json-to-pretty-yaml": "^1.2.2",
-    "liferaft": "github:kakserpom/liferaft",
+    "liferaft-patched": "^1.0.0",
     "md5": "^2.3.0",
     "ora": "^5.3.0",
     "parse-duration": "^0.4.4",

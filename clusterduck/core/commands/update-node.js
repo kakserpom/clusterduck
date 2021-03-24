@@ -103,6 +103,7 @@ class UpdateNode extends Command {
      * @returns {UpdateNode}
      */
     setSharedState(id, state) {
+
         const attr = {}
         id = dotProp.escape(id)
         state.ts = Date.now()

@@ -2,6 +2,11 @@ const Cluster = require('clusterduck/core/cluster')
 const parseAddr = require('clusterduck/misc/addr')
 
 class RedisCluster extends Cluster {
+    constructor(config, clusterduck) {
+        super(config, clusterduck)
+        this.__dirname = __dirname
+    }
+
     require(what) {
         what = Array.isArray(what) ? what : [what]
         let error
