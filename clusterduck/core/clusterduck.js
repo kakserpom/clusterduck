@@ -170,7 +170,7 @@ class ClusterDuck extends emitter {
 
                         resolve('OK')
                     } catch (e) {
-                        console.log(e)
+                        console.error(e)
                         reject(error(1, e.message))
                     }
                 })

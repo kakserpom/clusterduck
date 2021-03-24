@@ -290,7 +290,7 @@ class RaftTransport extends Transport {
                 try {
                     transport.emit('commit', command)
                 } catch (e) {
-                    console.log(e)
+                    console.error(e)
                 }
             })
 

@@ -65,7 +65,7 @@ const createServer = onCommand => {
             try {
                 parser.execute(data)
             } catch (e) {
-                console.log(e)
+                console.error(e)
             }
         });
     })

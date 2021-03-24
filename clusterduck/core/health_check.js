@@ -80,7 +80,7 @@ class HealthCheck extends Entity {
                 // @todo: implement misc. data
             })
             worker.on('error', error => {
-              //  debug([error, workerData])
+                debug([error, workerData])
                 reject({error, hc: this.config})
             })
             worker.on('exit', (code) => {
@@ -101,13 +101,12 @@ class HealthCheck extends Entity {
 
 
             })
-            .catch(function (e) {
-                console.log(e)
+            .catch(e => {
                 if (hc.result == null) {
                     hc.result = e
                 }
                 throw e;
-            }).then(function (result) {
+            }).then(result => {
                 //console.log(result);
             })
     }
