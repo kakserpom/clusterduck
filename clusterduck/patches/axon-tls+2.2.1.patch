@@ -1,0 +1,17 @@
+diff --git a/node_modules/axon-tls/lib/sockets/rep.js b/node_modules/axon-tls/lib/sockets/rep.js
+index bcaf055..32c74eb 100644
+--- a/node_modules/axon-tls/lib/sockets/rep.js
++++ b/node_modules/axon-tls/lib/sockets/rep.js
+@@ -48,7 +48,11 @@ RepSocket.prototype.onmessage = function(sock){
+     var id = args.pop();
+     args.unshift('message');
+     args.push(reply);
+-    self.emit.apply(self, args);
++    if (sock.listenerCount('message')) {
++      sock.emit(...args)
++    } else {
++      self.emit.apply(self, args);
++    }
+ 
+     function reply() {
+       var fn = function(){};

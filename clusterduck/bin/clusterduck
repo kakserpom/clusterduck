@@ -8,7 +8,7 @@
     const pidFileClass = require('../misc/pid-file')
     const md5 = require('md5')
 
-    const {exec} = require('child_process')
+    const {exec, spawn} = require('child_process')
     const {quote} = require('shell-quote')
     const path = require('path')
     const fs = require('fs')
@@ -89,6 +89,16 @@
             } catch (err) {
                 console.error(argv.verbose ? err : err.message)
             }
+        })
+
+        yargs.command('log [type]', 'show log', yargs => {
+        }, argv => {
+            const tail = spawn('tail', [
+                '-f',
+                '-n', 100,
+                argv.logDir + '/' + (argv.type || 'debug') + '.log',
+            ])
+            tail.stdout.pipe(process.stdout)
         })
 
 

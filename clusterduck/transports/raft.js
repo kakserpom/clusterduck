@@ -7,9 +7,10 @@ const Liferaft = require(LIFERAFT_PKG)
 const Commit = require('../core/commit')
 const util = require('util')
 const path = require('path')
-const Collection = require("../misc/collection");
+const Peers = require("../core/collections/peers")
 const debug = require('diagnostics')('raft')
 const debugDeep = require('diagnostics')('raft-deep')
+const {SHA3} = require('sha3')
 
 class RaftTransport extends Transport {
     /**
@@ -38,7 +39,7 @@ class RaftTransport extends Transport {
             commit.execute(clusterduck)
         })
 
-        this.peers = new Collection()
+        this.peers = new Peers()
 
         let saveTimeout
         this.peers.on('all', () => {
@@ -98,11 +99,40 @@ class RaftTransport extends Transport {
         return this.raft.state === Liferaft.CANDIDATE
     }
 
-    join(addr) {
-        if (!this.peers.has(addr)) {
-            this.peers.set(addr, true)
-            this.raft.join(addr)
+    join(address) {
+        if (address === this.address) {
+            return
         }
+
+        if (this.peers.has(address)) {
+            return
+        }
+
+        const socket = msg.socket('req')
+
+        this.peers.set(address, socket)
+
+        socket.connect(address)
+            .on('connect', () => {
+                const hash = new SHA3(224)
+                hash.update(JSON.stringify([this.address, this.passphrase, address]))
+                socket.send({
+                    hash: hash.digest('base64'),
+                    address: this.address,
+                    peers: this.peers.keys()
+                }, response => {
+                    if (response === 'auth_failed') {
+                        debug(address + ': authentication failed')
+                        return
+                    }
+                    this.raft.join(address)
+                    response.peers.forEach(peer => this.join(peer))
+                })
+            })
+            .on('socket error', err => {
+                this.raft.leave(address)
+                debugDeep('failed to write to: %s: %s', address, err)
+            })
     }
 
     async messageLeader(type, data) {
@@ -173,31 +203,47 @@ class RaftTransport extends Transport {
                         tlsOptions.cert = fs.readFileSync(path.resolve(configDir, util.format(pattern, 'cert')))
                     }
 
-                    const socket = this.socket = msg.socket('rep', tlsOptions);
+                    const boundSocket = this.socket = msg.socket('rep', tlsOptions);
 
-                    socket.bind(this.address)
+                    boundSocket.bind(this.address)
 
-                    socket.on('connect', conn => { ///  unused
-                        const peer = (tlsOptions ? 'tls' : 'tcp')
-                            + '://'
-                            + conn.remoteAddress + ':' + conn.remotePort
+
+                    boundSocket.on('error', () => {
+                        debug('failed to initialize on port: ', this.address);
                     })
+                    boundSocket.on('connect', socket => {
+                        const peer = socket.remoteAddress + ':' + socket.remotePort
+                        this.authenticated = false
+                        socket.on('message', (data, fn) => {
+                            try {
+                                if (this.authenticated) {
+                                    debugDeep('caught ' + JSON.stringify(data.type) + ' packet from %s', data.address)
+                                    this.emit('data', data, fn)
+                                    return
+                                }
 
-                    socket.on('message', (data, fn) => {
-                        if (data.peers) {
-                            if (!Array.isArray(data.peers)) {
-                                debug(`'peers' is not array`, data.peers)
-                                return
+                                const hash = new SHA3(224)
+                                hash.update(JSON.stringify([data.address, transport.passphrase, this.address]))
+                                if (hash.digest('base64') !== data.hash) {
+                                    fn('auth_failed')
+                                    return
+                                }
+
+                                this.authenticated = true
+
+                                if (!Array.isArray(data.peers)) {
+                                    debug(`'peers' is not array`, data.peers)
+                                    return
+                                }
+                                transport.join(data.address)
+                                data.peers.forEach(addr => transport.join(addr))
+                                fn({
+                                    peers: transport.peers.keys()
+                                })
+                            } catch (e) {
+                                fn('error')
                             }
-                            data.peers.forEach(addr => transport.join(addr))
-                            fn({
-                                peers: transport.peers.keys()
-                            })
-                        } else {
-                            transport.join(data.address)
-                            debugDeep('caught ' + JSON.stringify(data.type) + ' packet from %s', data.address)
-                            this.emit('data', data, fn)
-                        }
+                        })
                     })
 
                     this.on('rpc', packet => {
@@ -205,8 +251,7 @@ class RaftTransport extends Transport {
                             acceptCommits = true
                             debugDeep('dropped a commit (acceptCommits = false)')
                             transport.emit('rpc-commit', packet.data)
-                        }
-                        else if (packet.type === 'rpc-commit') {
+                        } else if (packet.type === 'rpc-commit') {
                             if (!acceptCommits) {
                                 // Drop the commit since the instance wasn't properly instantiated
                                 return
@@ -216,11 +261,6 @@ class RaftTransport extends Transport {
                             transport.emit('new-follower', packet.data)
                         }
                     })
-
-                    socket.on('error', () => {
-                        debug('failed to initialize on port: ', this.address);
-                    })
-
                 }
 
                 /**
@@ -231,26 +271,9 @@ class RaftTransport extends Transport {
                  * @api private
                  */
                 write(packet, fn) {
-                    if (!this.socket) {
-                        this.socket = msg.socket('req')
-                        this.socket.connect(this.address)
-                        transport.peers.set(this.address, this.socket)
-                        this.socket.on('connect', () => {
-                            this.socket.send({
-                                peers: transport.peers.keys()
-                            }, response => {
-                                response.peers.forEach(addr => transport.join(addr))
-                            })
-                        })
-                        this.socket.on('error', err => {
-                            console.error('failed to write to: %s: %s', this.address, err)
-                        })
-                    }
                     debugDeep('sending ' + JSON.stringify(packet.type) + ' packet %s', this.address)
 
-                    this.socket.send(packet, data => {
-                        fn(undefined, data)
-                    })
+                    transport.peers.get(this.address).send(packet, data => fn(undefined, data))
                 }
             }
 
@@ -263,9 +286,9 @@ class RaftTransport extends Transport {
             }
 
             const raft = this.raft = new DuckRaft(this.address, {
-                'election min': this.election_min || 6000,
-                'election max': this.election_max || 15000,
-                'heartbeat': this.heartbeat || 5000,
+                'election min': this.election_min || 2000,
+                'election max': this.election_max || 5000,
+                'heartbeat': this.heartbeat || 1000,
                 Log: require(this.log_module || LIFERAFT_PKG + '/log'),
                 path: logPath,
                 state: DuckRaft.STOPPED
@@ -322,12 +345,12 @@ class RaftTransport extends Transport {
             })
 
             raft.on('join', node => {
-                debug('joined: ', node.address)
+                debug('joined peer:', node.address)
             })
 
-            raft.on('leave', addr => {
-                transport.peers.delete(addr)
-                debug('left: ', node.address)
+            raft.on('leave', node => {
+                transport.peers.delete(node.address)
+                debug('left peer:', node.address)
             })
 
             for (const addr of (this.bootstrap || [])) {
