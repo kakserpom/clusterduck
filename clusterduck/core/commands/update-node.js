@@ -59,6 +59,12 @@ class UpdateNode extends Command {
         try {
             const node = root.resolveEntityPath(this.path)
 
+            if (!node.cluster.acceptCommits) {
+                // Dropping it
+                node.cluster.debug('update-node: acceptCommits is false, dropping')
+                return
+            }
+
             let changed = false, changed_ss = false
             for (const [key, value] of Object.entries(this.set)) {
 

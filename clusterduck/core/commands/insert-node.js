@@ -45,6 +45,12 @@ class InsertNode extends Command {
     run(root) {
         const cluster = root.resolveEntityPath(this.path)
 
+        if (!cluster.acceptCommits) {
+            // Dropping it
+            cluster.debug('insert-node: acceptCommits is false, dropping')
+            return
+        }
+
         cluster.nodes.add(this.definition)
     }
 }
