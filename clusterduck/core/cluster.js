@@ -31,6 +31,7 @@ class Cluster extends Entity {
         this.name = config.name
         this.clusterduck = clusterduck
         this.set_config(config)
+        this.debug = debug
     }
 
     /**
@@ -86,14 +87,20 @@ class Cluster extends Entity {
         if (raft) {
             raft.on('leader', () => this.nodes.forEach(node => node.emit('changed_shared_state', node)))
             raft.on('candidate', () => this.nodes.forEach(node => node.emit('changed_shared_state', node)))
-            raft.on('new-follower', follower => {
-                debug('new follower event: ', follower)
 
+            raft.on('is:leader', bool => {
+                this.acceptCommits = bool
+            })
+
+            raft.on('new-follower', follower => {
+                debug('new follower: ', follower, ', sending ' + this.nodes.length + ' nodes')
                 const commit = new Commit([
                     (new SetClusterState).target(this).addNodesFromCollection(this.nodes)
                 ])
-                raft.messageChild(follower, 'initial-rpc-commit', commit.bundle())
+                raft.messageChild(follower, 'rpc-commit', commit.bundle())
             })
+        } else {
+            this.acceptCommits = true
         }
 
         this.nodes
@@ -213,7 +220,7 @@ class Cluster extends Entity {
         const key = node.addr + '__' + config.id;
         let hc = this.nodesHealthChecks.get(key)
         if (!hc) {
-            hc = new HealthCheck(node, config, this.__dirname  + '/health_checks/' + config.type + '.js')
+            hc = new HealthCheck(node, config, this.__dirname + '/health_checks/' + config.type + '.js')
             hc.cluster = this
             this.nodesHealthChecks.set(key, hc)
         }

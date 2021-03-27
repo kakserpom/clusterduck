@@ -180,8 +180,6 @@ class RaftTransport extends Transport {
     doListen() {
         const transport = this
 
-        let acceptCommits = false
-
         return new Promise((resolve, reject) => {
             class DuckRaft extends Liferaft {
 
@@ -247,15 +245,7 @@ class RaftTransport extends Transport {
                     })
 
                     this.on('rpc', packet => {
-                        if (packet.type === 'initial-rpc-commit') {
-                            acceptCommits = true
-                            debugDeep('dropped a commit (acceptCommits = false)')
-                            transport.emit('rpc-commit', packet.data)
-                        } else if (packet.type === 'rpc-commit') {
-                            if (!acceptCommits) {
-                                // Drop the commit since the instance wasn't properly instantiated
-                                return
-                            }
+                        if (packet.type === 'rpc-commit') {
                             transport.emit('rpc-commit', packet.data)
                         } else if (packet.type === 'new-follower') {
                             transport.emit('new-follower', packet.data)
@@ -303,7 +293,7 @@ class RaftTransport extends Transport {
             }).on('leader change', (to, from) => {
                 debug('NEW LEADER: %s (prior was %s)', to, from || 'unknown')
             }).on('state change', (to, from) => {
-                acceptCommits = to === Liferaft.LEADER
+                transport.emit('is:leader', to === Liferaft.LEADER)
                 transport.emit('state change', to, from)
                 transport.clusterduck.updateProcessTitle({RAFT: DuckRaft.states[to]})
                 debug('STATE CHANGE: %s (prior from %s)', DuckRaft.states[to], DuckRaft.states[from])
@@ -341,7 +331,7 @@ class RaftTransport extends Transport {
                 transport.emit('follower')
                 setTimeout(() => {
                     transport.messageLeader('new-follower', raft.address)
-                }, 300)
+                }, 100)
             })
 
             raft.on('join', node => {
