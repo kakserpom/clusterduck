@@ -24,6 +24,7 @@
     "daemonize-process": "^3.0.0",
     "diagnostics": "^2.0.2",
     "ensure-array": "^1.0.0",
+    "evil-dns": "^0.2.0",
     "md5": "^2.3.0",
     "shell-quote": "^1.7.2",
     "tcp-port-used": "^1.0.2",
