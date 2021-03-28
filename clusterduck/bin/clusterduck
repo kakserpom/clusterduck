@@ -132,7 +132,7 @@
                 }
 
                 const response = await jaysonRequest('ls', argv.paths)
-                    .catch(err => console.error(argv.verbose ? err : err.message))
+                    .catch(error => console.error(argv.verbose ? error : error.message))
 
                 const treeify = require('treeify')
 

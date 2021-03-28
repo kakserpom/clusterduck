@@ -1,5 +1,6 @@
 const {parentPort, workerData, isMainThread, Worker} = require('worker_threads')
 const debug = require('diagnostics')('thread')
+const isObject = require('is-obj')
 
 class Thread {
     constructor() {
@@ -37,31 +38,32 @@ class Thread {
         return new Promise((resolve, reject) => {
             const id = ++this.seq
             this.requests.set(id, {resolve, reject})
-            this.worker.postMessage({id, path, args})
+            this.worker.postMessage(['run', {id, path, args}])
         })
+    }
+
+    exit() {
+        this.worker.postMessage(['exit'])
     }
 }
 
 if (!isMainThread) {
-    setTimeout(() => {
-
-    }, 100e3)
-    process
-        .on('uncaughtException', e => {
-            console.log(e)
-        })
-        .on('unhandledRejection', e => {
-            console.log(e)
-        })
+    const uncaught = require('../misc/uncaught')
+    uncaught()
     parentPort.on('message', async message => {
         try {
-            const {id, path, args} = message
-            try {
-                const execute = require(path)
-                const response = await execute(...args)
-                parentPort.postMessage({id, op: 'resolve', args: [response]})
-            } catch (error) {
-                parentPort.postMessage({id, op: 'reject', args: [error]})
+            const [command, payload] = message
+            if (command === 'exit') {
+                process.exit()
+            } else if (command === 'run') {
+                const {id, path, args} = payload
+                try {
+                    const execute = require(path)
+                    const response = await execute(...args)
+                    parentPort.postMessage({id, op: 'resolve', args: [response]})
+                } catch (error) {
+                    parentPort.postMessage({id, op: 'reject', args: [error]})
+                }
             }
         } catch (error) {
             console.error(error)

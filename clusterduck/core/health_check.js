@@ -71,11 +71,11 @@ class HealthCheck extends Entity {
             this.thread.run(this.path, [this.node.export(), this.config, timeoutMs])
         ).finally(() => {
 
-        }).catch(e => {
+        }).catch(error => {
             if (this.result == null) {
-                this.result = e
+                this.result = eror
             }
-            throw e;
+            throw error
         }).then(result => {
 
         })

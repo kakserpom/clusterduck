@@ -3,6 +3,10 @@ const parseAddr = require('clusterduck/misc/addr')
 
 return module.exports = (node, config, timeoutMs) =>
     new Promise(async (resolve, reject) => {
+
+        const event = 'unhandled-rejection:ReplyError'
+        process.listenerCount(event) || process.on(event, e => e.hide = true)
+
         const addr = parseAddr(node.addr)
         let clientConfig = {
             host: addr.hostname,
@@ -24,13 +28,13 @@ return module.exports = (node, config, timeoutMs) =>
         }
 
         setTimeout(() => {
-            reject('timeout')
+            reject(new Error('timeout'))
             destroy()
         }, timeoutMs)
 
         try {
             client.on('error', error => {
-                reject(error.message)
+                reject(error)
                 destroy()
             })
             const commands = config.commands || []
@@ -47,7 +51,7 @@ return module.exports = (node, config, timeoutMs) =>
             resolve('ok')
             destroy()
         } catch (error) {
-            reject(error.message)
+            reject(error)
             destroy()
         }
     })

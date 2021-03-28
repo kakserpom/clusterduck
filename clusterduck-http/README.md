@@ -98,8 +98,7 @@ Otherwise, define the `health_checks` array:
 
 >Note that DNS lookups get overridden, so `your-domain` will be resolved 
 > to an IP-address corresponding to one of the nodes in your cluster.
-> However, `Host` header will be set to `your-domain`
-> .
+> However, `Host` header will be set to `your-domain`.
 
 
 ### HAProxy balancer

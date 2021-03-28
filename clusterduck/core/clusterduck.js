@@ -8,6 +8,7 @@ const InsertNode = require('./commands/insert-node')
 const DeleteNode = require('./commands/delete-node')
 const Threads = require('./collections/threads')
 const {v4: uuidv4} = require('uuid')
+const uncaught = require('../misc/uncaught')
 
 /**
  * Main class
@@ -238,16 +239,7 @@ class ClusterDuck extends emitter {
             this.clusters.forEach(cluster => cluster.run_health_checks())
         }, 1000)
 
-        process
-            .on('uncaughtException', e => {
-                console.error(e)
-            })
-            .on('unhandledRejection', e => {
-                this.emit('unhandled-rejection:' + e.name, e)
-                if (!e.hide) {
-                    console.error('Uncaught rejection', e)
-                }
-            })
+        uncaught()
     }
 
     /**
