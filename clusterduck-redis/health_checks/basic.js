@@ -1,9 +1,8 @@
 const Redis = require("ioredis")
 const parseAddr = require('clusterduck/misc/addr')
 
-return module.exports = (node, config) =>
+return module.exports = (node, config, timeoutMs) =>
     new Promise(async (resolve, reject) => {
-        // process.on('unhandledRejection', e => {})
         const addr = parseAddr(node.addr)
         let clientConfig = {
             host: addr.hostname,
@@ -23,6 +22,12 @@ return module.exports = (node, config) =>
                 client.disconnect()
             }
         }
+
+        setTimeout(() => {
+            reject('timeout')
+            destroy()
+        }, timeoutMs)
+
         try {
             client.on('error', error => {
                 reject(error.message)

@@ -13,6 +13,7 @@ const {v4: uuidv4} = require('uuid')
  * Main class
  */
 class ClusterDuck extends emitter {
+
     /**
      * Constructor
      */

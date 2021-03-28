@@ -68,7 +68,7 @@ class HealthCheck extends Entity {
         // promiseWithTimeout hard caps the execution time
         return promiseWithTimeout(
             timeoutMs,
-            this.thread.run(this.path, [this.node.export(), this.config])
+            this.thread.run(this.path, [this.node.export(), this.config, timeoutMs])
         ).finally(() => {
 
         }).catch(e => {
