@@ -46,9 +46,13 @@ if (!isMainThread) {
     setTimeout(() => {
 
     }, 100e3)
-    process.on('uncaughtException', (e) => {
-        console.log(e)
-    })
+    process
+        .on('uncaughtException', e => {
+            console.log(e)
+        })
+        .on('unhandledRejection', e => {
+            console.log(e)
+        })
     parentPort.on('message', async message => {
         try {
             const {id, path, args} = message

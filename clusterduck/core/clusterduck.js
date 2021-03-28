@@ -238,12 +238,16 @@ class ClusterDuck extends emitter {
             this.clusters.forEach(cluster => cluster.run_health_checks())
         }, 1000)
 
-        process.on('unhandledRejection', e => {
-            this.emit('unhandled-rejection:' + e.name, e)
-            if (!e.hide) {
-                console.error('Uncaught rejection', e)
-            }
-        });
+        process
+            .on('uncaughtException', e => {
+                console.error(e)
+            })
+            .on('unhandledRejection', e => {
+                this.emit('unhandled-rejection:' + e.name, e)
+                if (!e.hide) {
+                    console.error('Uncaught rejection', e)
+                }
+            })
     }
 
     /**

@@ -47,14 +47,60 @@ Then let's define some nodes:
       - addr: 1.1.1.1:80
       - addr: 2.2.2.2:80
 ```
- 
+
 *Note that you can omit this altogether if you want to only add nodes dynamically.*
 
 ### Health checks
 
+If you do not want to use health checks, use:
+
 ```yaml
     pass_without_checks: true
 ```
+
+Otherwise, define the `health_checks` array:
+
+```yaml
+    health_checks:
+```
+
+#### WebSocket
+
+```yaml
+      - type: websocket
+        timeout: 5s
+        every: 10s
+        url: wss://your-domain/websocket/
+        every: 1000s
+        timeout: 20s
+        flow:
+          - type: expect_json       # Expect a JSON packet
+            skip_forward: true      # Ignore prior unexpected packets
+            match:                  # Match conditions [path, eq|exists, ?right]
+              - [ response.text, eq, "Knock-knock."] 
+              - [ timestamp ]       # 'timestamp' field exists
+
+          - type: send_json
+            body: {query: {text: "Who's there?"}}
+
+          - type: expect_json
+            match:                
+              - [ response.text, eq, "Amish."]
+
+          - type: send_json
+            body: {query: {text: "Amish who?"}}
+
+          - type: expect_json
+            match:                
+              - [ response.text, eq, "Really? You don’t look like a shoe!"]
+
+```
+
+>Note that DNS lookups get overridden, so `your-domain` will be resolved 
+> to an IP-address corresponding to one of the nodes in your cluster.
+> However, `Host` header will be set to `your-domain`
+> .
+
 
 ### HAProxy balancer
 
