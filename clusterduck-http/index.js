@@ -1,6 +1,11 @@
 const Cluster = require('clusterduck/core/cluster')
 
 class HttpCluster extends Cluster {
+    constructor(config, clusterduck) {
+        super(config, clusterduck)
+        this.__dirname = __dirname
+    }
+
     require(what) {
         what = Array.isArray(what) ? what : [what]
         let error
