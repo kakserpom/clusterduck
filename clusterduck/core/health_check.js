@@ -10,6 +10,7 @@ const promiseWithTimeout = require('../misc/promise-with-timeout')
  */
 const parseDuration = require('parse-duration')
 const Entity = require("../misc/entity")
+const Thread = require("./thread");
 
 const debug = require('diagnostics')('health_checks')
 
@@ -51,6 +52,10 @@ class HealthCheck extends Entity {
     }
 
 
+    get thread() {
+        return this.node.cluster.clusterduck.threads.thread
+    }
+
     /**
      * Trigger this health check
      * @returns {Promise<* | void>}
@@ -59,56 +64,21 @@ class HealthCheck extends Entity {
         this.last_triggered = Date.now()
         this.result = null
 
-        const hc = this
-
-        const {Worker} = require('worker_threads')
-
         const timeoutMs = parseDuration(this.config.timeout)
-
-        const workerData = {
-            config: this.config,
-            node: this.node.export(),
-            timeoutMs,
-        }
-
-        const worker = new Worker(this.path, {
-            workerData
-        })
-        worker.unref()
-        const promise = new Promise((resolve, reject) => {
-            worker.on('message', data => {
-                // @todo: implement misc. data
-            })
-            worker.on('error', error => {
-                debug([error, workerData])
-                reject({error, hc: this.config})
-            })
-            worker.on('exit', (code) => {
-                if (code !== 0) {
-                    reject(new Error(`Worker stopped with exit code ${code}`));
-                } else {
-                    resolve({})
-                }
-            })
-        })
-
         // promiseWithTimeout hard caps the execution time
         return promiseWithTimeout(
             timeoutMs,
-            promise
-        )
-            .finally(() => {
+            this.thread.run(this.path, [this.node.export(), this.config])
+        ).finally(() => {
 
+        }).catch(e => {
+            if (this.result == null) {
+                this.result = e
+            }
+            throw e;
+        }).then(result => {
 
-            })
-            .catch(e => {
-                if (hc.result == null) {
-                    hc.result = e
-                }
-                throw e;
-            }).then(result => {
-                //console.log(result);
-            })
+        })
     }
 }
 

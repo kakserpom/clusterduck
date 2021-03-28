@@ -6,6 +6,7 @@ const Cluster = require('./cluster')
 const Commit = require('./commit')
 const InsertNode = require('./commands/insert-node')
 const DeleteNode = require('./commands/delete-node')
+const Threads = require('./collections/threads')
 const {v4: uuidv4} = require('uuid')
 
 /**
@@ -21,6 +22,8 @@ class ClusterDuck extends emitter {
         this.verbose = ![null, false, undefined].includes(this.argv.verbose)
         this.statuses = {}
         this.updateProcessTitle()
+
+        this.threads = new Threads
     }
 
     updateProcessTitle(update) {
@@ -170,7 +173,7 @@ class ClusterDuck extends emitter {
 
                         resolve('OK')
                     } catch (e) {
-                        console.error(e)
+                        console.log(e)
                         reject(error(1, e.message))
                     }
                 })

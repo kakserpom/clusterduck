@@ -63,10 +63,10 @@ class SetClusterState extends Command {
     run(root) {
         const cluster = root.resolveEntityPath(this.path)
         cluster.nodes.clear()
-        this.nodes.map(node => cluster.nodes.add((new ClusterNode(null, cluster)).entry(node, true)))
+        cluster.nodes.add(...this.nodes.map(node => (new ClusterNode(null, cluster)).entry(node, true)))
         cluster.debug('set-cluster-state: ' + this.nodes.length + ' node(s) written')
         cluster.acceptCommits = true
-    }
+    }Я
 }
 
 return module.exports = SetClusterState

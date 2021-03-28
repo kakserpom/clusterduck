@@ -1,6 +1,7 @@
 const Entity = require('./entity')
 const {SHAKE} = require('sha3');
 const emitter = require('events').EventEmitter
+const isObject = require('is-obj')
 
 class Collection extends emitter {
     constructor(key, hydrate) {
@@ -56,11 +57,13 @@ class Collection extends emitter {
      * @private
      */
     extractKey(entry) {
-        if (typeof entry === 'string') {
+        if (isObject(entry)) {
+            return entry[this.key]
+        } else {
             return entry
         }
-        return entry[this.key]
     }
+
     /**
      *
      * @param key
@@ -99,7 +102,7 @@ class Collection extends emitter {
      */
     clear() {
         this._map.clear()
-
+        this.emit('all')
         return this
     }
 
@@ -231,7 +234,7 @@ class Collection extends emitter {
         const collection = new constructor(this.key, this.hydrate)
         this._map.forEach((value, key) => {
             if (callback(value, key, this)) {
-                collection.add(value)
+                collection.set(key, value)
             }
         })
         return collection

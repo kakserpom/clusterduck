@@ -88,8 +88,8 @@ class Cluster extends Entity {
             raft.on('leader', () => this.nodes.forEach(node => node.emit('changed_shared_state', node)))
             raft.on('candidate', () => this.nodes.forEach(node => node.emit('changed_shared_state', node)))
 
-            raft.on('is:leader', bool => {
-                this.acceptCommits = bool
+            raft.on('state', state => {
+                this.acceptCommits = ['LEADER', 'CANDIDATE'].includes(state)
             })
 
             raft.on('new-follower', follower => {
