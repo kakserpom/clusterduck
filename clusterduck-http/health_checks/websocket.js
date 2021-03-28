@@ -8,6 +8,11 @@ return module.exports = (node, config, timeoutMs) =>
         const addr = parseAddr(node.addr)
 
         const run = () => {
+            if (evilDns.domains.filter(item => item.source === url.host).length) {
+                setTimeout(run, 30)
+                return
+            }
+
             evilDns.add(url.host, addr.hostname)
 
             const client = new WebSocket(config.url)
@@ -88,9 +93,5 @@ return module.exports = (node, config, timeoutMs) =>
             }
         }
 
-        if (evilDns.domains.filter(item => item.source === url.host).length) {
-            setTimeout(run, 30)
-        } else {
-            run()
-        }
+        run()
     })
