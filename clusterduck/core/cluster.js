@@ -28,6 +28,10 @@ class Cluster extends Entity {
      */
     constructor(config, clusterduck) {
         super()
+
+        this._nodes_starting = 0
+        this._spare_nodes_starting = 0
+
         this.name = config.name
         this.debug = require('diagnostics')('cluster.' + this.name)
         this.clusterduck = clusterduck
@@ -54,6 +58,53 @@ class Cluster extends Entity {
             && key !== 'clusterduck'
             && key !== 'config'
             && key !== 'name'
+    }
+
+    check_nodes_limits() {
+
+        // Active nodes
+
+        const nodes_active = this.nodes.filter(node => node.active || !node.checked).length
+
+        let nodes_spare_count = this.nodes.filter(node => node.available && node.spare).length
+
+        let nodes_active_deficit = (this.config.min_active_nodes || 0) - nodes_active - this._nodes_starting
+
+
+        while (nodes_active_deficit > 0) {
+
+            const spare = nodes_spare_count > 0 ? this.nodes.one(node => node.available && node.spare) : false
+            if (spare) {
+                this.debug('activating a spare node: ' + spare.addr)
+                this.clusterduck.commit([
+                    (new UpdateNode).target(spare).attr({spare: false})
+                ])
+                --nodes_spare_count
+            } else {
+                this.debug('starting a node')
+                ++this._nodes_starting
+                setTimeout(() => --this._nodes_starting, 5e3)
+                this.nodes.emit('start')
+            }
+
+            --nodes_active_deficit
+        }
+
+
+        // Spare nodes
+
+        let nodes_spare_deficit = (this.config.min_spare_nodes || 0) - nodes_spare_count - this._spare_nodes_starting
+
+        while (nodes_spare_deficit > 0) {
+
+            this.debug('starting a spare node')
+
+            ++this._spare_nodes_starting
+            setTimeout(() => --this._soare_nodes_starting, 5e3)
+            this.nodes.emit('start', {spare: true})
+
+            --nodes_spare_deficit
+        }
     }
 
     /**
@@ -102,6 +153,32 @@ class Cluster extends Entity {
         } else {
             this.acceptCommits = true
         }
+
+        this.triggers = new Collection('id')
+        this.triggers.addFromArray(this.config.triggers || [])
+        this.triggers.forEach(trigger => {
+            const [prop, event] = trigger.on
+            this[prop].on(event, (...args) => {
+                let env = {
+                    CLUSTER: this.name,
+                    CD_OPTS: '-c ' + quote([this.clusterduck.argv.configFile]),
+                }
+
+                if (prop === 'nodes') {
+                    env.nodes_active_addrs = JSON.stringify(this.nodes.active.map(node => node.addr))
+                    env.nodes_active_count = this.nodes.active.length
+
+                    if (event === 'start') {
+                        env.CD_NODE_PARAMS = JSON.stringify(args[0])
+                    }
+                }
+
+                (trigger.do || []).forEach((cfgAction) => {
+                    const action = new (require('../actions/' + cfgAction.type))(cfgAction)
+                    action.invoke(env)
+                })
+            });
+        })
 
         this.nodes
             .on('inserted', node => {
@@ -161,41 +238,13 @@ class Cluster extends Entity {
             .on('all', () => {
                 this.config.nodes = this.nodes.map(node => node.export())
                 this.clusterduck.emit('config:changed')
-
-
-                const nodes_active = this.nodes.filter(node => node.active || !node.checked).length
-
-                let nodes_spare_count = this.nodes.filter(node => node.available && node.spare).length
-
-                let nodes_active_deficit = (this.config.min_active_nodes || 0) - nodes_active
-
-                while (nodes_active_deficit > 0) {
-
-                    const spare = nodes_spare_count > 0 ? this.nodes.one(node => node.available && node.spare) : false
-                    if (spare) {
-                        this.clusterduck.commit([
-                            (new UpdateNode).target(spare).attr({spare: false})
-                        ])
-                        --nodes_spare_count
-                    } else {
-                        this.nodes.emit('start')
-                    }
-
-                    --nodes_active_deficit
-                }
-
-                let nodes_spare_deficit = (this.config.min_spare_nodes || 0) - nodes_spare_count
-
-                while (nodes_active_deficit > 0) {
-
-                    this.debug('starting a spare node')
-                    this.nodes.emit('start', {spare: true})
-
-                    --nodes_spare_deficit
-                }
-
             })
             .addFromArray(this.config.nodes || [])
+
+        setTimeout(() => {
+            this.nodes.on('all', () => this.check_nodes_limits())
+            this.check_nodes_limits()
+        }, 5e3)
 
         this.nodesHealthChecks = new Map()
 
@@ -209,34 +258,6 @@ class Cluster extends Entity {
         this.health_checks = new Collection('id')
         this.health_checks.addFromArray(this.config.health_checks || [])
 
-        this.triggers = new Collection('id')
-        this.triggers.addFromArray(this.config.triggers || [])
-        this.triggers.forEach(trigger => {
-            const [prop, event] = trigger.on
-            this[prop].on(event, (...args) => {
-                let env = {
-                    CLUSTER: this.name,
-                    CD_OPTS: '-c ' + quote([this.clusterduck.argv.configFile]),
-                }
-
-                if (prop === 'nodes') {
-                    env.nodes_active_addrs = JSON.stringify(this.nodes.active.map(node => node.addr))
-                    env.nodes_active_count = this.nodes.active.length
-
-                    if (event === 'start') {
-                        env.CD_NODE_PARAMS = JSON.stringify(args[0])
-                    }
-                }
-
-                (trigger.do || []).forEach((cfgAction) => {
-                    const action = new (require('../actions/' + cfgAction.type))(cfgAction)
-                    action.invoke(env)
-                })
-            });
-        })
-
-
-        this.export()
     }
 
     /**

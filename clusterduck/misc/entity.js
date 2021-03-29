@@ -28,7 +28,10 @@ class Entity extends emitter {
                 obj[key] = value
             }
         }
-        return obj
+        return Object.fromEntries(
+            Object.entries(obj)
+            .sort(([a], [b]) => a.localeCompare(b))
+        )
     }
 }
 

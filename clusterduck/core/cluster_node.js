@@ -69,9 +69,12 @@ class ClusterNode extends Entity {
      * @private
      */
     _exportable(key, withState) {
+        if (key === 'spare' && !this.spare) {
+            return false
+        }
         return super._exportable(key, withState) && key !== 'cluster' && (withState || !ClusterNode.volatile.includes(key))
     }
 }
 
-ClusterNode.volatile = ['available', 'active', 'spare', 'checked', 'shared_state']
+ClusterNode.volatile = ['available', 'active', 'checked', 'shared_state']
 return module.exports = ClusterNode

@@ -1,6 +1,5 @@
 const {quote} = require('shell-quote')
 const exec = require('child_process').exec
-const debug = require('diagnostics')('triggers')
 
 /**
  *
@@ -13,6 +12,7 @@ class ShellAction {
      */
     constructor(config) {
         this.config = config
+        this.debug = require('diagnostics')('triggers')
     }
 
     /**
@@ -21,13 +21,20 @@ class ShellAction {
      * @param env
      */
     async invoke(env) {
+
+        console.log('invoked!')
         const options = {};
         if (this.config.cwd != null) {
             options.cwd = this.config.cwd
         }
         options.env = Object.assign({}, this.config.env || {}, env)
-        debug('Triggering shell:', this.config.commands, options.env)
+
+        let envString = Object.entries(options.env)
+            .map(([key, value]) => key + '=' + quote([value]))
+            .join(' ')
+
         for (const command of this.config.commands) {
+            this.debug('TRIGGER:', envString, command)
             await this._exec_shell_command(command, options)
         }
     }
