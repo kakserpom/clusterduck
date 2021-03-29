@@ -242,6 +242,21 @@ class Collection extends emitter {
 
     /**
      *
+     * @param callback
+     * @returns mixed|undefined
+     */
+    one(callback) {
+        let item
+        this._map.forEach((value, key) => {
+            if (callback(value, key, this)) {
+                item = value
+            }
+        })
+        return item
+    }
+
+    /**
+     *
      * @param obj
      * @returns {string}
      */

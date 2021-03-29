@@ -99,9 +99,11 @@ const start = (yargs, port) => {
                     const cmd = yargs.startTrigger.replace('$CD_OPTS', process.env.CD_OPTS || '')
                     console.log('START TRIGGER: ' + cmd)
                     started = true
+
+                    const nodeParams = JSON.parse(process.env.CD_NODE_PARAMS || '{}')
                     exec(cmd, {
                         env: Object.assign(process.env, {
-                            'NODE': JSON.stringify({addr: yargs.addr + ':' + port})
+                            'NODE': JSON.stringify(Object.assign({}, nodeParams, {addr: yargs.addr + ':' + port}))
                         })
                     }, (error, stdout, stderr) => {
                         console.log('START TRIGGER: ', stdout, stderr)
@@ -138,7 +140,7 @@ const Yargs = yargs(hideBin(process.argv)).strict()
     .option('addr', {
         description: 'Addr',
         type: 'string',
-        default: '127.0.0.1',
+        default: process.env.REDIS_ADDR || '127.0.0.1',
     })
     .option('config-file', {
         alias: 'c',

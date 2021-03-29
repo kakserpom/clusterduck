@@ -1,6 +1,6 @@
 {
   "name": "clusterduck",
-  "version": "0.1.42",
+  "version": "0.1.43",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck",
   "keywords": [
@@ -28,8 +28,10 @@
     "chalk": "^4.1.0",
     "clone-deep": "^4.0.1",
     "daemonize-process": "^3.0.0",
+    "deep-diff": "^1.0.2",
     "diagnostics": "^2.0.2",
     "dot-prop": "^6.0.1",
+    "ensure-array": "^1.0.0",
     "express": "^4.17.1",
     "hashring": "^3.2.0",
     "is-obj": "^2.0.0",
@@ -38,6 +40,7 @@
     "json-to-pretty-yaml": "^1.2.2",
     "liferaft-patched": "^1.0.0",
     "md5": "^2.3.0",
+    "node-pty": "^0.10.0",
     "ora": "^5.3.0",
     "parse-duration": "^0.4.4",
     "patch-package": "^6.4.7",

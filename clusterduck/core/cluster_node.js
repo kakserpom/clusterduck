@@ -42,7 +42,6 @@ class ClusterNode extends Entity {
         return this
     }
 
-
     /**
      *
      * @returns {*}

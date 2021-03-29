@@ -9,6 +9,7 @@ const DeleteNode = require('./commands/delete-node')
 const Threads = require('./collections/threads')
 const {v4: uuidv4} = require('uuid')
 const uncaught = require('../misc/uncaught')
+const array = require('ensure-array')
 
 /**
  * Main class
@@ -44,7 +45,12 @@ class ClusterDuck extends emitter {
      */
     set_config(config) {
 
+
         this.config = config
+
+        process.env.DEBUG =
+            (process.env.DEBUG ? process.env.DEBUG + ',' : '')
+            + array(config.debug || []).join(',')
     }
 
     /**

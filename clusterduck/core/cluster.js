@@ -2,14 +2,14 @@ const ClusterNode = require('./cluster_node')
 const Balancer = require('./balancer')
 const emitter = require('events').EventEmitter
 const Collection = require('../misc/collection')
-const HealthCheck = require("./health_check");
-const debug = require('diagnostics')('cluster')
+const HealthCheck = require('./health_check');
 const UpdateNode = require('./commands/update-node')
-const ClusterNodes = require("./collections/cluster_nodes")
-const Entity = require("../misc/entity")
-const Majority = require("../misc/majority")
-const SetClusterState = require("./commands/set-cluster-state");
-const Commit = require("./commit");
+const ClusterNodes = require('./collections/cluster_nodes')
+const Entity = require('../misc/entity')
+const Majority = require('../misc/majority')
+const SetClusterState = require('./commands/set-cluster-state')
+const Commit = require('./commit')
+const {quote} = require('shell-quote')
 
 /**
  * Cluster model
@@ -27,11 +27,11 @@ class Cluster extends Entity {
      * @param clusterduck
      */
     constructor(config, clusterduck) {
-        super();
+        super()
         this.name = config.name
+        this.debug = require('diagnostics')('cluster.' + this.name)
         this.clusterduck = clusterduck
         this.set_config(config)
-        this.debug = debug
     }
 
     /**
@@ -93,7 +93,7 @@ class Cluster extends Entity {
             })
 
             raft.on('new-follower', follower => {
-                debug('new follower: ', follower, ', sending ' + this.nodes.length + ' nodes')
+                this.debug('new follower: ', follower, ', sending ' + this.nodes.length + ' nodes')
                 const commit = new Commit([
                     (new SetClusterState).target(this).addNodesFromCollection(this.nodes)
                 ])
@@ -147,20 +147,53 @@ class Cluster extends Entity {
                         ])
                     })
 
-                debug(`${this.name}: INSERTED NODE: `, node.export())
+                this.debug(`${this.name}: INSERTED NODE: `, node.export())
                 this.nodes.emit('changed', node, node.state)
 
             })
             .on('deleted', node => {
-                debug(`${this.name}: DELETED NODE: `, node.export())
+                this.debug(`${this.name}: DELETED NODE: `, node.export())
                 this.nodes.emit('changed', node, false)
             })
             .on('changed', (node, state) => {
-                debug('nodes.changed: %s', node.addr, state)
+                this.debug('nodes.changed: %s', node.addr, state)
             })
             .on('all', () => {
                 this.config.nodes = this.nodes.map(node => node.export())
                 this.clusterduck.emit('config:changed')
+
+
+                const nodes_active = this.nodes.filter(node => node.active || !node.checked).length
+
+                let nodes_spare_count = this.nodes.filter(node => node.available && node.spare).length
+
+                let nodes_active_deficit = (this.config.min_active_nodes || 0) - nodes_active
+
+                while (nodes_active_deficit > 0) {
+
+                    const spare = nodes_spare_count > 0 ? this.nodes.one(node => node.available && node.spare) : false
+                    if (spare) {
+                        this.clusterduck.commit([
+                            (new UpdateNode).target(spare).attr({spare: false})
+                        ])
+                        --nodes_spare_count
+                    } else {
+                        this.nodes.emit('start')
+                    }
+
+                    --nodes_active_deficit
+                }
+
+                let nodes_spare_deficit = (this.config.min_spare_nodes || 0) - nodes_spare_count
+
+                while (nodes_active_deficit > 0) {
+
+                    this.debug('starting a spare node')
+                    this.nodes.emit('start', {spare: true})
+
+                    --nodes_spare_deficit
+                }
+
             })
             .addFromArray(this.config.nodes || [])
 
@@ -173,37 +206,32 @@ class Cluster extends Entity {
 
         process.on('exit', () => this.balancers.forEach(balancer => balancer.stop()))
 
-
-        this.health_checks = new Collection('id', entry => {
-            return entry
-        })
+        this.health_checks = new Collection('id')
         this.health_checks.addFromArray(this.config.health_checks || [])
 
         this.triggers = new Collection('id')
         this.triggers.addFromArray(this.config.triggers || [])
         this.triggers.forEach(trigger => {
             const [prop, event] = trigger.on
+            this[prop].on(event, (...args) => {
+                let env = {
+                    CLUSTER: this.name,
+                    CD_OPTS: '-c ' + quote([this.clusterduck.argv.configFile]),
+                }
 
-            let getProp
+                if (prop === 'nodes') {
+                    env.nodes_active_addrs = JSON.stringify(this.nodes.active.map(node => node.addr))
+                    env.nodes_active_count = this.nodes.active.length
 
-            if (prop === 'nodes') {
-                getProp = variable => {
-                    if (variable === 'nodes_active_addrs') {
-                        return JSON.stringify(this.nodes.active.map(node => node.addr))
-                    } else if (variable === 'nodes_active_count') {
-                        return JSON.stringify(this.nodes.active.length)
+                    if (event === 'start') {
+                        env.CD_NODE_PARAMS = JSON.stringify(args[0])
                     }
                 }
-            } else {
-                getProp = variable => {
-                }
-            }
-            this[prop].on(event, () => {
+
                 (trigger.do || []).forEach((cfgAction) => {
                     const action = new (require('../actions/' + cfgAction.type))(cfgAction)
-                    action.invoke(getProp)
+                    action.invoke(env)
                 })
-
             });
         })
 

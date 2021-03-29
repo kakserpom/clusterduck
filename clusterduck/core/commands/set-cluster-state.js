@@ -1,6 +1,5 @@
 const Command = require('./command')
-const YAML = require("js-yaml");
-const ClusterNode = require("../cluster_node");
+const ClusterNode = require('../cluster_node')
 
 /**
  * This command is used when a leader instance sends the current state to a new follower

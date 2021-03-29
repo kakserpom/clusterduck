@@ -16,7 +16,6 @@ const array = require('ensure-array')
  */
 class EnvoyBalancer extends Balancer {
 
-
     /**
      *
      */

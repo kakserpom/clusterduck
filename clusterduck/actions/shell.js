@@ -17,42 +17,19 @@ class ShellAction {
 
     /**
      *
-     * @param params
      * @returns {Promise<void>}
+     * @param env
      */
-    async invoke(callback) {
-        const commands = this._prepare_commands(this.config.commands, callback || (() => {}));
-
-        debug('Triggering shell:', commands)
-
+    async invoke(env) {
         const options = {};
         if (this.config.cwd != null) {
             options.cwd = this.config.cwd
         }
-        for (const command of commands) {
+        options.env = Object.assign({}, this.config.env || {}, env)
+        debug('Triggering shell:', this.config.commands, options.env)
+        for (const command of this.config.commands) {
             await this._exec_shell_command(command, options)
         }
-    }
-
-    /**
-     *
-     * @param commands
-     * @param params
-     * @returns {*}
-     * @private
-     */
-    _prepare_commands(commands, callback) {
-        return commands.map(function (command) {
-            return command.replace(/\$(\w+)/, function (match, variable) {
-
-                const value = callback(variable)
-                if (value !== undefined) {
-                    return quote([value])
-                }
-
-                return match
-            })
-        })
     }
 
     /**

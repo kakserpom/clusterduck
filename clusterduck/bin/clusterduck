@@ -101,6 +101,37 @@
             tail.stdout.pipe(process.stdout)
         })
 
+        yargs.command('edit', 'edit configuration', yargs => {
+        }, async argv => {
+
+            const originalConfig = await fs.promises.readFile(argv.configFile)
+            const diff = require('deep-diff').diff
+
+            const tmp = require('tmp-promise')
+            const tmpFile = await tmp.file()
+            await fs.promises.writeFile(tmpFile.path, originalConfig)
+            const pty = require('node-pty')
+            const editor = pty.spawn(process.env.EDITOR || 'nano', [tmpFile.path], {
+                name: 'xterm-color',
+                cols: process.stdout.columns,
+                rows: process.stdout.rows,
+                env: process.env
+            })
+            editor.pipe(process.stdout)
+            process.stdin
+                .setEncoding('utf8')
+                .setRawMode(true)
+                .pipe(editor)
+
+            editor.on('close', async () => {
+                const orig = ConfigFile.fromString(originalConfig)
+                const changed = ConfigFile.fromString(await fs.promises.readFile(tmpFile.path))
+                const difference = diff(orig, changed)
+                console.log(JSON.stringify(difference))
+                process.exit()
+            })
+        })
+
 
         InsertNode.cliCommand(yargs, clusterduck)
         DeleteNode.cliCommand(yargs, clusterduck)

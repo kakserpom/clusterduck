@@ -45,4 +45,6 @@ class ConfigFile extends emitter {
     }
 }
 
+ConfigFile.fromString = str => YAML.load(str)
+
 return module.exports = ConfigFile
