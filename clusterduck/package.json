@@ -1,6 +1,6 @@
 {
   "name": "clusterduck",
-  "version": "0.1.43",
+  "version": "0.1.44",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck",
   "keywords": [
@@ -28,6 +28,7 @@
     "chalk": "^4.1.0",
     "clone-deep": "^4.0.1",
     "daemonize-process": "^3.0.0",
+    "deep-copy": "^1.4.2",
     "deep-diff": "^1.0.2",
     "diagnostics": "^2.0.2",
     "dot-prop": "^6.0.1",

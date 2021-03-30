@@ -48,9 +48,15 @@ class ClusterDuck extends emitter {
 
         this.config = config
 
-        process.env.DEBUG =
-            (process.env.DEBUG ? process.env.DEBUG + ',' : '')
-            + array(config.debug || []).join(',')
+        Object.entries(config.env || {}).map(([key, value]) => {
+            if (key === 'DEBUG') {
+                process.env[key] =
+                    (process.env[key] ? process.env[key] + ',' : '')
+                    + array(value || []).join(',')
+            } else {
+                process.env[key] = value
+            }
+        })
     }
 
     /**

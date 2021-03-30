@@ -1,3 +1,4 @@
+const isObject = require("is-obj");
 const {quote} = require('shell-quote')
 const exec = require('child_process').exec
 
@@ -22,16 +23,27 @@ class ShellAction {
      */
     async invoke(env) {
 
-        console.log('invoked!')
-        const options = {};
+        const options = {
+            env: {},
+        }
+
         if (this.config.cwd != null) {
             options.cwd = this.config.cwd
         }
-        options.env = Object.assign({}, this.config.env || {}, env)
+
+        (Object.entries(this.config.env || {}).concat(Object.entries(env || {})))
+            .map(([key, value]) => {
+                if (isObject(value) && isObject(options.env[key])) {
+                    value = Object.assign({}, options.env[key] || {}, value)
+                }
+                options.env[key] = typeof value === 'string' ? value : JSON.stringify(value)
+            })
+
 
         let envString = Object.entries(options.env)
             .map(([key, value]) => key + '=' + quote([value]))
             .join(' ')
+
 
         for (const command of this.config.commands) {
             this.debug('TRIGGER:', envString, command)

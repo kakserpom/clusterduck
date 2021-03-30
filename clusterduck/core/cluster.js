@@ -9,6 +9,7 @@ const Entity = require('../misc/entity')
 const Majority = require('../misc/majority')
 const SetClusterState = require('./commands/set-cluster-state')
 const Commit = require('./commit')
+const deepCopy = require('deep-copy')
 const {quote} = require('shell-quote')
 
 /**
@@ -159,17 +160,17 @@ class Cluster extends Entity {
         this.triggers.forEach(trigger => {
             const [prop, event] = trigger.on
             this[prop].on(event, (...args) => {
-                let env = {
-                    CLUSTER: this.name,
-                    CD_OPTS: '-c ' + quote([this.clusterduck.argv.configFile]),
-                }
+                let env = deepCopy(trigger.env || {})
+
+                env.CLUSTER = this.name
+                env.CD_OPTS = '-c ' + quote([this.clusterduck.argv.configFile])
 
                 if (prop === 'nodes') {
-                    env.nodes_active_addrs = JSON.stringify(this.nodes.active.map(node => node.addr))
+                    env.nodes_active_addrs = this.nodes.active.map(node => node.addr)
                     env.nodes_active_count = this.nodes.active.length
 
-                    if (event === 'start') {
-                        env.CD_NODE_PARAMS = JSON.stringify(args[0])
+                    if (event === 'start' && args.length) {
+                        env.CD_NODE_PARAMS = args[0]
                     }
                 }
 
@@ -206,6 +207,7 @@ class Cluster extends Entity {
                         ])
                     })
                     .on('changed', (node, state) => this.nodes.emit('changed', node, state))
+
 
                     .on('passed', node => {
                         this.clusterduck.commit([
