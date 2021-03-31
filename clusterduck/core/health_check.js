@@ -73,7 +73,7 @@ class HealthCheck extends Entity {
 
         }).catch(error => {
             if (this.result == null) {
-                this.result = eror
+                this.result = error
             }
             throw error
         }).then(result => {

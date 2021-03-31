@@ -1,6 +1,6 @@
 const ClusterNode = require('./cluster_node')
 const Balancer = require('./balancer')
-const emitter = require('events').EventEmitter
+const emitter = require('eventemitter2')
 const Collection = require('../misc/collection')
 const HealthCheck = require('./health_check');
 const UpdateNode = require('./commands/update-node')
@@ -10,6 +10,8 @@ const Majority = require('../misc/majority')
 const SetClusterState = require('./commands/set-cluster-state')
 const Commit = require('./commit')
 const deepCopy = require('deep-copy')
+const EmitEvent = require('./commands/emit-event')
+const isObject = require("is-obj");
 const {quote} = require('shell-quote')
 
 /**
@@ -61,7 +63,57 @@ class Cluster extends Entity {
             && key !== 'name'
     }
 
-    check_nodes_limits() {
+    /**
+     *
+     * @param timeout
+     * @returns {Promise<unknown>}
+     */
+    async get_capacity(timeout) {
+        const totalNodes = this.clusterduck.totalNodes()
+        return new Promise((resolve, reject) => {
+            let ducks = []
+
+            let timer
+            let ids = []
+            const handler = (id, info) => {
+                if (ids.includes(id)) {
+                    return
+                }
+                ids.push(id)
+                ducks.push({id, info})
+                if (ids.length >= totalNodes) {
+                    clearTimeout(timer)
+                    ret()
+                }
+            }
+            const ev = 'rep:start-capacity'
+            const ret = () => {
+                this.nodes.off(ev, handler)
+                resolve(ducks.sort((a, b) => a.info.load - b.info.load))
+            }
+            timer = setTimeout(ret, timeout)
+            this.nodes.on(ev, handler)
+
+            this.clusterduck.commit([
+                (new EmitEvent).target(this.nodes).define('req:start-capacity')
+            ])
+        })
+    }
+
+    /**
+     *
+     * @returns {Promise<void>}
+     */
+    async check_nodes_limits() {
+        /**
+         *
+         * @type RaftTransport
+         */
+        const raft = this.clusterduck.transports.get('raft')
+
+        if (raft && !raft.isLeader()) {
+            return
+        }
 
         // Active nodes
 
@@ -71,40 +123,63 @@ class Cluster extends Entity {
 
         let nodes_active_deficit = (this.config.min_active_nodes || 0) - nodes_active - this._nodes_starting
 
-
         while (nodes_active_deficit > 0) {
-
             const spare = nodes_spare_count > 0 ? this.nodes.one(node => node.available && node.spare) : false
-            if (spare) {
-                this.debug('activating a spare node: ' + spare.addr)
-                this.clusterduck.commit([
-                    (new UpdateNode).target(spare).attr({spare: false})
-                ])
-                --nodes_spare_count
-            } else {
-                this.debug('starting a node')
-                ++this._nodes_starting
-                setTimeout(() => --this._nodes_starting, 5e3)
-                this.nodes.emit('start')
+            if (!spare) {
+                break
             }
+            this.debug('activating a spare node: ' + spare.addr)
+            this.clusterduck.commit([
+                (new UpdateNode).target(spare).attr({spare: false})
+            ])
 
             --nodes_active_deficit
+            --nodes_spare_count
         }
-
-
-        // Spare nodes
 
         let nodes_spare_deficit = (this.config.min_spare_nodes || 0) - nodes_spare_count - this._spare_nodes_starting
 
-        while (nodes_spare_deficit > 0) {
+        for (const duck of await this.get_capacity(2e3)) {
 
-            this.debug('starting a spare node')
+            const start = (...args) => {
+                const commit = new Commit([
+                    (new EmitEvent).target(this.nodes).define('start', ...args)
+                ])
+                if (raft) {
+                    raft.messageChild(duck.id, commit)
+                } else if (duck.id === this.clusterduck.id) {
+                    commit.execute(this.clusterduck)
+                }
+            }
 
-            ++this._spare_nodes_starting
-            setTimeout(() => --this._soare_nodes_starting, 5e3)
-            this.nodes.emit('start', {spare: true})
+            while (nodes_active_deficit > 0) {
+                if ((duck.info.capacity || 0) <= 0) {
+                    break
+                }
+                --duck.info.capacity
+                this.debug('[leader] starting a node')
+                ++this._nodes_starting
+                setTimeout(() => --this._nodes_starting, 5e3)
+                start()
+                --nodes_active_deficit
+            }
 
-            --nodes_spare_deficit
+            while (nodes_spare_deficit > 0) {
+                if ((duck.info.capacity || 0) <= 0) {
+                    break
+                }
+                --duck.info.capacity
+                this.debug('[leader] starting a spare node')
+                ++this._spare_nodes_starting
+                setTimeout(() => --this._spare_nodes_starting, 5e3)
+                start({spare: true})
+                --nodes_spare_deficit
+            }
+        }
+
+        const deficit = nodes_active_deficit + nodes_spare_deficit
+        if (deficit > 0) {
+            this.debug('[leader] cluster capacity deficit: ', deficit)
         }
     }
 
@@ -129,7 +204,7 @@ class Cluster extends Entity {
             return new ClusterNode(node, this)
         })
 
-
+        this.nodes.path = () => this.path().concat(['nodes'])
         /**
          *
          * @type RaftTransport
@@ -149,11 +224,32 @@ class Cluster extends Entity {
                 const commit = new Commit([
                     (new SetClusterState).target(this).addNodesFromCollection(this.nodes)
                 ])
-                raft.messageChild(follower, 'rpc-commit', commit.bundle())
+                raft.messageChild(follower, 'commit', commit.bundle())
             })
         } else {
             this.acceptCommits = true
         }
+
+        this.nodes.on('req:*', () => {
+            const ev = this.nodes.event.substr(4)
+
+            const sendBack = (...args) => {
+                const commit = new Commit([
+                    (new EmitEvent).target(this.nodes).define('rep:' + ev, this.clusterduck.id, ...args)
+                ])
+                if (raft) {
+                    raft.messageLeader('commit', commit)
+                } else {
+                    commit.execute(this.clusterduck)
+                }
+            }
+
+            if (this.nodes.listenerCount(ev)) {
+                this.nodes.emit(ev, (...args) => sendBack(...args))
+            } else {
+                sendBack()
+            }
+        })
 
         this.triggers = new Collection('id')
         this.triggers.addFromArray(this.config.triggers || [])
@@ -176,7 +272,7 @@ class Cluster extends Entity {
 
                 (trigger.do || []).forEach((cfgAction) => {
                     const action = new (require('../actions/' + cfgAction.type))(cfgAction)
-                    action.invoke(env)
+                    action.invoke(env, ...args)
                 })
             });
         })
@@ -244,8 +340,23 @@ class Cluster extends Entity {
             .addFromArray(this.config.nodes || [])
 
         setTimeout(() => {
-            this.nodes.on('all', () => this.check_nodes_limits())
-            this.check_nodes_limits()
+            setImmediate((async () => {
+                let changed = true
+                this.nodes.on('all', () => {
+                    changed = true
+                })
+                for (; ;) {
+                    if (changed) {
+                        changed = false
+                        await this.check_nodes_limits()
+                    }
+                    if (!changed) {
+                        await this.nodes.waitFor('all', {timeout: 30e3}).catch(e => {
+                        })
+                    }
+                }
+            }))
+
         }, 5e3)
 
         this.nodesHealthChecks = new Map()

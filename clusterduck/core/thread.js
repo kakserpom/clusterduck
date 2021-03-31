@@ -1,6 +1,5 @@
 const {parentPort, workerData, isMainThread, Worker} = require('worker_threads')
 const debug = require('diagnostics')('thread')
-const isObject = require('is-obj')
 
 class Thread {
     constructor() {

@@ -30,7 +30,7 @@ class InsertNode extends Command {
     target(cluster) {
         this.path = cluster.path()
 
-        return this;
+        return this
     }
 
     define(definition) {

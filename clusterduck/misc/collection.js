@@ -1,11 +1,14 @@
 const Entity = require('./entity')
 const {SHAKE} = require('sha3');
-const emitter = require('events').EventEmitter
+const emitter = require('eventemitter2')
 const isObject = require('is-obj')
 
 class Collection extends emitter {
     constructor(key, hydrate) {
-        super()
+        super({
+            wildcard: true,
+            delimiter: ':'
+        })
         this._map = new Map()
         this.key = key
         this.hydrate = hydrate || (entry => entry)

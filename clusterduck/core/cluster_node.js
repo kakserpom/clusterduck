@@ -1,4 +1,3 @@
-const HealthCheck = require('./health_check')
 const Entity = require('../misc/entity')
 
 /**

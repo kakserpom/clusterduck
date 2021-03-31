@@ -20,8 +20,9 @@ class ShellAction {
      *
      * @returns {Promise<void>}
      * @param env
+     * @param ...args
      */
-    async invoke(env) {
+    async invoke(env, ...args) {
 
         const options = {
             env: {},
@@ -45,9 +46,13 @@ class ShellAction {
             .join(' ')
 
 
+        let out = ''
+
         for (const command of this.config.commands) {
             this.debug('TRIGGER:', envString, command)
-            await this._exec_shell_command(command, options)
+            const commandOutput = await this._exec_shell_command(command, options)
+            this.debug('OUTPUT: ', commandOutput)
+            out += commandOutput
         }
     }
 

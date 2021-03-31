@@ -1,4 +1,4 @@
-const emitter = require('events').EventEmitter
+const emitter = require('eventemitter2')
 
 const Collection = require('../misc/collection')
 const Transport = require('./transport')
@@ -252,6 +252,25 @@ class ClusterDuck extends emitter {
         }, 1000)
 
         uncaught()
+    }
+
+
+    /**
+     *
+     * @returns {number}
+     */
+    totalNodes() {
+        /**
+         *
+         * @type RaftTransport
+         */
+        const raft = this.transports.get('raft')
+
+        if (!raft) {
+            return 1
+        }
+
+        return raft.peers.filter(peer => peer.authenticated).length
     }
 
     /**

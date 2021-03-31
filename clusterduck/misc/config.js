@@ -5,7 +5,7 @@ const writeFileAtomic = require('write-file-atomic')
 const cloneDeep = require('clone-deep')
 const fs = require('fs')
 
-const emitter = require('events').EventEmitter
+const emitter = require('eventemitter2')
 
 class ConfigFile extends emitter {
     constructor(path) {

@@ -191,6 +191,18 @@ const Yargs = yargs(hideBin(process.argv)).strict()
             console.error(e.message)
         }
     })
+    .command('count-running', 'get the number of running instances', yargs => {
+    }, async yargs => {
+        let counter = 0
+        const [minPort, maxPort] = yargs.portRange.split(',', 2).map(str => parseInt(str))
+        for (let tryPort = minPort; tryPort <= maxPort; ++tryPort) {
+            const pidFile = new pidFileClass(util.format(yargs.pidFile, tryPort))
+            if (pidFile.running) {
+                ++counter
+            }
+        }
+        process.stdout.write(counter.toString() + '\n')
+    })
     .command('start [port]', 'start an instance', yargs => {
         yargs
             .positional('port', {

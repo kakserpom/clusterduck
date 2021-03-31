@@ -1,8 +1,8 @@
 diff --git a/node_modules/json-to-pretty-yaml/index.js b/node_modules/json-to-pretty-yaml/index.js
-index 979e2f5..7e82893 100644
+index 979e2f5..3f01b95 100644
 --- a/node_modules/json-to-pretty-yaml/index.js
 +++ b/node_modules/json-to-pretty-yaml/index.js
-@@ -1,72 +1,81 @@
+@@ -1,72 +1,85 @@
  (function() {
      "use strict";
 -
@@ -35,6 +35,7 @@ index 979e2f5..7e82893 100644
 +    const typeOf = require('remedial').typeOf;
 +    const trimWhitespace = require('remove-trailing-spaces');
 +    const YAML = require('js-yaml')
++    let stack = new Array()
 +    const stringify = data => {
 +        let indentLevel = ''
 +        const handlers = {
@@ -69,19 +70,22 @@ index 979e2f5..7e82893 100644
 +            "array": value => {
 +                if (0 === value.length) {
 +                    return '[]'
-                 }
++                }
 +                let output = ''
 +                indentLevel = indentLevel.replace(/$/, '  ')
 +
-+                let short = true
-+                value.forEach(value => {
-+                    const type = typeOf(value)
-+                    if (type === 'array' || type === 'object') {
-+                        short = false
-+                    } else if (type === 'string' && value.match(/\$/)) {
-+                        short = false
-+                    }
-+                })
++                let short = !stack[stack.length - 1][0].match(/triggers.\d+.do.\d+.commands$/)
++
++                if (short) {
++                    value.forEach(value => {
++                        const type = typeOf(value)
++                        if (type === 'array' || type === 'object') {
++                            short = false
++                        } else if (type === 'string' && value.match(/\$/)) {
++                            short = false
++                        }
++                    })
+                 }
  
 -                indentLevel = indentLevel.replace(/$/, '  ');
 -                x.forEach(function(y, i) {
@@ -92,9 +96,9 @@ index 979e2f5..7e82893 100644
 -                        throw new Error('what the crap: ' + typeOf(y));
 +                value.forEach((y, i) => {
 +                    if (short) {
-+                        output += (i > 0 ? ', ' : '[ ') + handle(y)
++                        output += (i > 0 ? ', ' : '[ ') + handle(i, y)
 +                    } else {
-+                        output += '\n' + indentLevel + '- ' + handle(y, true)
++                        output += '\n' + indentLevel + '- ' + handle(i, y, true)
                      }
 +                })
  
@@ -136,7 +140,7 @@ index 979e2f5..7e82893 100644
  
                      if ('undefined' === typeof val) {
                          // the user should do
-@@ -74,31 +83,36 @@
+@@ -74,31 +87,45 @@
                          // and not
                          // obj.key = undefined
                          // but we'll error on the side of caution
@@ -157,7 +161,7 @@ index 979e2f5..7e82893 100644
 +                    if (val === null) {
 +                        output += k + ':'
 +                    } else {
-+                        output += k + ': ' + handle(val)
++                        output += k + ': ' + handle(k, val)
 +                    }
                  });
 -                indentLevel = indentLevel.replace(/  /, '');
@@ -173,13 +177,22 @@ index 979e2f5..7e82893 100644
 -        };
 +        }
 +
-+        const handle = (value, inArray, parentNode) => {
++        const handle = (key, value, inArray, parentNode) => {
 +            const type = typeOf(value)
-+            return handlers[type](value, inArray, parentNode)
++            try {
++                const prev = stack[stack.length - 1]
++                stack.push([
++                    (prev ? prev[0] + '.' : '') + key,
++                    type
++                ])
++                return handlers[type](value, inArray, parentNode)
++            } finally {
++                stack.pop()
++            }
 +        }
  
 -        return trimWhitespace(handlers[typeOf(data)](data, true, true) + '\n');
-+        return trimWhitespace(handle(data, true, true) + '\n');
++        return trimWhitespace(handle('root', data, true, true) + '\n');
      }
  
 -    module.exports.stringify = stringify;

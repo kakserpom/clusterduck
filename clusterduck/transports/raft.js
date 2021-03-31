@@ -32,7 +32,7 @@ class RaftTransport extends Transport {
                 this.commit(commit)
             } else {
                 // Just execute the transaction locally
-                commit.execute(this.clusterduck)
+                commit.execute(clusterduck)
             }
         })
 

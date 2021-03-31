@@ -1,10 +1,20 @@
-const emitter = require('events').EventEmitter
+const emitter = require('eventemitter2')
 const isObj = require('is-obj')
 
-class Entity extends emitter {
+class Entity {
 
     constructor() {
-        super()
+        this._ev = new emitter({
+            wildcard: true,
+        })
+    }
+
+    on() {
+        return this._ev.on(...arguments)
+    }
+
+    emit() {
+        return this._ev.emit(...arguments)
     }
 
 
@@ -30,7 +40,7 @@ class Entity extends emitter {
         }
         return Object.fromEntries(
             Object.entries(obj)
-            .sort(([a], [b]) => a.localeCompare(b))
+                .sort(([a], [b]) => a.localeCompare(b))
         )
     }
 }

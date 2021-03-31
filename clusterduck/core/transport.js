@@ -1,4 +1,4 @@
-const emitter = require('events').EventEmitter
+const emitter = require('eventemitter2')
 const debug = require('diagnostics')('transport')
 
 /**
