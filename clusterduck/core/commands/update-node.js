@@ -27,7 +27,14 @@ class UpdateNode extends Command {
                 }
                 return false
             }
-            if (Object.keys(this.set).includesAny('available', 'disabled', 'spare')) {
+
+            const setKeys = Object.keys(this.set)
+
+            if (setKeys.includesAny('available', 'checked')) {
+                this.set.available_changed = Date.now()
+            }
+
+            if (setKeys.includesAny('available', 'disabled', 'spare')) {
                 this.set.active = Boolean(this._proxy.available && !this._proxy.disabled && !this._proxy.spare)
             }
         })
@@ -68,11 +75,13 @@ class UpdateNode extends Command {
             let changed = false, changed_ss = false
             for (const [key, value] of Object.entries(this.set)) {
 
-                if (dotProp.get(node, key, null) === value) {
+                const prev = dotProp.get(node, key, null)
+
+                if (prev === value) {
                     continue
                 }
-                dotProp.set(node, key, value)
 
+                dotProp.set(node, key, value)
                 if (!key.match(/^shared_state\./)) {
                     changed = true
                 } else {

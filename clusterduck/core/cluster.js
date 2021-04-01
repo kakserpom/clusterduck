@@ -1,6 +1,5 @@
 const ClusterNode = require('./cluster_node')
 const Balancer = require('./balancer')
-const emitter = require('eventemitter2')
 const Collection = require('../misc/collection')
 const HealthCheck = require('./health_check');
 const UpdateNode = require('./commands/update-node')
@@ -11,8 +10,9 @@ const SetClusterState = require('./commands/set-cluster-state')
 const Commit = require('./commit')
 const deepCopy = require('deep-copy')
 const EmitEvent = require('./commands/emit-event')
-const isObject = require("is-obj");
 const {quote} = require('shell-quote')
+const parseDuration = require('parse-duration')
+const DeleteNode = require('./commands/delete-node')
 
 /**
  * Cluster model
@@ -100,6 +100,29 @@ class Cluster extends Entity {
         })
     }
 
+    purge_unavailable(timeout) {
+
+        /**
+         *
+         * @type RaftTransport
+         */
+        const raft = this.clusterduck.transports.get('raft')
+
+        if (raft && !raft.isLeader()) {
+            return
+        }
+
+        const threshold = Date.now() - timeout
+        this.nodes.forEach(node => {
+            if (!node.available && node.checked && (node.available_changed < threshold)) {
+                this.debug('Purging unavailable node: ', node.addr)
+                this.clusterduck.commit([
+                    (new DeleteNode).target(node)
+                ])
+            }
+        })
+    }
+
     /**
      *
      * @returns {Promise<void>}
@@ -138,6 +161,10 @@ class Cluster extends Entity {
         }
 
         let nodes_spare_deficit = (this.config.min_spare_nodes || 0) - nodes_spare_count - this._spare_nodes_starting
+
+        if (nodes_active_deficit <= 0 && nodes_spare_deficit <= 0) {
+            return
+        }
 
         for (const duck of await this.get_capacity(2e3)) {
 
@@ -345,13 +372,18 @@ class Cluster extends Entity {
                 this.nodes.on('all', () => {
                     changed = true
                 })
+                const purgeDuration = parseDuration(this.config.purge_unavailable || '0')
                 for (; ;) {
+                    if (purgeDuration) {
+                        this.purge_unavailable(purgeDuration)
+                    }
+
                     if (changed) {
                         changed = false
                         await this.check_nodes_limits()
                     }
                     if (!changed) {
-                        await this.nodes.waitFor('all', {timeout: 30e3}).catch(e => {
+                        await this.nodes.waitFor('all', {timeout: 10e3}).catch(e => {
                         })
                     }
                 }

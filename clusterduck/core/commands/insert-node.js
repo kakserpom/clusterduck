@@ -50,7 +50,7 @@ class InsertNode extends Command {
             cluster.debug('insert-node: acceptCommits is false, dropping')
             return
         }
-
+        
         cluster.nodes.add(this.definition)
     }
 }
