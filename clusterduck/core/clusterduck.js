@@ -291,13 +291,15 @@ class ClusterDuck extends emitter {
          */
         const raft = this.transports.get('raft')
 
-        if (callback) {
+        let ret
+        if (callback === true) {
+            ret = new Promise((resolve, reject) => {
+                this.once('commit:' + commit.id, resolve)
+            })
+            setTimeout(() => commit.execute(this), 5e3)
+        } else if (callback) {
             this.once('commit:' + commit.id, callback)
-
-            setTimeout(() => {
-                commit.execute(this)
-            }, 5e3)
-
+            setTimeout(() => commit.execute(this), 5e3)
         }
 
         // Non-Raft mode
@@ -307,6 +309,8 @@ class ClusterDuck extends emitter {
         }
 
         raft.commit(commit)
+
+        return ret
     }
 }
 

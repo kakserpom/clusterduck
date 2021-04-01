@@ -35,14 +35,15 @@ class DeleteNode extends Command {
      */
     run(root) {
         try {
-            const node = root.resolveEntityPath(this.path)
+            const cluster = root.resolveEntityPath(this.path.slice(0, -2))
 
-            if (!node.cluster.acceptCommits) {
+            if (!cluster.acceptCommits) {
                 // Dropping it
-                node.cluster.debug('delete-node: acceptCommits is false, dropping')
+                cluster.debugDeep('delete-node: acceptCommits is false, dropping')
                 return
             }
 
+            const node = root.resolveEntityPath(this.path)
             if (node) {
                 node.cluster.nodes.remove(node)
             }

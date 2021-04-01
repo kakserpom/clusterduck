@@ -18,7 +18,7 @@ class UpdateNode extends Command {
 
         this.set = {}
         this.command = 'update-node'
-        this.once('beforeCommit', () => {
+        this._ev.once('beforeCommit', () => {
             Array.prototype.includesAny = function () {
                 for (let i = 0; i < arguments.length; ++i) {
                     if (this.includes(arguments[i])) {
@@ -64,13 +64,15 @@ class UpdateNode extends Command {
      */
     run(root) {
         try {
-            const node = root.resolveEntityPath(this.path)
+            const cluster = root.resolveEntityPath(this.path.slice(0, -2))
 
-            if (!node.cluster.acceptCommits) {
+            if (!cluster.acceptCommits) {
                 // Dropping it
-                node.cluster.debug('update-node: acceptCommits is false, dropping')
+                cluster.debugDeep('update-node: acceptCommits is false, dropping')
                 return
             }
+
+            const node = root.resolveEntityPath(this.path)
 
             let changed = false, changed_ss = false
             for (const [key, value] of Object.entries(this.set)) {

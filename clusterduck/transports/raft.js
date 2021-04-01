@@ -268,6 +268,8 @@ class RaftTransport extends Transport {
                     this.on('rpc', packet => {
                         if (packet.type === 'rpc-commit') {
                             transport.emit('rpc-commit', packet.data)
+                        } else if (packet.type === 'commit') {
+                            transport.emit('commit', packet.data)
                         } else if (packet.type === 'new-follower') {
                             transport.emit('new-follower', packet.data)
                         }
@@ -361,10 +363,12 @@ class RaftTransport extends Transport {
                 debug('----------------------------------');
 
                 transport.emit('follower')
-                setTimeout(() => {
+                setImmediate(() => {
+                    debug('sending new-follower to leader')
                     transport.messageLeader('new-follower', raft.address)
-                }, 100)
+                })
             })
+
 
             let interval
             transport.on('state', state => {

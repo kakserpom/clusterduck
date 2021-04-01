@@ -37,6 +37,7 @@ class Cluster extends Entity {
 
         this.name = config.name
         this.debug = require('diagnostics')('cluster.' + this.name)
+        this.debugDeep = require('diagnostics')('cluster-deep.' + this.name)
         this.clusterduck = clusterduck
         this.set_config(config)
     }

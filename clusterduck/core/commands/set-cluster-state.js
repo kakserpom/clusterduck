@@ -17,7 +17,7 @@ class SetClusterState extends Command {
         }
 
         this.command = 'set-cluster-state'
-        this.once('beforeCommit', () => {
+        this._ev.once('beforeCommit', () => {
 
         })
 

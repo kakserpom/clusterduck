@@ -17,7 +17,7 @@ class InsertNode extends Command {
         }
 
         this.command = 'insert-node'
-        this.once('beforeCommit', () => {
+        this._ev.once('beforeCommit', () => {
 
         })
     }

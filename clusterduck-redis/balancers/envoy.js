@@ -43,11 +43,11 @@ class EnvoyBalancer extends Balancer {
                 if (!changed) {
                     try {
                         await this.cluster.nodes.waitFor('all')
-                    } catch (e) {}
+                    } catch (e) {
+                    }
                 }
             }
         }))
-
     }
 
     /**

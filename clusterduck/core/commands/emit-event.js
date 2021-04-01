@@ -17,7 +17,7 @@ class EmitEvent extends Command {
         }
 
         this.command = 'emit-event'
-        this.once('beforeCommit', () => {
+        this._ev.once('beforeCommit', () => {
 
         })
     }

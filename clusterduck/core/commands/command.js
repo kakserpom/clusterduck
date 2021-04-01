@@ -3,17 +3,17 @@ const emitter = require('eventemitter2')
 /**
  *
  */
-class Command extends emitter {
+class Command  {
 
     /**
      *
      * @param hydrated
      */
     constructor(hydrated) {
-        super()
+        this._ev = new emitter()
 
         if (!hydrated) {
-            this.once('beforeCommit', () => {
+            this._ev.once('beforeCommit', () => {
                 this.timestamp = Date.now()
             })
         }
