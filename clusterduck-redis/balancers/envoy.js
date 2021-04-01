@@ -32,22 +32,20 @@ class EnvoyBalancer extends Balancer {
      * Start
      */
     start() {
-
-        const throttleEvent = callback => {
-            let timeout
-            return (...args) => {
-                if (timeout) {
-                    return
+        setImmediate((async () => {
+            let changed = true
+            this.cluster.nodes.on('all', () => changed = true)
+            for (; ;) {
+                if (changed) {
+                    changed = false
+                    await this.listen()
                 }
-                timeout = setTimeout(() => {
-                    timeout = null
-                    callback(...args)
-                }, 1)
+                if (!changed) {
+                    try {
+                        await this.cluster.nodes.waitFor('all')
+                    } catch (e) {}
+                }
             }
-        }
-
-        this.cluster.nodes.on('changed', throttleEvent(() => {
-            this.listen()
         }))
 
     }
