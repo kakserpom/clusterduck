@@ -22,7 +22,7 @@ class Commit {
      */
     add() {
         Array.from(arguments).map(command => {
-            command._ev.emit('beforeCommit')
+            command.emit('beforeCommit')
             if (!command.skip) {
                 this.commands.push(command)
             }

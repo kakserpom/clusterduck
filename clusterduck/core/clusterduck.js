@@ -270,7 +270,7 @@ class ClusterDuck extends emitter {
             return 1
         }
 
-        return raft.peers.filter(peer => peer.authenticated).length
+        return 1 + raft.peers.filter(peer => peer.authenticated).length
     }
 
     /**
@@ -305,7 +305,7 @@ class ClusterDuck extends emitter {
         // Non-Raft mode
         if (!raft) {
             commit.execute(this)
-            return
+            return ret
         }
 
         raft.commit(commit)

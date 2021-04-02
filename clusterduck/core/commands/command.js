@@ -19,6 +19,10 @@ class Command  {
         }
     }
 
+    emit() {
+        return this._ev.emit(...arguments)
+    }
+
     run(root) {
         throw new Error('run() must be implemented')
     }

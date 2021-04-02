@@ -71,6 +71,7 @@ class Cluster extends Entity {
      */
     async get_capacity(timeout) {
         const totalNodes = this.clusterduck.totalNodes()
+        this.debugDeep('totalNodes ', totalNodes)
         return new Promise((resolve, reject) => {
             let ducks = []
 
@@ -81,8 +82,11 @@ class Cluster extends Entity {
                     return
                 }
                 ids.push(id)
-                ducks.push({id, info})
+                if (info) {
+                    ducks.push({id, info})
+                }
                 if (ids.length >= totalNodes) {
+                    this.debugDeep('clearing timeout')
                     clearTimeout(timer)
                     ret()
                 }
@@ -109,7 +113,7 @@ class Cluster extends Entity {
          */
         const raft = this.clusterduck.transports.get('raft')
 
-        if (raft && !raft.isLeader()) {
+        if (raft && raft.isFollower()) {
             return
         }
 
@@ -126,17 +130,24 @@ class Cluster extends Entity {
 
     /**
      *
-     * @returns {Promise<void>}
+     * @returns {Promise<boolean>}
      */
     async check_nodes_limits() {
+
+        this.debugDeep('check_nodes_limits()')
         /**
          *
          * @type RaftTransport
          */
         const raft = this.clusterduck.transports.get('raft')
 
-        if (raft && !raft.isLeader()) {
-            return
+        if (raft) {
+            if (raft.isFollower()) {
+                return true
+            }
+            if (!raft.isLeaderOrLongCandidate()) {
+                return false
+            }
         }
 
         // Active nodes
@@ -164,19 +175,26 @@ class Cluster extends Entity {
         let nodes_spare_deficit = (this.config.min_spare_nodes || 0) - nodes_spare_count - this._spare_nodes_starting
 
         if (nodes_active_deficit <= 0 && nodes_spare_deficit <= 0) {
-            return
+            return true
         }
 
-        for (const duck of await this.get_capacity(2e3)) {
+        const capacity = await this.get_capacity(3e3)
 
-            const start = (...args) => {
+        this.debug('capacity:', capacity)
+        for (const duck of capacity) {
+            const start = params => {
+                params = params || {}
                 const commit = new Commit([
-                    (new EmitEvent).target(this.nodes).define('start', ...args)
+                    (new EmitEvent).target(this.nodes).define('start', params)
                 ])
-                if (raft) {
-                    raft.messageChild(duck.id, commit)
-                } else if (duck.id === this.clusterduck.id) {
+                if (duck.id === this.clusterduck.id) {
+                    this.debug('starting a node here with params', params)
                     commit.execute(this.clusterduck)
+                } else if (raft) {
+                    this.debug('starting a node on ', duck.id, 'with params', params)
+                    raft.messageChild(duck.id, 'commit', commit.bundle())
+                } else {
+                    this.debug('cannot start a node, bad duck.id', duck.id)
                 }
             }
 
@@ -185,7 +203,6 @@ class Cluster extends Entity {
                     break
                 }
                 --duck.info.capacity
-                this.debug('[leader] starting a node')
                 ++this._nodes_starting
                 setTimeout(() => --this._nodes_starting, 5e3)
                 start()
@@ -197,7 +214,6 @@ class Cluster extends Entity {
                     break
                 }
                 --duck.info.capacity
-                this.debug('[leader] starting a spare node')
                 ++this._spare_nodes_starting
                 setTimeout(() => --this._spare_nodes_starting, 5e3)
                 start({spare: true})
@@ -207,7 +223,10 @@ class Cluster extends Entity {
 
         const deficit = nodes_active_deficit + nodes_spare_deficit
         if (deficit > 0) {
-            this.debug('[leader] cluster capacity deficit: ', deficit)
+            this.debug('cluster capacity deficit: ', deficit)
+            return false
+        } else {
+            return true
         }
     }
 
@@ -244,6 +263,7 @@ class Cluster extends Entity {
             raft.on('candidate', () => this.nodes.forEach(node => node.emit('changed_shared_state', node)))
 
             raft.on('state', state => {
+                this.debug('state = ' + state)
                 this.acceptCommits = ['LEADER', 'CANDIDATE'].includes(state)
             })
 
@@ -259,6 +279,7 @@ class Cluster extends Entity {
         }
 
         this.nodes.on('req:*', () => {
+
             const ev = this.nodes.event.substr(4)
 
             const sendBack = (...args) => {
@@ -266,7 +287,11 @@ class Cluster extends Entity {
                     (new EmitEvent).target(this.nodes).define('rep:' + ev, this.clusterduck.id, ...args)
                 ])
                 if (raft) {
-                    raft.messageLeader('commit', commit)
+                    if (raft.isFollower()) {
+                        raft.messageLeader('commit', commit.bundle())
+                    } else if (raft.isLeader() || raft.isCandidate()) {
+                        commit.execute(this.clusterduck)
+                    }
                 } else {
                     commit.execute(this.clusterduck)
                 }
@@ -369,19 +394,28 @@ class Cluster extends Entity {
 
         setTimeout(() => {
             setImmediate((async () => {
-                let changed = true
+                let changed = false
+                let finished = false
                 this.nodes.on('all', () => {
                     changed = true
                 })
+                if (raft) {
+                    raft.on('state', () => finished = false)
+                }
                 const purgeDuration = parseDuration(this.config.purge_unavailable || '0')
                 for (; ;) {
                     if (purgeDuration) {
                         this.purge_unavailable(purgeDuration)
                     }
 
-                    if (changed) {
+                    if (changed || !finished) {
                         changed = false
-                        await this.check_nodes_limits()
+                        try {
+                            finished = await this.check_nodes_limits()
+                        } catch (e) {
+                            console.error(e)
+                            finished = false
+                        }
                     }
                     if (!changed) {
                         await this.nodes.waitFor('all', {timeout: 10e3}).catch(e => {

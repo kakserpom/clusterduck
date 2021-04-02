@@ -23,6 +23,8 @@ class RaftTransport extends Transport {
     constructor(config, clusterduck) {
         super(config, clusterduck)
 
+        this.state_changed = Date.now()
+
         this.commitMode = this.commitMode || 'rpc'
 
         this.on('rpc-commit', bundle => {
@@ -101,6 +103,18 @@ class RaftTransport extends Transport {
         return this.raft.state === Liferaft.CANDIDATE
     }
 
+    isLeaderOrLongCandidate() {
+        return this.isLeader() || (this.isCandidate() && this.state_changed < Date.now() - 10e3)
+    }
+
+    /**
+     *
+     * @returns {boolean}
+     */
+    isFollower() {
+        return this.raft.state === Liferaft.FOLLOWER
+    }
+
     _socket(address) {
         const socket = msg.socket('req')
 
@@ -118,6 +132,7 @@ class RaftTransport extends Transport {
                     debug(address + ': error: ' + response)
                     return
                 }
+                socket.authenticated = true
                 this.raft.join(address)
                 response.peers.forEach(peer => this.join(peer))
             })
@@ -322,13 +337,40 @@ class RaftTransport extends Transport {
                 debug('HEART BEAT TIMEOUT, starting election')
             })
 
+            let following
+            let leader
+
+            const follow = () => {
+                if (following) {
+                    return
+                }
+                following = true
+                setImmediate(() => {
+                    transport.messageLeader('new-follower', raft.address)
+                })
+            }
+
             raft.on('term change', (to, from) => {
                 debugDeep('were now running on term %s -- was %s', to, from)
             }).on('leader change', (to, from) => {
                 debug('NEW LEADER: %s (prior was %s)', to, from || 'unknown')
+                leader = to
+                following = false
+
+                if (this.isFollower()) {
+                    follow()
+                }
             }).on('state change', (to, from) => {
+                this.state_changed = Date.now()
+
+                transport.emit('state', DuckRaft.states[to])
+                transport.emit(DuckRaft.states[to].toLowerCase())
+
+                if (this.isFollower()) {
+                    follow()
+                }
+
                 transport.emit('state change', to, from)
-                transport.emit('state', DuckRaft.states[to], DuckRaft.states[from])
                 transport.clusterduck.updateProcessTitle({RAFT: DuckRaft.states[to]})
                 debug('STATE CHANGE: %s (prior from %s)', DuckRaft.states[to], DuckRaft.states[from])
             })
@@ -346,27 +388,18 @@ class RaftTransport extends Transport {
                 debug('I am elected as LEADER');
                 debug('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@');
 
-                transport.emit('leader')
             });
 
             raft.on('candidate', () => {
                 debug('----------------------------------');
                 debug('I am starting as CANDIDATE');
                 debug('----------------------------------');
-
-                transport.emit('candidate')
             })
 
             raft.on('follower', () => {
                 debug('----------------------------------');
                 debug('I am starting as FOLLOWER');
                 debug('----------------------------------');
-
-                transport.emit('follower')
-                setImmediate(() => {
-                    debug('sending new-follower to leader')
-                    transport.messageLeader('new-follower', raft.address)
-                })
             })
 
 

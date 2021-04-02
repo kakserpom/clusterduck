@@ -25,7 +25,7 @@ class ShellAction {
     async invoke(env, ...args) {
 
         const options = {
-            env: {},
+            env: this.config.inherit_env ? process.env : {PATH: process.env.PATH},
         }
 
         if (this.config.cwd != null) {
@@ -49,6 +49,12 @@ class ShellAction {
         let out = ''
 
         for (const command of this.config.commands) {
+
+            console.log({
+                env: options.env,
+                command
+            })
+
             this.debug('TRIGGER:', envString, command)
             const commandOutput = await this._exec_shell_command(command, options)
             this.debug('OUTPUT: ', commandOutput)
@@ -68,6 +74,8 @@ class ShellAction {
                 if (error) {
                     console.warn(error);
                 }
+                console.log(stdout)
+                console.log(stderr)
                 resolve(stdout ? stdout : stderr);
             });
         });

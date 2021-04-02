@@ -145,9 +145,9 @@ transports:
 
 Parameter           | Description
 --------------------|------------------------------------------------------
-`address` *           | Address to listen
+`address` *         | Address to listen
 `tls`               | Path pattern to key/cert files. Default is `clusterduck.%s` (relative to the config file directory)
-`bootstrap`         | List of node addresses to connect with. __For now it is crucial to declare all yours nodes on each server.__
+`bootstrap`         | List of node addresses to connect with.
 
 > Clusterduck instances will exchange peers and update `bootstrap` accordingly, but initial address is necessary.
 
