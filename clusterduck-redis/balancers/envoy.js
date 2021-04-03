@@ -2,14 +2,11 @@ const Balancer = require('clusterduck/core/balancer')
 
 const parseAddr = require('clusterduck/misc/addr')
 
-const fs = require('fs')
-const util = require('util')
-const tmp = require('tmp-promise')
-const {quote} = require('shell-quote')
 const {spawn} = require('child_process')
-const debug = require('diagnostics')('envoy')
-const debugDeep = require('diagnostics')('envoy-deep')
 const array = require('ensure-array')
+const net = require('net');
+const readline = require('readline')
+const util = require('util')
 
 /**
  *
@@ -26,6 +23,51 @@ class EnvoyBalancer extends Balancer {
 
         // https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-restart-epoch
         this.restart_epoch = 0
+
+        this.debug = require('diagnostics')('envoy')
+        this.debugDeep = require('diagnostics')('envoy-deep')
+
+        this.socket = null
+    }
+
+
+    listen() {
+        const send = () => this.socket.write(JSON.stringify(this.envoy()) + '\n')
+
+        if (this.socket) {
+            send()
+            return
+        }
+
+        const socketFile = util.format(
+            this.config.socket_file || '/var/run/clusterduck/envoy-wrapper-%s.sock',
+            this.cluster.clusterduck.config_id
+        )
+        this.socket = net.createConnection(socketFile)
+        this.socket.on('connect', () => {
+            const rl = readline.createInterface({input: this.socket})
+            send()
+            rl.on('line', line => {
+                const array = JSON.parse(line.trim())
+                if (['debug', 'debugDeep'].includes(array[0])) {
+                    this[array[0]](...array.slice(1))
+                }
+            })
+        }).on('error', (e) => {
+            this.socket = null
+            const proc = spawn(this.config.envoy_wrapper_bin || __dirname + '/../bin/envoy-wrapper', [
+                'start',
+                '--pid-file', util.format(
+                    this.config.pid_file || '/var/run/clusterduck/envoy-wrapper-%s.pid',
+                    this.cluster.clusterduck.config_id
+                ),
+                '--socket-file', socketFile,
+                '--envoy-bin', this.config.envoy_bin || 'envoy',
+            ], {detached: true})
+            proc.stdout.on('data', async data => this.debug(data.toString()))
+            proc.stderr.on('data', async data => console.error(data.toString()))
+            setTimeout(() => this.listen(), 1e3)
+        })
     }
 
     /**
@@ -48,6 +90,13 @@ class EnvoyBalancer extends Balancer {
                 }
             }
         }))
+    }
+
+
+    stop() {
+        if (this.process) {
+            this.process.kill()
+        }
     }
 
     /**
@@ -161,76 +210,6 @@ class EnvoyBalancer extends Balancer {
         }
 
         return envoy
-    }
-
-    stop() {
-        if (this.process) {
-            this.process.kill()
-        }
-    }
-
-    /**
-     *
-     * @returns {Promise<unknown>}
-     */
-    listen() {
-
-        return new Promise(async (resolve, reject) => {
-
-            let args = [
-                '--config-yaml', JSON.stringify(this.envoy()),
-                '--drain-strategy', this.config.drain_strategy || 'immediate',
-            ]
-            let base_id_file
-
-            if (this.base_id) {
-                ++this.restart_epoch
-                args = args.concat([
-                    '--base-id', this.base_id,
-                    '--restart-epoch', this.restart_epoch
-                ])
-            } else {
-                base_id_file = await tmp.file();
-                args = args.concat([
-                    '--use-dynamic-base-id',
-                    '--base-id-path', base_id_file.path,
-                ])
-
-            }
-
-            debug('[%s] %s', this.restart_epoch, quote(args))
-
-            try {
-                this.process = spawn(this.config.envoy_bin || 'envoy', args)
-
-                this.process.stderr.on('data', async data => {
-                    data = data.toString()
-                    debugDeep(data.split("\n").map(
-                        line => `[cluster=${this.cluster.name} balancer=${this.name} epoch=${this.restart_epoch}] ${line}`
-                    ))
-
-                    if (data.match(/previous envoy process is still initializing/)) {
-                        console.error(data)
-                    } else if (data.match(/\] starting main dispatch loop/)) {
-
-                        if (base_id_file) {
-                            this.base_id = parseInt((await fs.promises.readFile(base_id_file.path)).toString())
-
-                            debug('acquired base id: %s', this.base_id)
-
-                            await base_id_file.cleanup()
-                        }
-                        resolve()
-                    }
-                })
-
-                this.process.on('error', () => {
-                    reject()
-                })
-            } catch (e) {
-                reject(e)
-            }
-        })
     }
 }
 

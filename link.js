@@ -15,7 +15,8 @@ fs.readdir('.', async (err, files) => {
 
     for (let i = 0; i < packages.length; ++i) {
         const pkg = packages[i]
-        await execAndPrint(`cd ${pkg}; npm link --unsafe-perm; cd -`);
+        const result = await execAndPrint(`cd ${pkg}; npm link --unsafe-perm; cd -`);
+        console.log(result.stderr)
     }
 
     for (let i = 0; i < packages.length; ++i) {
@@ -28,6 +29,7 @@ fs.readdir('.', async (err, files) => {
             }
             link.push(pkgRight)
         }
-        await execAndPrint(`cd ${pkg}; npm link ${link.join(' ')} --unsafe-perm; cd -`);
+        const result = await execAndPrint(`cd ${pkg}; npm link ${link.join(' ')} --unsafe-perm; cd -`);
+        console.log(result.stderr)
     }
 })

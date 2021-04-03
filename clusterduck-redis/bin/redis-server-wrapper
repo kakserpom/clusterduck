@@ -9,20 +9,20 @@ const {hideBin} = require('yargs/helpers')
 const fs = require('fs')
 const tcpPortUsed = require('tcp-port-used')
 
-const start = (yargs, port) => {
+const start = (argv, port) => {
     return new Promise(async (resolve, reject) => {
             const inUse = await tcpPortUsed.check(port)
             if (inUse) {
                 resolve(false)
                 return
             }
-            const dir = util.format(yargs.dataDir, port)
+            const dir = util.format(argv.dataDir, port)
 
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir, '0755', true);
             }
 
-            const pidFile = new pidFileClass(util.format(yargs.pidFile, port))
+            const pidFile = new pidFileClass(util.format(argv.pidFile, port))
 
             try {
                 if (!pidFile.acquire()) {
@@ -35,20 +35,20 @@ const start = (yargs, port) => {
             }
 
             let args = [
-                yargs.configFile,
+                argv.configFile,
                 '--dir', dir,
                 '--port', port,
                 '--daemonize', 'no',
                 '--logfile', ''
             ]
-            if (yargs.bind) {
+            if (argv.bind) {
                 args = args.concat([
                     '--bind', yargs.bind
                 ]);
             }
 
-            console.log(JSON.stringify([yargs.redisServerBin, ...args]) + "\n")
-            const redis = spawn(yargs.redisServerBin,
+            console.log(JSON.stringify([argv.redisServerBin, ...args]) + "\n")
+            const redis = spawn(argv.redisServerBin,
                 args, {
                     detached: true,
                 })
@@ -68,11 +68,11 @@ const start = (yargs, port) => {
                     return
                 }
 
-                const cmd = yargs.stopTrigger.replace('$CD_OPTS', process.env.CD_OPTS || '')
+                const cmd = argv.stopTrigger.replace('$CD_OPTS', process.env.CD_OPTS || '')
                 console.log('STOP TRIGGER: ' + cmd)
                 exec(cmd, {
                     env: Object.assign(process.env, {
-                        'NODE': JSON.stringify({addr: yargs.addr + ':' + port})
+                        'NODE': JSON.stringify({addr: argv.addr + ':' + port})
                     })
                 }, (error, stdout, stderr) => {
                     console.log('STOP TRIGGER: ', stdout, stderr)
@@ -96,14 +96,14 @@ const start = (yargs, port) => {
                 } else if (data.match(/\* Ready to accept connections/)) {
 
                     process.title = 'redis-server-wrapper: ' + port
-                    const cmd = yargs.startTrigger.replace('$CD_OPTS', process.env.CD_OPTS || '')
+                    const cmd = argv.startTrigger.replace('$CD_OPTS', process.env.CD_OPTS || '')
                     console.log('START TRIGGER: ' + cmd)
                     started = true
 
                     const nodeParams = JSON.parse(process.env.CD_NODE_PARAMS || '{}')
                     exec(cmd, {
                         env: Object.assign(process.env, {
-                            'NODE': JSON.stringify(Object.assign({}, nodeParams, {addr: yargs.addr + ':' + port}))
+                            'NODE': JSON.stringify(Object.assign({}, nodeParams, {addr: argv.addr + ':' + port}))
                         })
                     }, (error, stdout, stderr) => {
                         console.log('START TRIGGER: ', stdout, stderr)
@@ -179,12 +179,12 @@ const Yargs = yargs(hideBin(process.argv)).strict()
                 describe: 'port',
                 demandOption: true
             })
-    }, async yargs => {
-        if (!yargs.port) {
+    }, async argv => {
+        if (!argv.port) {
             console.log('port is required')
             return
         }
-        const pidFile = new pidFileClass(util.format(yargs.pidFile, yargs.port))
+        const pidFile = new pidFileClass(util.format(argv.pidFile, argv.port))
         try {
             pidFile.stop()
         } catch (e) {
@@ -192,11 +192,11 @@ const Yargs = yargs(hideBin(process.argv)).strict()
         }
     })
     .command('count-running', 'get the number of running instances', yargs => {
-    }, async yargs => {
+    }, async argv => {
         let counter = 0
-        const [minPort, maxPort] = yargs.portRange.split(',', 2).map(str => parseInt(str))
+        const [minPort, maxPort] = argv.portRange.split(',', 2).map(str => parseInt(str))
         for (let tryPort = minPort; tryPort <= maxPort; ++tryPort) {
-            const pidFile = new pidFileClass(util.format(yargs.pidFile, tryPort))
+            const pidFile = new pidFileClass(util.format(argv.pidFile, tryPort))
             if (pidFile.running) {
                 ++counter
             }
@@ -209,26 +209,26 @@ const Yargs = yargs(hideBin(process.argv)).strict()
                 describe: 'port to start a Redis on',
                 default: 0
             })
-    }, async yargs => {
-        yargs.daemonize && daemonizeProcess()
+    }, async argv => {
+        argv.daemonize && daemonizeProcess()
 
         let redis, port
-        if (yargs.port) {
+        if (argv.port) {
             try {
-                redis = await start(yargs, yargs.port)
-                port = yargs.port
+                redis = await start(argv, argv.port)
+                port = argv.port
                 if (!redis) {
-                    console.error(`Cannnot start a Redis instance on port ${yargs.port}`)
+                    console.error(`Cannnot start a Redis instance on port ${argv.port}`)
                     return
                 }
             } catch (e) {
                 console.log(e.message)
             }
         } else {
-            const [minPort, maxPort] = yargs.portRange.split(',', 2).map(str => parseInt(str))
+            const [minPort, maxPort] = argv.portRange.split(',', 2).map(str => parseInt(str))
             for (let tryPort = minPort; tryPort <= maxPort; ++tryPort) {
                 try {
-                    redis = await start(yargs, tryPort)
+                    redis = await start(argv, tryPort)
                     if (redis) {
                         port = tryPort
                         break

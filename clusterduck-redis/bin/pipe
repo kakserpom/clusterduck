@@ -1,0 +1,12 @@
+#!/usr/bin/env node
+const {spawn} = require('child_process')
+const command = process.argv.slice(2)
+if (command.length === 0) {
+    console.error('Insufficient arguments.')
+    return
+}
+const p = spawn(command[0], command.slice(1))
+p.stderr.pipe(process.stderr)
+p.stdout.pipe(process.stdout)
+process.title = 'pipe'
+;['SIGTERM', 'SIGHUP', 'SIGUSR1', 'SIGUSR2'].forEach(signal => process.on(signal, () => p.kill(signal)))

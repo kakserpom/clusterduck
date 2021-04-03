@@ -1,6 +1,6 @@
 {
   "name": "clusterduck-redis",
-  "version": "0.1.19",
+  "version": "0.1.21",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck-redis",
   "keywords": [
@@ -15,7 +15,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "redis-server-wrapper": "./bin/redis-server-wrapper"
+    "redis-server-wrapper": "./bin/redis-server-wrapper",
+    "pipe": "./bin/pipe"
   },
   "repository": {
     "type": "git",

@@ -1,0 +1,193 @@
+#!/usr/bin/env node
+
+const fs = require('fs')
+const {quote} = require('shell-quote')
+const daemonizeProcess = require('daemonize-process')
+const pidFileClass = require('clusterduck/misc/pid-file')
+const tmp = require('tmp-promise')
+const {spawn} = require('child_process')
+const yargs = require('yargs/yargs')
+const {hideBin} = require('yargs/helpers')
+const net = require('net')
+const readline = require("readline")
+
+
+class Envoy {
+
+    constructor(argv) {
+
+        this.argv = argv
+
+        // https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-base-id
+        this.base_id = null
+
+        // https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-restart-epoch
+        this.restart_epoch = 0
+
+
+        this.queued = null
+
+        this.sockets = new Set()
+        this.server = net.createServer(socket => {
+            this.sockets.add(socket)
+            socket.on('end', () => this.sockets.delete(socket))
+            const rl = readline.createInterface({input: socket})
+            rl.on('line', async line => {
+                const packet = JSON.parse(line.trim())
+                if (this.starting) {
+                    this.queued = packet
+                } else {
+                    const dequeue = async (packet) => {
+                        this.starting = true
+                        await this.start(packet).catch(e => {
+                        })
+                        this.starting = false
+
+                        if (this.queued) {
+                            dequeue(this.queued)
+                            this.queued = null
+                        }
+                    }
+                    dequeue(packet)
+                }
+            })
+        })
+
+        try {
+            fs.unlinkSync(argv.socketFile)
+        } catch (e) {
+        }
+        this.server.listen(argv.socketFile)
+
+        process.on('exit', () => {
+            this.server.close()
+        })
+    }
+
+    debug(...args) {
+        const packet = JSON.stringify(['debugDeep', ...args]) + '\n'
+        this.sockets.forEach(socket => socket.write(packet))
+    }
+
+    debugDeep(...args) {
+        const packet = JSON.stringify(['debugDeep', ...args]) + '\n'
+        this.sockets.forEach(socket => socket.write(packet))
+    }
+
+    /**
+     *
+     * @param envoyConfig
+     * @returns {Promise<unknown>}
+     */
+    start(envoyConfig) {
+
+        return new Promise(async (resolve, reject) => {
+
+            let args = [
+                '--config-yaml', JSON.stringify(envoyConfig),
+                '--drain-strategy', this.argv.drainStrategy,
+            ]
+            let base_id_file
+
+            if (this.base_id) {
+                ++this.restart_epoch
+                args = args.concat([
+                    '--base-id', this.base_id,
+                    '--restart-epoch', this.restart_epoch
+                ])
+            } else {
+                base_id_file = await tmp.file();
+                args = args.concat([
+                    '--use-dynamic-base-id',
+                    '--base-id-path', base_id_file.path,
+                ])
+
+            }
+
+            this.debug('[%s] %s', this.restart_epoch, quote(args))
+
+            try {
+                this.process = spawn(this.argv.envoyBin, args)
+                const restart_epoch = this.restart_epoch
+                this.process.stderr.on('data', async data => {
+                    data = data.toString()
+                    this.debugDeep(data.trim().split("\n").map(
+                        line => `[base_id=${this.base_id} epoch=${restart_epoch}] ${line}`
+                    ))
+
+                    if (data.match(/previous envoy process is still initializing/)) {
+                        console.error(data)
+                    } else if (data.match(/\] starting main dispatch loop/)) {
+
+                        if (base_id_file) {
+                            this.base_id = parseInt((await fs.promises.readFile(base_id_file.path)).toString())
+
+                            this.debug('acquired base id: %s', this.base_id)
+
+                            await base_id_file.cleanup()
+                        }
+                        resolve()
+                    }
+                })
+
+                this.process.on('error', () => {
+                    reject()
+                })
+            } catch (e) {
+                reject(e)
+            }
+        })
+    }
+}
+
+const Yargs = yargs(hideBin(process.argv)).strict()
+    .option('daemonize', {
+        alias: 'd',
+        description: 'Daemonize',
+        type: 'boolean',
+        nargs: 0
+    })
+    .option('envoy-bin', {
+        default: 'envoy',
+        description: 'Path to envoy',
+        type: 'string',
+    })
+    .option('pid-file', {
+        description: 'Pid file',
+        type: 'string',
+        demand: true,
+    })
+    .option('socket-file', {
+        description: 'Socket file',
+        type: 'string',
+        demand: true,
+    })
+    .option('drain-strategy', {
+        description: 'drain strategy',
+        default: 'immediate',
+        type: 'string',
+    })
+    .command('stop', 'stop an instance', yargs => {
+    }, async argv => {
+        const pidFile = new pidFileClass(argv.pidFile)
+        try {
+            pidFile.stop()
+        } catch (e) {
+            console.error(e.message)
+        }
+    })
+    .command('start', 'start an instance', yargs => {
+    }, async argv => {
+        try {
+            argv.daemonize && daemonizeProcess()
+            const pidFile = new pidFileClass(argv.pidFile)
+            pidFile.acquireOrThrow()
+            const envoy = new Envoy(argv)
+        } catch (e) {
+            console.error(e)
+        }
+    })
+    .strict()
+    .demandCommand()
+
+Yargs.parse()

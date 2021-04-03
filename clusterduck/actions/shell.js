@@ -14,6 +14,7 @@ class ShellAction {
     constructor(config) {
         this.config = config
         this.debug = require('diagnostics')('triggers')
+        this.debugDeep = require('diagnostics')('triggers-deep')
     }
 
     /**
@@ -45,20 +46,15 @@ class ShellAction {
             .map(([key, value]) => key + '=' + quote([value]))
             .join(' ')
 
-
-        let out = ''
-
         for (const command of this.config.commands) {
-
-            console.log({
-                env: options.env,
-                command
-            })
-
             this.debug('TRIGGER:', envString, command)
-            const commandOutput = await this._exec_shell_command(command, options)
-            this.debug('OUTPUT: ', commandOutput)
-            out += commandOutput
+            const [stdout, stderr] = await this._exec_shell_command(command, options)
+            if (stdout.length) {
+                this.debugDeep('TRIGGER (stdout): ', stdout)
+            }
+            if (stderr.length) {
+                this.debug('TRIGGER (stderr): ', stderr)
+            }
         }
     }
 
@@ -71,12 +67,10 @@ class ShellAction {
     _exec_shell_command(cmd, options) {
         return new Promise((resolve, reject) => {
             exec(cmd, options || {}, (error, stdout, stderr) => {
-                if (error) {
-                    console.warn(error);
-                }
-                console.log(stdout)
-                console.log(stderr)
-                resolve(stdout ? stdout : stderr);
+                resolve([
+                    stdout.toString(),
+                    stderr.toString()
+                ]);
             });
         });
     }

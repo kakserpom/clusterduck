@@ -36,8 +36,8 @@ class Cluster extends Entity {
         this._spare_nodes_starting = 0
 
         this.name = config.name
-        this.debug = require('diagnostics')('cluster.' + this.name)
-        this.debugDeep = require('diagnostics')('cluster-deep.' + this.name)
+        this.debug = require('diagnostics')('cluster:' + this.name)
+        this.debugDeep = require('diagnostics')('cluster-deep:' + this.name)
         this.clusterduck = clusterduck
         this.set_config(config)
     }
@@ -250,6 +250,8 @@ class Cluster extends Entity {
             }
             return new ClusterNode(node, this)
         })
+        this.nodes.debug = require('diagnostics')('cluster-nodes:' + this.name)
+        this.nodes.debugDeep = require('diagnostics')('cluster-nodes-deep:' + this.name)
 
         this.nodes.path = () => this.path().concat(['nodes'])
         /**
@@ -263,7 +265,7 @@ class Cluster extends Entity {
             raft.on('candidate', () => this.nodes.forEach(node => node.emit('changed_shared_state', node)))
 
             raft.on('state', state => {
-                this.debug('state = ' + state)
+                this.debug('Raft state:', state)
                 this.acceptCommits = ['LEADER', 'CANDIDATE'].includes(state)
             })
 
@@ -375,16 +377,16 @@ class Cluster extends Entity {
                         ])
                     })
 
-                this.debug(`${this.name}: INSERTED NODE: `, node.export())
+                this.nodes.debug(`INSERTED: `, node.export())
                 this.nodes.emit('changed', node, node.state)
 
             })
             .on('deleted', node => {
-                this.debug(`${this.name}: DELETED NODE: `, node.export())
+                this.nodes.debug(`DELETED: `, node.export())
                 this.nodes.emit('changed', node, false)
             })
             .on('changed', (node, state) => {
-                this.debug('nodes.changed: %s', node.addr, state)
+                this.nodes.debugDeep('CHANGED %s:', node.addr, state)
             })
             .on('all', () => {
                 this.config.nodes = this.nodes.map(node => node.export())

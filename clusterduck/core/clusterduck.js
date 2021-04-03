@@ -10,6 +10,7 @@ const Threads = require('./collections/threads')
 const {v4: uuidv4} = require('uuid')
 const uncaught = require('../misc/uncaught')
 const array = require('ensure-array')
+const md5 = require('md5')
 
 /**
  * Main class
@@ -22,6 +23,7 @@ class ClusterDuck extends emitter {
     constructor(argv) {
         super()
         this.argv = argv
+        this.config_id = md5(argv.configFile)
         this.verbose = ![null, false, undefined].includes(this.argv.verbose)
         this.statuses = {}
         this.updateProcessTitle()
@@ -252,6 +254,8 @@ class ClusterDuck extends emitter {
         }, 1000)
 
         uncaught()
+
+        this.emit('ready')
     }
 
 

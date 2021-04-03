@@ -72,7 +72,7 @@ class PidFile {
                 })
                 return true
             } catch (e) {
-                if (e.code === 'EACCES' || e.code === 'ENOENT') {
+                if (e.name === 'TypeError' || e.code === 'EACCES' || e.code === 'ENOENT') {
                     throw e
                 }
                 if (this.running) {
