@@ -44,14 +44,6 @@ class Cluster extends Entity {
 
     /**
      *
-     * @returns {(string|*)[]}
-     */
-    path() {
-        return ['clusters', this.name]
-    }
-
-    /**
-     *
      * @param key
      * @param withState
      * @returns {*|boolean}
@@ -60,8 +52,18 @@ class Cluster extends Entity {
     _exportable(key, withState) {
         return super._exportable(key, withState)
             && key !== 'clusterduck'
-            && key !== 'config'
-            && key !== 'name'
+            && key !== 'debug'
+            && key !== 'debugDeep'
+            && key !== 'nodesHealthChecks'
+    }
+
+
+    /**
+     *
+     * @returns {(string|*)[]}
+     */
+    path() {
+        return ['clusters', this.name]
     }
 
     /**
@@ -500,4 +502,4 @@ Cluster.factory = (config, clusterduck) => {
     return new constructor(config, clusterduck)
 }
 
-return module.exports = Cluster
+module.exports = Cluster

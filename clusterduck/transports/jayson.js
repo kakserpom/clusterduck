@@ -41,5 +41,5 @@ class JaysonTransport extends Transport {
     }
 }
 
-return module.exports = JaysonTransport
+module.exports = JaysonTransport
 

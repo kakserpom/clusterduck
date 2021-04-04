@@ -65,7 +65,7 @@ class SetClusterState extends Command {
         cluster.nodes.add(...this.nodes.map(node => (new ClusterNode(null, cluster)).entry(node, true)))
         cluster.debug('set-cluster-state: ' + this.nodes.length + ' node(s) written')
         cluster.acceptCommits = true
-    }Я
+    }
 }
 
-return module.exports = SetClusterState
+module.exports = SetClusterState

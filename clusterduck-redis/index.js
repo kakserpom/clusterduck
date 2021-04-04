@@ -5,6 +5,11 @@ class RedisCluster extends Cluster {
     constructor(config, clusterduck) {
         super(config, clusterduck)
         this.__dirname = __dirname
+        this.software = {
+            name: 'Redis',
+            logo: 'https://cdn.cdnlogo.com/logos/r/3/redis.svg',
+            url: 'https://redis.io/'
+        }
     }
 
     require(what) {
@@ -39,4 +44,4 @@ class RedisCluster extends Cluster {
     }
 }
 
-return module.exports = RedisCluster
+module.exports = RedisCluster

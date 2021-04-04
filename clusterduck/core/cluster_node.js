@@ -76,4 +76,4 @@ class ClusterNode extends Entity {
 }
 
 ClusterNode.volatile = ['available', 'available_changed', 'active', 'checked', 'shared_state']
-return module.exports = ClusterNode
+module.exports = ClusterNode

@@ -1,6 +1,11 @@
 const Collection = require("../../misc/collection")
 
 class ClusterNodes extends Collection {
+    constructor(key, hydrate) {
+        super(key, hydrate)
+
+        this._exportMode = 'array'
+    }
     /**
      *
      * @returns {*[]}
@@ -9,4 +14,4 @@ class ClusterNodes extends Collection {
         return this.filter(node => node.active)
     }
 }
-return module.exports = ClusterNodes
+module.exports = ClusterNodes

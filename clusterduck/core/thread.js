@@ -69,5 +69,5 @@ if (!isMainThread) {
         }
     })
 } else {
-    return module.exports = Thread
+    module.exports = Thread
 }

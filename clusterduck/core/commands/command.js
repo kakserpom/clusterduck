@@ -52,4 +52,4 @@ Command.dehydrate = command => {
     }
     return obj
 }
-return module.exports = Command
+module.exports = Command

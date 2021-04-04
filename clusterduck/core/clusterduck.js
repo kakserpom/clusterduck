@@ -209,6 +209,10 @@ class ClusterDuck extends emitter {
         )
     }
 
+    require(what) {
+        return require(what)
+    }
+
     /**
      *
      * @param err
@@ -318,4 +322,4 @@ class ClusterDuck extends emitter {
     }
 }
 
-return module.exports = ClusterDuck;
+module.exports = ClusterDuck;

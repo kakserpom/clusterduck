@@ -1,6 +1,6 @@
-const http = require('http')
-const yaml = require('js-yaml')
-const Transport = require("../core/transport");
+const Transport = require('../core/transport')
+const array = require('ensure-array')
+const crypto = require('crypto')
 
 /**
  *
@@ -14,23 +14,64 @@ class Http extends Transport {
     constructor() {
         super(...arguments);
 
-        (this.addons || []).forEach(addon => new (require(addon.require))(addon.config || {}, this))
+        (this.addons || []).forEach(addon => {
+            if (typeof addon === 'string') {
+                new (require(addon))(this)
+            } else {
+                new (require(addon.require))(this, addon)
+            }
+        })
     }
 
     doListen() {
-        const port = this.listen || 8485
-
         this.fastify = require('fastify')()
-        this.fastify.register(require('fastify-websocket'))
-        this.fastify.get('/socket', {websocket: true}, (connection /* SocketStream */, req /* FastifyRequest */) => {
-            connection.socket.send('hi from server')
-            const handler = (...args) => connection.socket.send(...args)
-            this.on('broadcast', handler)
-            connection.socket
-                .on('message', message => {
-                    connection.socket.send('hi from server')
+
+        if (this.auth) {
+            this.fastify.register(require('fastify-basic-auth'), {
+                validate: (username, password, req, reply, done) => {
+                    const cmpUsername = username.length === this.auth.username.length && crypto.timingSafeEqual(
+                        Buffer.from(username),
+                        Buffer.from(this.auth.username)
+                    )
+                    const cmpPassword = password.length === this.auth.password.length && crypto.timingSafeEqual(
+                        Buffer.from(password),
+                        Buffer.from(this.auth.password)
+                    )
+                    if (cmpUsername && cmpPassword) {
+                        done()
+                    } else {
+                        done(new Error('Winter is coming'))
+                    }
+                }, authenticate: {realm: 'Clusterduck'}
+            })
+        }
+
+        this.fastify.after(() => {
+            if (this.auth) {
+                this.fastify.addHook('onRequest', (request, reply, done) => {
+                    if (request.url === '/manifest.json') {
+                        done()
+                        return
+                    }
+                    this.fastify.basicAuth(request, reply, done)
                 })
-                .on('close', () => this.off('broadcast', handler))
+            }
+
+            this.fastify.register(require('fastify-websocket'))
+            this.fastify.get('/socket', {websocket: true}, stream => {
+                const send = (...args) => {
+                    stream.socket.send(JSON.stringify(args))
+                }
+                this.on('broadcast', send)
+
+                this.clusterduck.clusters.forEach(cluster => send('cluster-state', cluster.export()))
+
+                stream.socket
+                    .on('message', message => {
+
+                    })
+                    .on('close', () => this.off('broadcast', send))
+            })
         })
 
         this.clusterduck.on('ready', () => {
@@ -42,7 +83,7 @@ class Http extends Transport {
 
         this.emit('listen')
 
-        this.fastify.listen(port, err => {
+        this.fastify.listen(...array(this.listen), err => {
             if (err) {
                 console.error(err)
             }
@@ -50,5 +91,5 @@ class Http extends Transport {
     }
 }
 
-return module.exports = Http
+module.exports = Http
 

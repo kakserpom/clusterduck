@@ -56,4 +56,4 @@ class EmitEvent extends Command {
         entity.emit(...this.definition)
     }
 }
-return module.exports = EmitEvent
+module.exports = EmitEvent

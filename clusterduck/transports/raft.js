@@ -445,4 +445,4 @@ class RaftTransport extends Transport {
     }
 }
 
-return module.exports = RaftTransport
+module.exports = RaftTransport

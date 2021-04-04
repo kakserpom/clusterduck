@@ -77,4 +77,4 @@ class ShellAction {
 
 }
 
-return module.exports = ShellAction
+module.exports = ShellAction

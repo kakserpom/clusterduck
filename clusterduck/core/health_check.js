@@ -82,4 +82,4 @@ class HealthCheck extends Entity {
     }
 }
 
-return module.exports = HealthCheck
+module.exports = HealthCheck

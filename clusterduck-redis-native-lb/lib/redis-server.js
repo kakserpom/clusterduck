@@ -70,4 +70,4 @@ const createServer = onCommand => {
         });
     })
 }
-return module.exports = {createServer}
+module.exports = {createServer}

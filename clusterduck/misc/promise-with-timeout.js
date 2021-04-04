@@ -1,4 +1,4 @@
-return module.exports = (timeoutMs, promise) => {
+module.exports = (timeoutMs, promise) => {
     let timeoutHandle;
     const timeoutPromise = new Promise((resolve, reject) => {
         timeoutHandle = setTimeout( () => {

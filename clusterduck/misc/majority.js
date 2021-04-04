@@ -33,4 +33,4 @@ class Majority {
         return defaultValue
     }
 }
-return module.exports = Majority
+module.exports = Majority

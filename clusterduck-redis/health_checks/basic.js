@@ -1,7 +1,7 @@
 const Redis = require("ioredis")
 const parseAddr = require('clusterduck/misc/addr')
 
-return module.exports = (node, config, timeoutMs) =>
+module.exports = (node, config, timeoutMs) =>
     new Promise(async (resolve, reject) => {
 
         const event = 'unhandled-rejection:ReplyError'

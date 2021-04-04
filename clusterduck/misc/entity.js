@@ -45,4 +45,4 @@ class Entity {
     }
 }
 
-return module.exports = Entity
+module.exports = Entity

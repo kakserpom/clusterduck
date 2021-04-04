@@ -33,5 +33,5 @@ class Threads extends Collection {
 }
 
 
-return module.exports = Threads
+module.exports = Threads
 

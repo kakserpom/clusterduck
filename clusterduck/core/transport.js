@@ -43,4 +43,4 @@ Transport.factory = (config, clusterduck) => {
     return transport
 
 }
-return module.exports = Transport
+module.exports = Transport

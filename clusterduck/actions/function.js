@@ -50,4 +50,4 @@ class FunctionAction {
     }
 }
 
-return module.exports = FunctionAction
+module.exports = FunctionAction

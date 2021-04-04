@@ -162,4 +162,4 @@ class BasicBalancer extends Balancer {
     }
 }
 
-return module.exports = BasicBalancer
+module.exports = BasicBalancer

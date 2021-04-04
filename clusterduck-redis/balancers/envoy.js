@@ -213,4 +213,4 @@ class EnvoyBalancer extends Balancer {
     }
 }
 
-return module.exports = EnvoyBalancer
+module.exports = EnvoyBalancer

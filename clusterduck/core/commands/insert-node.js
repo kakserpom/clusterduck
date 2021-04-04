@@ -88,4 +88,4 @@ InsertNode.cliCommand = (yargs, clusterduck) => {
         })
 }
 
-return module.exports = InsertNode
+module.exports = InsertNode

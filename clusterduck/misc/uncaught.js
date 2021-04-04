@@ -1,5 +1,5 @@
 const isObject = require('is-obj')
-return module.exports = () => {
+module.exports = () => {
     process
         .on('uncaughtException', e => {
             console.error('Uncaught exception', e)

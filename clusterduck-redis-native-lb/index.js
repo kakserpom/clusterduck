@@ -70,4 +70,4 @@ class NativeBalancer extends Balancer {
     }
 }
 
-return module.exports = NativeBalancer
+module.exports = NativeBalancer

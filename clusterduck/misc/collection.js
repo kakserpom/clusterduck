@@ -309,4 +309,4 @@ class Collection extends emitter {
     }
 }
 
-return module.exports = Collection
+module.exports = Collection

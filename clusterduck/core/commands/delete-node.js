@@ -87,5 +87,5 @@ DeleteNode.cliCommand = (yargs, clusterduck) => {
     )
 }
 
-return module.exports = DeleteNode
+module.exports = DeleteNode
 

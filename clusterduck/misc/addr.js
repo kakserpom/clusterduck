@@ -1,4 +1,4 @@
-return module.exports = (addr, default_port) => {
+module.exports = (addr, default_port) => {
     if (!addr.match(/^\/|:\/\//)) {
         addr = 'tcp://' + addr
     }

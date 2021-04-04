@@ -61,4 +61,4 @@ Balancer.factory = (config, cluster) => {
     return new constructor(config, cluster)
 }
 
-return module.exports = Balancer
+module.exports = Balancer

@@ -63,4 +63,4 @@ Commit.fromBundle = bundle => {
     return commit
 }
 
-return module.exports = Commit
+module.exports = Commit

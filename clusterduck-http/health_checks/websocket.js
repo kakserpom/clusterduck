@@ -1,4 +1,4 @@
-return module.exports = (node, config, timeoutMs) =>
+module.exports = (node, config, timeoutMs) =>
     new Promise((resolve, reject) => {
         try {
             const WebSocket = require('ws')

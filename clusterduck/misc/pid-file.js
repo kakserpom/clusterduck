@@ -94,4 +94,4 @@ class PidFile {
     }
 }
 
-return module.exports = PidFile
+module.exports = PidFile

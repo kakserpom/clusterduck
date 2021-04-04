@@ -4,4 +4,4 @@ class Peers extends Collection {
 
 }
 
-return module.exports = Peers
+module.exports = Peers

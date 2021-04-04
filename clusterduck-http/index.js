@@ -23,4 +23,4 @@ class HttpCluster extends Cluster {
     }
 }
 
-return module.exports = HttpCluster
+module.exports = HttpCluster
