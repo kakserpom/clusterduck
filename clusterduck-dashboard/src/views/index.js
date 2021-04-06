@@ -1,5 +1,7 @@
 import Dashboard from './pages/Dashboard';
 import Cluster from './pages/Cluster';
+import Logs from './pages/Logs';
+
 import Buttons from './elements/Buttons';
 import Alerts from './elements/Alerts';
 import Grid from './elements/Grid';
@@ -26,14 +28,24 @@ import ErrorPage from './pages/404';
 // See React Router documentation for details: https://reacttraining.com/react-router/web/api/Route
 const pageList = [
   {
-    name: 'Dashboard',
     path: '/home',
     component: Dashboard,
   },
   {
-    name: 'Cluster',
+    path: '/clusters/:cluster/:tab',
+    component: Cluster,
+  },
+  {
     path: '/clusters/:cluster',
     component: Cluster,
+  },
+  {
+    path: '/logs/:tab',
+    component: Logs,
+  },
+  {
+    path: '/logs',
+    component: Logs,
   },
   {
     name: 'Buttons',

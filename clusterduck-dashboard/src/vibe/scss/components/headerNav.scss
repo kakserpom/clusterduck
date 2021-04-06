@@ -42,15 +42,15 @@
   i {
     position: relative;
   }
+}
 
-  .sidebar-toggle {
+.sidebar-toggle {
+  .fa {
+    transform: rotate(0deg);
+  }
+  &.is-collapsed {
     .fa {
-      transform: rotate(0deg);
-    }
-    &.is-collapsed {
-      .fa {
-        transform: rotate(180deg);
-      }
+      transform: rotate(180deg);
     }
   }
 }

@@ -1,6 +1,5 @@
 import Avatar from './components/utilities/Avatar/Avatar';
 import Footer from './components/Footer/Footer';
-import Header from './components/Header/Header';
 import Loader from './components/Loader/Loader';
 import Page from './components/Page/Page';
 import PageContent from './components/Page/PageContent';
@@ -13,7 +12,6 @@ import Switch from './components/utilities/Switch/Switch';
 export {
   Avatar,
   Footer,
-  Header,
   Loader,
   Page,
   PageContent,

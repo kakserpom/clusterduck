@@ -6,6 +6,7 @@ import NavDivider from './components/NavDivider';
 import NavSingleItem from './components/NavSingleItem';
 import NavDropdownItem from './components/NavDropdownItem';
 import PageAlertContext from '../PageAlert/PageAlertContext';
+import ToggleSidebarButton from './components/ToggleSidebarButton';
 
 export default class SidebarNav extends Component {
   constructor(props) {
@@ -38,7 +39,6 @@ export default class SidebarNav extends Component {
         </div>
       );
     };
-
     return (
       <PageAlertContext.Consumer>
         {consumer => {
@@ -52,6 +52,12 @@ export default class SidebarNav extends Component {
                     {navItems(this.props.nav.top)}
                     <NavSpacer />
                     {navItems(this.props.nav.bottom)}
+                    <li className={"nav-item"}>
+                      <ToggleSidebarButton
+                          toggleSidebar={this.props.toggleSidebar || ''}
+                          isSidebarCollapsed={this.props.isSidebarCollapsed}
+                      />
+                    </li>
                   </ul>
                 </nav>
               </div>

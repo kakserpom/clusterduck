@@ -1,9 +1,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import * as serviceWorker from './registerServiceWorker';
+
+import "bootstrap-css-only/css/bootstrap.min.css";
+
 import App from './App';
 
 import clusterduck from './clusterduck'
+import "@fortawesome/fontawesome-free/css/all.min.css";
+import "antd/dist/antd.css";
 
 let port
 if (process.env.REACT_APP_WS_PORT) {
@@ -12,14 +17,8 @@ if (process.env.REACT_APP_WS_PORT) {
     port = window.location.port
 }
 
-const socket = new WebSocket('ws://' + window.location.hostname + (port ? ':' + port : '') + '/socket');
-socket.addEventListener('open', () => clusterduck.emit('connected', socket));
+clusterduck.connect('ws://' + window.location.hostname + (port ? ':' + port : '') + '/socket')
 
-socket.addEventListener('message', ({data}) => {
-    const packet = JSON.parse(data)
-    clusterduck.emit('packet', packet)
-    console.log('Message from server ', packet);
-});
 
 ReactDOM.render(<App/>, document.getElementById('app'));
 // If you want your app to work offline and load faster, you can change
