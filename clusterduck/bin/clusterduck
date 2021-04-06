@@ -196,8 +196,8 @@
             return
         }
 
-        const debugStream = fs.createWriteStream(argv.logDir + '/debug.log', {flags: 'a'})
-            , errorStream = fs.createWriteStream(argv.logDir + '/error.log', {flags: 'a'});
+        const debugStream = fs.createWriteStream(argv.logDir + '/stdout.log', {flags: 'a'})
+            , errorStream = fs.createWriteStream(argv.logDir + '/stderr.log', {flags: 'a'});
 
         process.stdout.writeReal = process.stdout.write
         process.stdout.write = data => {
@@ -217,6 +217,7 @@
             if (argv.verbose) {
                 console.log('[INFO] An instance has just started. PID: ' + process.pid)
             }
+
             daemonizeProcess()
 
         }

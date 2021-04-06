@@ -16,8 +16,17 @@ class Clusterduck extends emitter {
                 this.clusters[cluster.name] = cluster
                 this.emit('state', this)
                 this.emit('cluster:' + cluster.name, cluster)
+            } else if (packet[0] === 'tail') {
+                this.emit('tail:' + packet[1], packet[2])
             }
         })
+    }
+
+    connected(callback) {
+        if (this.socket && this.socket.readyState === 1) {
+           callback(this.socket)
+        }
+        this.on('connected', callback)
     }
 
     connect(url) {
@@ -54,8 +63,8 @@ class Clusterduck extends emitter {
      * @param func
      */
     clusterOnce(name, func) {
-        if (this.cluster[name]) {
-            func(this.cluster[name])
+        if (this.clusters[name]) {
+            func(this.clusters[name])
         } else {
             this.once('cluster:' + name, func)
         }
@@ -68,8 +77,8 @@ class Clusterduck extends emitter {
      * @param func
      */
     cluster(name, func) {
-        if (this.cluster[name]) {
-            func(this.cluster[name])
+        if (this.clusters[name]) {
+            func(this.clusters[name])
         }
         this.on('cluster:' + name, func)
     }

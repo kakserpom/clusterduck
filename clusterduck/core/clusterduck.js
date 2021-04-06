@@ -6,6 +6,7 @@ const Cluster = require('./cluster')
 const Commit = require('./commit')
 const InsertNode = require('./commands/insert-node')
 const DeleteNode = require('./commands/delete-node')
+const UpdateNode = require('./commands/update-node')
 const Threads = require('./collections/threads')
 const {v4: uuidv4} = require('uuid')
 const uncaught = require('../misc/uncaught')
@@ -29,6 +30,8 @@ class ClusterDuck extends emitter {
         this.updateProcessTitle()
 
         this.threads = new Threads
+
+        this._ready = false
     }
 
     updateProcessTitle(update) {
@@ -89,8 +92,9 @@ class ClusterDuck extends emitter {
     }
 
     /**
-     * API
-     * @returns {{export: (function(): Promise<unknown>)}}
+     *
+     * @param jayson
+     * @returns {Promise<unknown>|{ls(*): Promise<void>, deleteNode(*): Promise<void>, insertNode(*): Promise<void>}}
      */
     api(jayson) {
         const clusterduck = this
@@ -160,6 +164,40 @@ class ClusterDuck extends emitter {
                 })
             },
 
+            /**
+             *
+             * @param args
+             * @param callback
+             * @returns {Promise<void>}
+             */
+            updateNode(args) {
+                return new Promise((resolve, reject) => {
+                    try {
+                        const [clusterName, addr, attr] = args
+                        const cluster = clusterduck.clusters.get(clusterName)
+                        if (!cluster) {
+                            reject(error(1, 'Cluster not found'))
+                            return
+                        }
+
+                        const node = cluster.nodes.get(addr)
+                        if (!node) {
+                            reject(error(1, 'Cannot delete ' + JSON.stringify(addr) + ': node not found'))
+                            return
+                        }
+
+                        clusterduck.commit([
+                            (new UpdateNode()).target(node).attr(attr)
+                        ])
+
+                        resolve('OK')
+                    } catch (e) {
+                        console.log(e)
+                        reject(error(1, e.message))
+                    }
+                })
+            },
+
 
             /**
              *
@@ -222,6 +260,14 @@ class ClusterDuck extends emitter {
         process.exit(1)
     }
 
+    ready(callback) {
+        if (this._ready) {
+            callback(this)
+        } else {
+            this.once('ready', callback)
+        }
+    }
+
     /**
      * Main function for the core process
      * @returns {Promise<void>}
@@ -259,7 +305,8 @@ class ClusterDuck extends emitter {
 
         uncaught()
 
-        this.emit('ready')
+        this._ready = true
+        this.emit('ready', this)
     }
 
 

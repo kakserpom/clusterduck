@@ -64,8 +64,8 @@ class EnvoyBalancer extends Balancer {
                 '--socket-file', socketFile,
                 '--envoy-bin', this.config.envoy_bin || 'envoy',
             ], {detached: true})
-            proc.stdout.on('data', async data => this.debug(data.toString()))
-            proc.stderr.on('data', async data => console.error(data.toString()))
+            proc.stdout.on('data', data => this.debug(data.toString()))
+            proc.stderr.on('data', data => console.error(data.toString()))
             setTimeout(() => this.listen(), 1e3)
         })
     }

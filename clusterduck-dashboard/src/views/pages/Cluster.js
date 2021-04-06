@@ -10,9 +10,10 @@ class Cluster extends CD_Component {
     constructor(props) {
         super(props)
         this.tab = this.props.match.params.tab || 'nodes'
-        clusterduck.clusterOnce(this.props.match.params.cluster, cluster => {
-            this.safeSetState({cluster: cluster})
-        })
+    }
+
+    componentDidMount() {
+        clusterduck.clusterOnce(this.props.match.params.cluster, cluster => this.setState({cluster: cluster}))
     }
 
     render() {
@@ -22,6 +23,7 @@ class Cluster extends CD_Component {
         if (!cluster) {
             return <div></div>
         }
+
         const ActionButton = ({children, onClick, action, node, args, ...props}) => {
             return (
                 <Button style={{marginRight: "10px"}} onClick={() => {
@@ -51,7 +53,7 @@ class Cluster extends CD_Component {
             )
         })
 
-        const expandedRowRender = record => record.comment ? <p>{record.comment}</p> : <p><i>Empty</i></p>;
+        const expandedRowRender = node => node.comment ? <p>{node.comment}</p> : <p><i>Empty</i></p>;
         const showHeader = true;
         const scroll = {y: 240};
         const pagination = {position: 'both'};
@@ -66,72 +68,36 @@ class Cluster extends CD_Component {
                 expandedRowRender,
                 rowSelection: {},
                 scroll: undefined,
-                hasData: true,
                 tableLayout: undefined,
             };
 
             componentDidMount() {
                 clusterduck.cluster(that.state.cluster.name, cluster => {
-                    console.log('fired!!!!')
-                    const rows =  cluster.nodes ?
+                    this.fetch(cluster.nodes ?
                         cluster.nodes.map(node => ({
                             key: node.addr,
                             ...node,
                         }))
-                        : null;
-
-                    console.log(rows)
-
-                    this.setState({
-                        dataSource: rows
-                    })
+                        : null
+                    )
                 })
             }
 
             handleChange = (pagination, filters, sorter) => {
                 console.log('Various parameters', pagination, filters, sorter);
                 this.setState({
+                    pagination: pagination,
                     filteredInfo: filters,
                     sortedInfo: sorter,
                 });
-            };
+                //  this.fetch()
+            }
 
-            handleToggle = prop => enable => {
-                this.setState({[prop]: enable});
-            };
-
-            handleSizeChange = e => {
-                this.setState({size: e.target.value});
-            };
-
-            handleTableLayoutChange = e => {
-                this.setState({tableLayout: e.target.value});
-            };
-
-            handleExpandChange = enable => {
-                this.setState({expandedRowRender: enable ? expandedRowRender : undefined});
-            };
-
-            handleEllipsisChange = enable => {
-                this.setState({ellipsis: enable});
-            };
-
-
-            handleHeaderChange = enable => {
-                this.setState({showHeader: enable ? showHeader : false});
-            };
-
-            handleRowSelectionChange = enable => {
-                this.setState({rowSelection: enable ? {} : undefined});
-            };
-
-            handleScollChange = enable => {
-                this.setState({scroll: enable ? scroll : undefined});
-            };
-
-            handleDataChange = hasData => {
-                this.setState({hasData});
-            };
+            fetch(data) {
+                this.setState({
+                    dataSource: data,
+                })
+            }
 
             handlePaginationChange = e => {
                 const {value} = e.target;
@@ -200,7 +166,6 @@ class Cluster extends CD_Component {
                     </span>),
                     },
                 ];
-
                 return <Table
                     {...this.state}
                     columns={columns.map(item => ({...item}))}

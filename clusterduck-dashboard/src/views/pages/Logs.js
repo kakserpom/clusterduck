@@ -1,13 +1,19 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import clusterduck from '../../clusterduck.js'
 import {Row, Col, Nav, NavItem, NavLink, TabContent, TabPane} from 'reactstrap';
 import CD_Component from "../../CD_Component";
 import classnames from "classnames";
 import {withRouter} from 'react-router-dom';
 import * as Feather from 'react-feather';
+import {css} from '@emotion/css';
+
 
 const AnsiConverter = require('ansi-to-html');
-const ansiConvert = new AnsiConverter();
+const ansiConvert = new AnsiConverter({
+    newline: true,
+    escapeXML: true,
+    stream: false
+});
 
 class Logs extends CD_Component {
     constructor(props) {
@@ -18,23 +24,34 @@ class Logs extends CD_Component {
     render() {
         const cluster = this.state
 
-        class LogStream extends React.Component {
-            componentDidMount() {
-                this.code.innerHTML += ansiConvert.toHtml('123')
-            }
+        const LogStream = (props) => {
+            const {type} = props
+            const code = React.createRef()
+            const anchor = React.createRef()
+            useEffect(() => {
+                const connectedHandler = () => {
+                    code.current.innerHTML = ''
+                    clusterduck.command('tail', type)
+                }
 
-            render() {
+                const tailHandler = chunk => {
+                    code.current.innerHTML += ansiConvert.toHtml(chunk)
+                    anchor.current.scrollIntoView({ behavior: "smooth" });
+                }
 
-                return <code ref={code => this.code = code}
-                             className="bg-dark stdout"
-                             style={{
-                                 display: 'block',
-                                 overflowY: 'scroll',
-                                 maxHeight: '75vh !important',
-                                 minWidth: '100%',
-                                 padding: '10px',
-                             }}/>
-            }
+                clusterduck.on('tail:' + type, tailHandler)
+                clusterduck.connected(connectedHandler)
+
+                return () => {
+                    clusterduck.off('tail:' + type, tailHandler)
+                    clusterduck.off('connected', connectedHandler)
+                }
+
+            })
+            return <code className={'bg-dark ' + ROOT_CSS}>
+                <div ref={code}/>
+                <div style={{ float:"left", clear: "both" }} ref={anchor}/>
+            </code>
         }
 
         const that = this
@@ -58,6 +75,14 @@ class Logs extends CD_Component {
             )
         })
 
+        const ROOT_CSS = css({
+            display: 'block',
+            overflowY: 'scroll',
+            maxHeight: '600px',
+            minWidth: '100%',
+            padding: '10px',
+        });
+
         return (
             <div>
                 <Row>
@@ -74,7 +99,10 @@ class Logs extends CD_Component {
                     </Nav>
                     <TabContent activeTab={this.tab}>
                         <TabPane tabId="stdout">
-                            <LogStream type={"stdout"}/>
+                            {this.tab === 'stdout' ? <LogStream type={"stdout"}/> : ''}
+                        </TabPane>
+                        <TabPane tabId="stderr">
+                            {this.tab === 'stderr' ? <LogStream type={"stderr"}/> : ''}
                         </TabPane>
                     </TabContent>
                 </div>
