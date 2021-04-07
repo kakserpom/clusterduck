@@ -8,18 +8,51 @@ import NavDropdownItem from './components/NavDropdownItem';
 import PageAlertContext from '../PageAlert/PageAlertContext';
 import ToggleSidebarButton from './components/ToggleSidebarButton';
 import clusterduck from "../../../clusterduck";
+import handleKeyAccessibility, {handleClickAccessibility} from "../../helpers/handleTabAccessibility";
 
+const MOBILE_SIZE = 992;
 export default class SidebarNav extends Component {
     constructor(props) {
         super(props);
-        this.state = {};
+
+        this.state = {
+            sidebarCollapsed: false,
+            isMobile: window.innerWidth <= MOBILE_SIZE,
+        }
+    }
+
+    handleResize = () => {
+        if (window.innerWidth <= MOBILE_SIZE) {
+            this.setState({sidebarCollapsed: false, isMobile: true});
+        } else {
+            this.setState({isMobile: false});
+        }
+    };
+
+    componentDidUpdate(prev) {
+        if (this.state.isMobile && prev.location.pathname !== this.props.location.pathname) {
+            this.toggleSideCollapse();
+        }
     }
 
     componentDidMount() {
+        window.addEventListener('resize', this.handleResize);
+        document.addEventListener('keydown', handleKeyAccessibility);
+        document.addEventListener('click', handleClickAccessibility);
+
         clusterduck.state(ыstate => {
             this.setState({clusterduck})
         })
     }
+
+    componentWillUnmount() {
+        window.removeEventListener('resize', this.handleResize);
+    }
+
+    toggleSideCollapse = () => {
+        this.setState(prevState => ({sidebarCollapsed: !prevState.sidebarCollapsed}));
+    };
+
 
     getNavigation() {
         const top =
@@ -158,7 +191,18 @@ export default class SidebarNav extends Component {
                 {
                     name: 'Logs',
                     icon: 'File',
-                    url: '/logs'
+                    url: '/logs',
+                    children: [
+                        {
+                            name: 'Stdout',
+                            icon: 'ThumbsUp',
+                            url: '/logs/stdout',
+                        },             {
+                            name: 'Stderr',
+                            icon: 'ThumbsDown',
+                            url: '/logs/stderr',
+                        }
+                    ]
                 },
             ].concat(top),
             bottom: [
@@ -175,13 +219,21 @@ export default class SidebarNav extends Component {
 
 
     render() {
+
+        const {sidebarCollapsed} = this.state;
+        const sidebarCollapsedClass = sidebarCollapsed ? 'side-menu-collapsed' : '';
+
+        if (this.props.appDivRef.current) {
+            this.props.appDivRef.current.className = `app ${sidebarCollapsedClass}`;
+        }
+
         const navItems = items => {
             return items.map((item, index) => itemType(item, index));
         };
 
         const itemType = (item, index) => {
             if (item.children) {
-                return <NavDropdownItem key={index} item={item} isSidebarCollapsed={this.props.isSidebarCollapsed}/>;
+                return <NavDropdownItem key={index} item={item} isSidebarCollapsed={sidebarCollapsed}/>;
             } else if (item.divider) {
                 return <NavDivider key={index}/>;
             } else {
@@ -216,14 +268,14 @@ export default class SidebarNav extends Component {
                                         {navItems(nav.bottom)}
                                         <li className={"nav-item"}>
                                             <ToggleSidebarButton
-                                                toggleSidebar={this.props.toggleSidebar || ''}
-                                                isSidebarCollapsed={this.props.isSidebarCollapsed}
+                                                isSidebarCollapsed={sidebarCollapsed}
+                                                toggleSidebar={this.toggleSideCollapse}
                                             />
                                         </li>
                                     </ul>
                                 </nav>
                             </div>
-                            {this.props.isSidebarCollapsed && <NavOverlay onClick={this.props.toggleSidebar}/>}
+                            {sidebarCollapsed && <NavOverlay onClick={this.toggleSidebar}/>}
                         </div>
                     );
                 }}

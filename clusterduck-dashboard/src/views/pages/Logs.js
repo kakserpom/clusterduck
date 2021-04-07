@@ -18,11 +18,26 @@ const ansiConvert = new AnsiConverter({
 class Logs extends CD_Component {
     constructor(props) {
         super(props)
-        this.tab = this.props.match.params.tab || 'stdout'
+
+        this.state = {tab: this.props.match.params.tab || 'stdout'}
     }
 
+    componentDidMount() {
+        this.setState({tab: this.props.match.params.tab || 'stdout'})
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        const tab = this.props.match.params.tab || 'stdout'
+
+        if (tab !== this.state.tab) {
+            this.setState({tab})
+        }
+    }
+
+
     render() {
-        const cluster = this.state
+        const {tab} = this.state
+        console.log('render tab = ' + tab)
 
         const LogStream = (props) => {
             const {type} = props
@@ -36,7 +51,7 @@ class Logs extends CD_Component {
 
                 const tailHandler = chunk => {
                     code.current.innerHTML += ansiConvert.toHtml(chunk)
-                    anchor.current.scrollIntoView({ behavior: "smooth" });
+                    anchor.current.scrollIntoView({behavior: "smooth"});
                 }
 
                 clusterduck.on('tail:' + type, tailHandler)
@@ -50,7 +65,7 @@ class Logs extends CD_Component {
             })
             return <code className={'bg-dark ' + ROOT_CSS}>
                 <div ref={code}/>
-                <div style={{ float:"left", clear: "both" }} ref={anchor}/>
+                <div style={{float: "left", clear: "both"}} ref={anchor}/>
             </code>
         }
 
@@ -60,7 +75,7 @@ class Logs extends CD_Component {
                 <NavItem>
                     <NavLink
                         href={'/logs/' + name}
-                        className={classnames({active: this.tab === name})}
+                        className={classnames({active: tab === name})}
                         onClick={function (e) {
                             e.preventDefault()
                             history.push(this.href)
@@ -88,25 +103,11 @@ class Logs extends CD_Component {
                 <Row>
                     <Col>
                         <div>
-                            <h1><Feather.File/> Logs</h1>
+                            <h1><Feather.File/> Logs / {tab}</h1>
                         </div>
                     </Col>
                 </Row>
-                <div>
-                    <Nav tabs>
-                        <TabHeader name={"stdout"}><Feather.ThumbsUp/> Stdout</TabHeader>
-                        <TabHeader name={"stderr"}><Feather.ThumbsDown/> Stderr</TabHeader>
-                    </Nav>
-                    <TabContent activeTab={this.tab}>
-                        <TabPane tabId="stdout">
-                            {this.tab === 'stdout' ? <LogStream type={"stdout"}/> : ''}
-                        </TabPane>
-                        <TabPane tabId="stderr">
-                            {this.tab === 'stderr' ? <LogStream type={"stderr"}/> : ''}
-                        </TabPane>
-                    </TabContent>
-                </div>
-
+                <LogStream type={tab}/>
             </div>
         )
     }

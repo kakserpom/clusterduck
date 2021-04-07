@@ -15,6 +15,7 @@ clusterduck [![total downloads of clusterduck](https://img.shields.io/npm/dt/clu
 ### Featured extensions
 
 - [clusterduck-redis](https://www.npmjs.com/package/clusterduck-redis) — Redis health checks and **envoy**-based balancing
+- [clusterduck-dashboard](https://www.npmjs.com/package/clusterduck-redis) — A web dashboard
 
 ## Table Of Contents
 

@@ -1,6 +1,6 @@
 {
   "name": "clusterduck-dashboard",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "",
   "author": "Vasily Zorin",
   "homepage": "/",
@@ -26,6 +26,7 @@
     "reactstrap": "6.4.0",
     "ws": "^7.1.0"
   },
+  "license": "LGPL-3.0-or-later",
   "scripts": {
     "start": "REACT_APP_WS_PORT=8880 react-scripts start",
     "build": "react-scripts build",
