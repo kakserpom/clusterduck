@@ -48,6 +48,8 @@ class Http extends Transport {
             })
         }
 
+        const raft = this.clusterduck.transports.get('raft');
+
         this.fastify.after(() => {
             if (this.auth) {
                 this.fastify.addHook('onRequest', (request, reply, done) => {
@@ -64,11 +66,19 @@ class Http extends Transport {
             const api = this.clusterduck.api()
             this.fastify.get('/socket', {websocket: true}, stream => {
                 const send = (...args) => {
-                    stream.socket.send(JSON.stringify(args))
+                    try {
+                        stream.socket.send(JSON.stringify(args))
+                    } catch (e) {
+                        console.error(e)
+                    }
                 }
                 this.on('broadcast', send)
 
                 this.clusterduck.clusters.forEach(cluster => send('cluster-state', cluster.export()))
+
+                if (raft) {
+                    send('raft-state', raft.export(true))
+                }
 
                 let tail
 
@@ -122,24 +132,35 @@ class Http extends Transport {
             })
         })
 
-        this.clusterduck.ready(clusterduck => clusterduck.clusters
-            .forEach(cluster => cluster.nodes
-                .on('*', (...args) => {
-                    try {
-                        this.emit('broadcast', 'cluster-state', cluster.export())
-                    } catch (e) {
-                        console.error(e)
-                    }
-                    //this.emit('broadcast', 'cluster-event', cluster.name, ...args)
-                })
-            ))
+        this.clusterduck.ready(clusterduck => {
+            clusterduck.clusters
+                .forEach(cluster => cluster.nodes
+                    .on('*', (...args) => {
+                        try {
+                            this.emit('broadcast', 'cluster-state', cluster.export())
+                        } catch (e) {
+                            console.error(e)
+                        }
+                        //this.emit('broadcast', 'cluster-event', cluster.name, ...args)
+                    })
+                )
+            if (raft) {
+                this.emit('broadcast', 'raft-state', raft.export(true))
+            }
+        })
 
         this.emit('listen')
 
-        this.fastify.listen(...array(this.listen), err => {
+        const listen = array(this.listen)
+        this.debug('http: binding ', listen)
+        this.fastify.listen(...listen, err => {
             if (err) {
                 console.error(err)
             }
+        })
+
+        process.on('exit', () => {
+            this.fastify.close()
         })
     }
 }

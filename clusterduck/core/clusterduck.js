@@ -34,6 +34,10 @@ class ClusterDuck extends emitter {
         this._ready = false
     }
 
+    /**
+     *
+     * @param update
+     */
     updateProcessTitle(update) {
         this.statuses = Object.assign(this.statuses, update || {})
         const statuses = Object.values(this.statuses).filter(x => x !== null)
@@ -260,6 +264,10 @@ class ClusterDuck extends emitter {
         process.exit(1)
     }
 
+    /**
+     *
+     * @param callback(this)
+     */
     ready(callback) {
         if (this._ready) {
             callback(this)

@@ -4,7 +4,16 @@ import * as Feather from 'react-feather';
 import NavBadge from './NavBadge';
 
 const NavSingleItem = ({item}) => {
-    const Icon = item.icon && Feather[item.icon] ? Feather[item.icon] : null;
+    let Icon = null
+    if (item.icon) {
+        if (item.icon.substr(0, 1) === '/') {
+            Icon = props => {
+                return <img src={item.icon} {...props}/>
+            }
+        } else if (Feather[item.icon]) {
+            Icon = Feather[item.icon]
+        }
+    }
     if (item.external) {
         const rel = item.target && item.target === '_blank' ? 'noopener noreferrer' : null;
 

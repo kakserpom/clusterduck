@@ -56,7 +56,10 @@ class RaftTransport extends Transport {
                 saveTimeout = null
             }, 1)
         })
+    }
 
+    export() {
+        return {peers: this.peers}
     }
 
     /**

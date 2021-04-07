@@ -29,9 +29,6 @@ export default class DashboardLayout extends Component {
                             </PageContent>
                         </Page>
                     </div>
-                    <Footer>
-                        <span></span>
-                    </Footer>
                 </div>
             </ContextProviders>
         );

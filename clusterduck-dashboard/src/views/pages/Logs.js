@@ -1,6 +1,6 @@
 import React, {useEffect} from 'react';
 import clusterduck from '../../clusterduck.js'
-import {Row, Col, Nav, NavItem, NavLink, TabContent, TabPane} from 'reactstrap';
+import {Row, Col, NavItem, NavLink} from 'reactstrap';
 import CD_Component from "../../CD_Component";
 import classnames from "classnames";
 import {withRouter} from 'react-router-dom';
@@ -41,16 +41,23 @@ class Logs extends CD_Component {
 
         const LogStream = (props) => {
             const {type} = props
+            const content = React.createRef()
             const code = React.createRef()
             const anchor = React.createRef()
             useEffect(() => {
                 const connectedHandler = () => {
-                    code.current.innerHTML = ''
+                    content.current.innerHTML = ''
                     clusterduck.command('tail', type)
                 }
 
+                const handleResize = () => {
+                    code.current.style.height = window.innerHeight - 100;
+
+                }
+                window.addEventListener('resize', handleResize);
+
                 const tailHandler = chunk => {
-                    code.current.innerHTML += ansiConvert.toHtml(chunk)
+                    content.current.innerHTML += ansiConvert.toHtml(chunk)
                     anchor.current.scrollIntoView({behavior: "smooth"});
                 }
 
@@ -58,14 +65,26 @@ class Logs extends CD_Component {
                 clusterduck.connected(connectedHandler)
 
                 return () => {
+                    window.removeEventListener('resize', handleResize);
                     clusterduck.off('tail:' + type, tailHandler)
                     clusterduck.off('connected', connectedHandler)
                 }
 
             })
-            return <code className={'bg-dark ' + ROOT_CSS}>
-                <div ref={code}/>
-                <div style={{float: "left", clear: "both"}} ref={anchor}/>
+
+            const ROOT_CSS = css({
+                display: 'block',
+                overflowY: 'scroll',
+                minWidth: '100%',
+                height: window.innerHeight - 100,
+                padding: '10px',
+                marginLeft: '-32px',
+                marginBottom: '-32px',
+            });
+
+            return <code className={'bg-dark ' + ROOT_CSS} ref={code}>
+                <div ref={content}/>
+                <div style={{float: "left", clear: "both", height: "100px"}} ref={anchor}/>
             </code>
         }
 
@@ -89,14 +108,6 @@ class Logs extends CD_Component {
                 </NavItem>
             )
         })
-
-        const ROOT_CSS = css({
-            display: 'block',
-            overflowY: 'scroll',
-            maxHeight: '600px',
-            minWidth: '100%',
-            padding: '10px',
-        });
 
         return (
             <div>

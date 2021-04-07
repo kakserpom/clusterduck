@@ -24,139 +24,144 @@ import Modals from './elements/Modals';
 import ProgressBars from './elements/ProgressBars';
 import PaginationPage from './elements/Pagination';
 import ErrorPage from './pages/404';
+import Raft from "./pages/Raft";
 
 // See React Router documentation for details: https://reacttraining.com/react-router/web/api/Route
 const pageList = [
-  {
-    path: '/home',
-    component: Dashboard,
-  },
-  {
-    path: '/clusters/:cluster/:tab',
-    component: Cluster,
-  },
-  {
-    path: '/clusters/:cluster',
-    component: Cluster,
-  },
-  {
-    path: '/logs/:tab',
-    component: Logs,
-  },
-  {
-    path: '/logs',
-    component: Logs,
-  },
-  {
-    name: 'Buttons',
-    path: '/elements/buttons',
-    component: Buttons,
-  },
-  {
-    name: 'Alerts',
-    path: '/elements/alerts',
-    component: Alerts,
-  },
-  {
-    name: 'Grid',
-    path: '/elements/grid',
-    component: Grid,
-  },
-  {
-    name: 'Typography',
-    path: '/elements/typography',
-    component: Typography,
-  },
-  {
-    name: 'Cards',
-    path: '/elements/cards',
-    component: Cards,
-  },
-  {
-    name: 'Tabs',
-    path: '/elements/tabs',
-    component: Tabs,
-  },
-  {
-    name: 'Tables',
-    path: '/elements/tables',
-    component: Tables,
-  },
-  {
-    name: 'Progress Bars',
-    path: '/elements/progressbars',
-    component: ProgressBars,
-  },
-  {
-    name: 'Pagination',
-    path: '/elements/pagination',
-    component: PaginationPage,
-  },
-  {
-    name: 'Modals',
-    path: '/elements/modals',
-    component: Modals,
-  },
-  {
-    name: 'Breadcrumbs',
-    path: '/elements/breadcrumbs',
-    component: Breadcrumbs,
-  },
-  {
-    name: 'Forms',
-    path: '/elements/forms',
-    component: Forms,
-  },
-  {
-    name: 'Loaders',
-    path: '/elements/loaders',
-    component: Loaders,
-  },
-  {
-    name: 'Avatars',
-    path: '/elements/avatars',
-    component: Avatars,
-  },
-  {
-    name: 'Blank',
-    path: '/pages/blank',
-    component: BlankPage,
-  },
-  {
-    name: 'Sub Navigation',
-    path: '/pages/subnav',
-    component: SubNav,
-  },
-  {
-    name: '404',
-    path: '/pages/404',
-    component: ErrorPage,
-  },
-  {
-    name: 'Analytics',
-    path: '/apps/analytics',
-    component: Analytics,
-  },
-  {
-    name: 'Activity Feed',
-    path: '/apps/feed',
-    component: Feed,
-  },
-  {
-    name: 'Invoice',
-    path: '/apps/invoice',
-    component: Invoice,
-  },
-  {
-    name: 'CMS',
-    path: '/apps/cms',
-    component: CmsPage,
-  },
-  {
-    name: 'Widgets',
-    path: '/widgets',
-    component: Widgets,
-  },
+    {
+        path: '/home',
+        component: Dashboard,
+    },
+    {
+        path: '/clusters/:cluster/:tab',
+        component: Cluster,
+    },
+    {
+        path: '/clusters/:cluster',
+        component: Cluster,
+    },
+    {
+        path: '/logs/:tab',
+        component: Logs,
+    },
+    {
+        path: '/logs',
+        component: Logs,
+    },
+    {
+        path: '/raft',
+        component: Raft,
+    },
+    {
+        name: 'Buttons',
+        path: '/elements/buttons',
+        component: Buttons,
+    },
+    {
+        name: 'Alerts',
+        path: '/elements/alerts',
+        component: Alerts,
+    },
+    {
+        name: 'Grid',
+        path: '/elements/grid',
+        component: Grid,
+    },
+    {
+        name: 'Typography',
+        path: '/elements/typography',
+        component: Typography,
+    },
+    {
+        name: 'Cards',
+        path: '/elements/cards',
+        component: Cards,
+    },
+    {
+        name: 'Tabs',
+        path: '/elements/tabs',
+        component: Tabs,
+    },
+    {
+        name: 'Tables',
+        path: '/elements/tables',
+        component: Tables,
+    },
+    {
+        name: 'Progress Bars',
+        path: '/elements/progressbars',
+        component: ProgressBars,
+    },
+    {
+        name: 'Pagination',
+        path: '/elements/pagination',
+        component: PaginationPage,
+    },
+    {
+        name: 'Modals',
+        path: '/elements/modals',
+        component: Modals,
+    },
+    {
+        name: 'Breadcrumbs',
+        path: '/elements/breadcrumbs',
+        component: Breadcrumbs,
+    },
+    {
+        name: 'Forms',
+        path: '/elements/forms',
+        component: Forms,
+    },
+    {
+        name: 'Loaders',
+        path: '/elements/loaders',
+        component: Loaders,
+    },
+    {
+        name: 'Avatars',
+        path: '/elements/avatars',
+        component: Avatars,
+    },
+    {
+        name: 'Blank',
+        path: '/pages/blank',
+        component: BlankPage,
+    },
+    {
+        name: 'Sub Navigation',
+        path: '/pages/subnav',
+        component: SubNav,
+    },
+    {
+        name: '404',
+        path: '/pages/404',
+        component: ErrorPage,
+    },
+    {
+        name: 'Analytics',
+        path: '/apps/analytics',
+        component: Analytics,
+    },
+    {
+        name: 'Activity Feed',
+        path: '/apps/feed',
+        component: Feed,
+    },
+    {
+        name: 'Invoice',
+        path: '/apps/invoice',
+        component: Invoice,
+    },
+    {
+        name: 'CMS',
+        path: '/apps/cms',
+        component: CmsPage,
+    },
+    {
+        name: 'Widgets',
+        path: '/widgets',
+        component: Widgets,
+    },
 ];
 
 export default pageList;

@@ -27,14 +27,25 @@ class EnvoyBalancer extends Balancer {
         this.debug = require('diagnostics')('envoy')
         this.debugDeep = require('diagnostics')('envoy-deep')
 
-        this.socket = null
+        this._socket = null
+    }
+
+    /**
+     *
+     * @param key
+     * @param withState
+     * @returns {*|boolean}
+     * @private
+     */
+    _exportable(key, withState) {
+        return super._exportable(key, withState) && key !== 'cluster';
     }
 
 
     listen() {
-        const send = () => this.socket.write(JSON.stringify(this.envoy()) + '\n')
+        const send = () => this._socket.write(JSON.stringify(this.envoy()) + '\n')
 
-        if (this.socket) {
+        if (this._socket) {
             send()
             return
         }
@@ -43,9 +54,9 @@ class EnvoyBalancer extends Balancer {
             this.config.socket_file || '/var/run/clusterduck/envoy-wrapper-%s.sock',
             this.cluster.clusterduck.config_id
         )
-        this.socket = net.createConnection(socketFile)
-        this.socket.on('connect', () => {
-            const rl = readline.createInterface({input: this.socket})
+        this._socket = net.createConnection(socketFile)
+        this._socket.on('connect', () => {
+            const rl = readline.createInterface({input: this._socket})
             send()
             rl.on('line', line => {
                 const array = JSON.parse(line.trim())
@@ -54,7 +65,7 @@ class EnvoyBalancer extends Balancer {
                 }
             })
         }).on('error', (e) => {
-            this.socket = null
+            this._socket = null
             const proc = spawn(this.config.envoy_wrapper_bin || __dirname + '/../bin/envoy-wrapper', [
                 'start',
                 '--pid-file', util.format(

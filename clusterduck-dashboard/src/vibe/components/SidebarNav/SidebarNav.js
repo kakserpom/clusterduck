@@ -9,6 +9,7 @@ import PageAlertContext from '../PageAlert/PageAlertContext';
 import ToggleSidebarButton from './components/ToggleSidebarButton';
 import clusterduck from "../../../clusterduck";
 import handleKeyAccessibility, {handleClickAccessibility} from "../../helpers/handleTabAccessibility";
+import RaftIcon from '../../../assets/images/raft.svg';
 
 const MOBILE_SIZE = 992;
 export default class SidebarNav extends Component {
@@ -197,12 +198,17 @@ export default class SidebarNav extends Component {
                             name: 'Stdout',
                             icon: 'ThumbsUp',
                             url: '/logs/stdout',
-                        },             {
+                        }, {
                             name: 'Stderr',
                             icon: 'ThumbsDown',
                             url: '/logs/stderr',
                         }
                     ]
+                },
+                {
+                    name: 'Raft',
+                    icon: RaftIcon,
+                    url: '/raft'
                 },
             ].concat(top),
             bottom: [

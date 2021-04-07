@@ -1,5 +1,8 @@
 const emitter = require('eventemitter2')
 
+/**
+ *
+ */
 class Clusterduck extends emitter {
 
     /**
@@ -22,13 +25,21 @@ class Clusterduck extends emitter {
         })
     }
 
+    /**
+     *
+     * @param callback
+     */
     connected(callback) {
         if (this.socket && this.socket.readyState === 1) {
-           callback(this.socket)
+            callback(this.socket)
         }
         this.on('connected', callback)
     }
 
+    /**
+     *
+     * @param url
+     */
     connect(url) {
         this.ws_url = url
         const socket = this.socket = new WebSocket(this.ws_url);
@@ -41,6 +52,10 @@ class Clusterduck extends emitter {
         });
     }
 
+    /**
+     *
+     * @param args
+     */
     command(...args) {
         if (!this.socket) {
             throw new Error('Connection is not established')
@@ -70,7 +85,6 @@ class Clusterduck extends emitter {
         }
     }
 
-
     /**
      *
      * @param name
@@ -81,6 +95,17 @@ class Clusterduck extends emitter {
             func(this.clusters[name])
         }
         this.on('cluster:' + name, func)
+    }
+
+    /**
+     *
+     * @param func
+     */
+    raft(func) {
+        if (this.raft) {
+            func(this.raft)
+        }
+        this.on('raft', func)
     }
 }
 

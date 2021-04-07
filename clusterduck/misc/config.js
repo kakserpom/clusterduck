@@ -41,7 +41,11 @@ class ConfigFile extends emitter {
 
         const output = PrettyYaml.stringify(prepare(cloneDeep(this.data)))
 
-        await writeFileAtomic(fs.realpathSync(this.path), output)
+        try {
+            await writeFileAtomic(fs.realpathSync(this.path), output)
+        } catch (e) {
+            console.error(e)
+        }
     }
 }
 
