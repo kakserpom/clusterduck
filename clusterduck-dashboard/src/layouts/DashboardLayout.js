@@ -4,7 +4,18 @@ import {SidebarNav, Footer, PageContent, PageAlert, Page} from '../vibe';
 import Logo from '../assets/images/rubber-duck.svg';
 import routes from '../views';
 import ContextProviders from '../vibe/components/utilities/ContextProviders';
+
 export default class DashboardLayout extends Component {
+    getSideBar() {
+        return this.sideBar.current
+    }
+
+    constructor() {
+        super()
+        this.sideBar = React.createRef()
+
+    }
+
     render() {
         const appDivRef = React.createRef()
         return (
@@ -13,20 +24,21 @@ export default class DashboardLayout extends Component {
                     <PageAlert/>
                     <div className="app-body">
                         <SidebarNav
+                            ref={this.sideBar}
                             logo={Logo}
                             logoText="Clusterduck"
                             appDivRef={appDivRef}
                             {...this.props}
                         />
                         <Page>
-                            <PageContent>
-                                <Switch>
-                                    {routes.map((page, key) => (
-                                        <Route path={page.path} component={page.component} key={key}/>
-                                    ))}
-                                    <Redirect from="/" to="/home"/>
-                                </Switch>
-                            </PageContent>
+                            <Switch>
+                                {routes.map((page, key) => (
+                                    <Route path={page.path} render={(props) => (
+                                        <page.component {...props} layout={this}/>
+                                    )} key={key}/>
+                                ))}
+                                <Redirect from="/" to="/home"/>
+                            </Switch>
                         </Page>
                     </div>
                 </div>

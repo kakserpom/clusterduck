@@ -1,10 +1,13 @@
 import React from 'react';
-import clusterduck from '../../clusterduck.js'
+import clusterduck from '../../clusterduck'
 import {Row, Col, Nav, NavItem, NavLink, TabContent, TabPane} from 'reactstrap';
 import CD_Component from "../../CD_Component";
 import classnames from "classnames";
 import {withRouter} from 'react-router-dom';
 import {Table, Button} from 'antd';
+import {Header} from "../../vibe/index";
+import {Page, PageContent} from "../../vibe";
+import * as Feather from 'react-feather';
 
 class Cluster extends CD_Component {
     constructor(props) {
@@ -175,33 +178,33 @@ class Cluster extends CD_Component {
             }
         }
 
-        return (
-            <div>
-                <Row>
-                    <Col>
+        return (<div>
+                <Header {...this.props}>
+                    Clusters&nbsp;&nbsp;❯&nbsp;&nbsp;
+                    <img
+                        src={cluster.software.logo}
+                        style={{width: 30, height: 30}}
+                        alt={cluster.software.name}
+                        aria-hidden={true}
+                    /> {cluster.name}
+                </Header>
+                <PageContent>
+                    <div>
                         <div>
-                            <h1><img
-                                src={cluster.software.logo}
-                                style={{width: 70, height: 70}}
-                                alt={cluster.software.name}
-                                aria-hidden={true}
-                            /> {cluster.name}</h1>
+                            <Nav tabs>
+                                <TabHeader name={"nodes"}>Nodes</TabHeader>
+                            </Nav>
+                            <TabContent activeTab={this.tab}>
+                                <TabPane tabId="nodes">
+
+                                    <NodesTable/>
+
+                                </TabPane>
+                            </TabContent>
                         </div>
-                    </Col>
-                </Row>
-                <div>
-                    <Nav tabs>
-                        <TabHeader name={"nodes"}>Nodes</TabHeader>
-                    </Nav>
-                    <TabContent activeTab={this.tab}>
-                        <TabPane tabId="nodes">
 
-                            <NodesTable/>
-
-                        </TabPane>
-                    </TabContent>
-                </div>
-
+                    </div>
+                </PageContent>
             </div>
         )
     }

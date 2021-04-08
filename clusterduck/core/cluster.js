@@ -13,6 +13,7 @@ const EmitEvent = require('./commands/emit-event')
 const {quote} = require('shell-quote')
 const parseDuration = require('parse-duration')
 const DeleteNode = require('./commands/delete-node')
+const {v4: uuidv4} = require('uuid')
 
 /**
  * Cluster model
@@ -32,9 +33,7 @@ class Cluster extends Entity {
     constructor(config, clusterduck) {
         super()
 
-        this._nodes_starting = 0
-        this._spare_nodes_starting = 0
-
+        this._starting_nodes = new Map()
         this.name = config.name
         this.debug = require('diagnostics')('cluster:' + this.name)
         this.debugDeep = require('diagnostics')('cluster-deep:' + this.name)
@@ -154,11 +153,26 @@ class Cluster extends Entity {
 
         // Active nodes
 
-        const nodes_active = this.nodes.filter(node => node.active || !node.checked).length
+        const nodes_active = this.nodes.filter(node =>
+            node.active || (!node.checked && !node.disabled && !node.spare)
+        ).length
 
-        let nodes_spare_count = this.nodes.filter(node => node.available && node.spare).length
 
-        let nodes_active_deficit = (this.config.min_active_nodes || 0) - nodes_active - this._nodes_starting
+        const countStarting = spare => {
+            let count = 0
+            this._starting_nodes.forEach(node => {
+                if ((spare && node.spare) || (!spare && !node.spare)) {
+                    ++count
+                }
+            })
+            return count
+        }
+
+        const nodes_starting = countStarting(false)
+
+        let nodes_active_deficit = (this.config.min_active_nodes || 0) - nodes_active - nodes_starting
+
+        let nodes_spare_count = this.nodes.filter(node => node.spare && !node.disabled && (node.available || !node.checked)).length
 
         while (nodes_active_deficit > 0) {
             const spare = nodes_spare_count > 0 ? this.nodes.one(node => node.available && node.spare) : false
@@ -174,18 +188,27 @@ class Cluster extends Entity {
             --nodes_spare_count
         }
 
-        let nodes_spare_deficit = (this.config.min_spare_nodes || 0) - nodes_spare_count - this._spare_nodes_starting
+        const nodes_spare_starting = countStarting(true)
+
+        let nodes_spare_deficit = (this.config.min_spare_nodes || 0) - nodes_spare_count - nodes_spare_starting
 
         if (nodes_active_deficit <= 0 && nodes_spare_deficit <= 0) {
             return true
         }
 
         const capacity = await this.get_capacity(3e3)
-
         this.debug('capacity:', capacity)
         for (const duck of capacity) {
             const start = params => {
                 params = params || {}
+
+                const cookie = uuidv4()
+
+                this._starting_nodes.set(cookie, params)
+                setTimeout(() => this._starting_nodes.delete(cookie), this.config.starting_timeout || 5e3)
+
+                params = {...params, start_cookie: cookie}
+
                 const commit = new Commit([
                     (new EmitEvent).target(this.nodes).define('start', params)
                 ])
@@ -205,8 +228,6 @@ class Cluster extends Entity {
                     break
                 }
                 --duck.info.capacity
-                ++this._nodes_starting
-                setTimeout(() => --this._nodes_starting, 5e3)
                 start()
                 --nodes_active_deficit
             }
@@ -216,8 +237,6 @@ class Cluster extends Entity {
                     break
                 }
                 --duck.info.capacity
-                ++this._spare_nodes_starting
-                setTimeout(() => --this._spare_nodes_starting, 5e3)
                 start({spare: true})
                 --nodes_spare_deficit
             }
@@ -228,7 +247,7 @@ class Cluster extends Entity {
             this.debug('cluster capacity deficit: ', deficit)
             return false
         } else {
-            return true
+            return this._starting_nodes.size === 0
         }
     }
 
@@ -336,6 +355,15 @@ class Cluster extends Entity {
 
         this.nodes
             .on('inserted', node => {
+
+                if (node.start_cookie) {
+                    if (this._starting_nodes.delete(node.start_cookie)) {
+                        this.clusterduck.commit([
+                            (new UpdateNode).target(node).deleteAttr('start_cookie')
+                        ])
+                    }
+                }
+
                 node
                     .on('changed_shared_state', node => {
                         if (raft && !raft.isLeader() && !raft.isCandidate()) {
@@ -423,6 +451,9 @@ class Cluster extends Entity {
                     }
                     if (!changed) {
                         await this.nodes.waitFor('all', {timeout: 10e3}).catch(e => {
+                        })
+                    } else if (!finished) {
+                        await this.nodes.waitFor('all', {timeout: 1e3}).catch(e => {
                         })
                     }
                 }

@@ -15,11 +15,15 @@ const MOBILE_SIZE = 992;
 export default class SidebarNav extends Component {
     constructor(props) {
         super(props);
-
+        console.log({sidebar_props: props.layout})
         this.state = {
             sidebarCollapsed: false,
             isMobile: window.innerWidth <= MOBILE_SIZE,
         }
+    }
+
+    isCollapsed() {
+        return this.state.sidebarCollapsed
     }
 
     handleResize = () => {
@@ -37,6 +41,7 @@ export default class SidebarNav extends Component {
     }
 
     componentDidMount() {
+
         window.addEventListener('resize', this.handleResize);
         document.addEventListener('keydown', handleKeyAccessibility);
         document.addEventListener('click', handleClickAccessibility);
@@ -50,8 +55,12 @@ export default class SidebarNav extends Component {
         window.removeEventListener('resize', this.handleResize);
     }
 
-    toggleSideCollapse = () => {
-        this.setState(prevState => ({sidebarCollapsed: !prevState.sidebarCollapsed}));
+    toggleSideCollapse() {
+        this.setState(prevState => {
+            console.log('set = ',  !prevState.sidebarCollapsed)
+            return {sidebarCollapsed: !prevState.sidebarCollapsed}
+        })
+        return !this.state.sidebarCollapsed
     };
 
 
@@ -272,12 +281,6 @@ export default class SidebarNav extends Component {
                                         {navItems(nav.top)}
                                         <NavSpacer/>
                                         {navItems(nav.bottom)}
-                                        <li className={"nav-item"}>
-                                            <ToggleSidebarButton
-                                                isSidebarCollapsed={sidebarCollapsed}
-                                                toggleSidebar={this.toggleSideCollapse}
-                                            />
-                                        </li>
                                     </ul>
                                 </nav>
                             </div>

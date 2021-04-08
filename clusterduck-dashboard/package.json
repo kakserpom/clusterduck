@@ -1,9 +1,9 @@
 {
   "name": "clusterduck-dashboard",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "",
   "author": "Vasily Zorin",
-  "homepage": "/",
+  "homepage": "",
   "dependencies": {
     "@ant-design/icons": "^4.6.2",
     "@emotion/css": "^11.1.3",

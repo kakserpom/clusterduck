@@ -17,6 +17,7 @@ class UpdateNode extends Command {
         }
 
         this.set = {}
+        this.delete = []
         this.command = 'update-node'
         this._ev.once('beforeCommit', () => {
             Array.prototype.includesAny = function () {
@@ -75,6 +76,13 @@ class UpdateNode extends Command {
             const node = root.resolveEntityPath(this.path)
 
             let changed = false, changed_ss = false
+
+            this.delete.forEach(key => {
+                if (dotProp.delete(node, key)) {
+                    changed = true
+                }
+            })
+
             for (const [key, value] of Object.entries(this.set)) {
 
                 const prev = dotProp.get(node, key, null)
@@ -99,8 +107,7 @@ class UpdateNode extends Command {
                 node.emit('changed_shared_state', node)
             }
         } catch (e) {
-            console.error(e.message)
-            console.error(this.command + ': ' + JSON.stringify(this.path) + ' failed')
+            console.error(this.command + ': ' + JSON.stringify(this.path) + ' failed', e)
         }
 
     }
@@ -110,7 +117,7 @@ class UpdateNode extends Command {
      * @returns {boolean}
      */
     get skip() {
-        return Object.keys(this.set || {}).length === 0
+        return Object.keys(this.set || {}).length === 0 && this.delete.length === 0
     }
 
     /**
@@ -143,6 +150,16 @@ class UpdateNode extends Command {
             this.set[key] = value
         }
 
+        return this
+    }
+
+    /**
+     *
+     * @param key
+     * @returns {UpdateNode}
+     */
+    deleteAttr(key) {
+        this.delete.push(key)
         return this
     }
 }

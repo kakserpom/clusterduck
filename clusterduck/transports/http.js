@@ -16,6 +16,8 @@ class Http extends Transport {
     constructor() {
         super(...arguments);
 
+        this.debug = require('diagnostics')('debug');
+
         (this.addons || []).forEach(addon => {
             if (typeof addon === 'string') {
                 new (require(addon))(this)

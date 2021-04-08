@@ -6,6 +6,7 @@ import classnames from "classnames";
 import {withRouter} from 'react-router-dom';
 import {Table, Button} from 'antd';
 import raftIcon from '../../assets/images/raft.svg'
+import {Header, PageContent} from "../../vibe";
 
 class Raft extends CD_Component {
     constructor(props) {
@@ -14,6 +15,7 @@ class Raft extends CD_Component {
     }
 
     componentDidMount() {
+        this.setState({})
     }
 
     render() {
@@ -22,7 +24,7 @@ class Raft extends CD_Component {
         const ActionButton = ({children, onClick, action, node, args, ...props}) => {
             return (
                 <Button style={{marginRight: "10px"}} onClick={() => {
-                 //   clusterduck.command(action, cluster.name, node.addr, ...(args || []))
+                    //   clusterduck.command(action, cluster.name, node.addr, ...(args || []))
                 }} {...props}>
                     {children}
                 </Button>
@@ -170,33 +172,30 @@ class Raft extends CD_Component {
             }
         }
 
-        return (
-            <div>
-                <Row>
-                    <Col>
-                        <div>
-                            <h1><img
-                                src={raftIcon}
-                                style={{width: 70, height: 70}}
-                                alt="Raft"
-                                aria-hidden={true}
-                            /> Raft</h1>
-                        </div>
-                    </Col>
-                </Row>
-                <div>
-                    <Nav tabs>
-                        <TabHeader name={"nodes"}>Nodes</TabHeader>
-                    </Nav>
-                    <TabContent activeTab={this.tab}>
-                        <TabPane tabId="nodes">
+        return (<div>
+                <Header {...this.props}>
+                    <img
+                        src={raftIcon}
+                        style={{width: 40, height: 40}}
+                        alt="Raft"
+                        aria-hidden={true}
+                    /> Raft
+                </Header>
+                <PageContent>
+                    <div>
+                        <Nav tabs>
+                            <TabHeader name={"nodes"}>Nodes</TabHeader>
+                        </Nav>
+                        <TabContent activeTab={this.tab}>
+                            <TabPane tabId="nodes">
 
-                            <NodesTable/>
+                                <NodesTable/>
 
-                        </TabPane>
-                    </TabContent>
-                </div>
+                            </TabPane>
+                        </TabContent>
+                    </div>
 
+                </PageContent>
             </div>
         )
     }

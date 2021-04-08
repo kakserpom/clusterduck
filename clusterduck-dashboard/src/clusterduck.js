@@ -48,7 +48,7 @@ class Clusterduck extends emitter {
         socket.addEventListener('message', ({data}) => {
             const packet = JSON.parse(data)
             this.emit('packet', packet)
-            console.log('Message from server ', packet);
+         //   console.log('Message from server ', packet);
         });
     }
 
