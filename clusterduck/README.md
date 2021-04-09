@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/kakserpom/clusterduck/master/clusterduck-dashboard/src/assets/images/logo.svg" width=180 style="float:left; margin-right: 60px" />
+<img src="https://raw.githubusercontent.com/kakserpom/clusterduck/master/clusterduck-dashboard/src/assets/images/logo.svg" width=180 align=left style="margin-right: 60px" />
 
 clusterduck
 =======
