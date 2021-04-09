@@ -22,7 +22,7 @@
     "clusterduck": "./bin/clusterduck"
   },
   "author": "Vasily Zorin",
-  "license": "LGPL-3.0-or-later",
+  "license": "MIT",
   "dependencies": {
     "axon-tls": "^2.2.1",
     "chalk": "^4.1.0",

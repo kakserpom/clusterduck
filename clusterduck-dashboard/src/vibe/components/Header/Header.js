@@ -20,7 +20,6 @@ export default class Header extends Component {
     };
 
     render() {
-        console.log({Header_render: this.props.layout})
         return (
             <header className="app-header">
                 <SkipToContentLink focusId="primary-content"/>

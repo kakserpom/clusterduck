@@ -19,6 +19,10 @@ class Clusterduck extends emitter {
                 this.clusters[cluster.name] = cluster
                 this.emit('state', this)
                 this.emit('cluster:' + cluster.name, cluster)
+            } else if (packet[0] === 'raft-state') {
+                this.raftState = packet[1]
+                this.emit('state', this)
+                this.emit('raft', this.raftState)
             } else if (packet[0] === 'tail') {
                 this.emit('tail:' + packet[1], packet[2])
             }
@@ -48,7 +52,7 @@ class Clusterduck extends emitter {
         socket.addEventListener('message', ({data}) => {
             const packet = JSON.parse(data)
             this.emit('packet', packet)
-         //   console.log('Message from server ', packet);
+            //   console.log('Message from server ', packet);
         });
     }
 
@@ -102,8 +106,8 @@ class Clusterduck extends emitter {
      * @param func
      */
     raft(func) {
-        if (this.raft) {
-            func(this.raft)
+        if (this.raftState) {
+            func(this.raftState)
         }
         this.on('raft', func)
     }

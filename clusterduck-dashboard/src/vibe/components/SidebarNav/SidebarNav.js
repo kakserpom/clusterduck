@@ -15,7 +15,6 @@ const MOBILE_SIZE = 992;
 export default class SidebarNav extends Component {
     constructor(props) {
         super(props);
-        console.log({sidebar_props: props.layout})
         this.state = {
             sidebarCollapsed: false,
             isMobile: window.innerWidth <= MOBILE_SIZE,

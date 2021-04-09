@@ -333,7 +333,7 @@ class ClusterDuck extends emitter {
             return 1
         }
 
-        return 1 + raft.peers.filter(peer => peer.authenticated).length
+        return 1 + raft.peers.filter(peer => peer.handshaked).length
     }
 
     /**

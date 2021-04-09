@@ -27,7 +27,7 @@
     "sass": "^1.32.8",
     "ws": "^7.1.0"
   },
-  "license": "LGPL-3.0-or-later",
+  "license": "MIT",
   "scripts": {
     "start": "REACT_APP_WS_PORT=8880 react-scripts start",
     "build": "react-scripts build",

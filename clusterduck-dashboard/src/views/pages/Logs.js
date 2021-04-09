@@ -20,7 +20,6 @@ class Logs extends CD_Component {
     }
 
     componentDidMount() {
-        console.log({logs_componentDidMount: this.props.sideBar})
         this.setState({tab: this.props.match.params.tab || 'stdout'})
     }
 

@@ -51,8 +51,6 @@ class Raft extends CD_Component {
         })
 
         const expandedRowRender = node => node.comment ? <p>{node.comment}</p> : <p><i>Empty</i></p>;
-        const showHeader = true;
-        const scroll = {y: 240};
         const pagination = {position: 'both'};
 
         class NodesTable extends React.Component {
@@ -63,15 +61,16 @@ class Raft extends CD_Component {
                 pagination,
                 size: 'default',
                 expandedRowRender,
-                rowSelection: {},
+                //   rowSelection: {},
                 scroll: undefined,
                 tableLayout: undefined,
             };
 
             componentDidMount() {
                 clusterduck.raft(raft => {
+                    console.log(raft)
                     this.fetch(raft.peers ?
-                        raft.nodes.map(peer => ({
+                        raft.peers.map(peer => ({
                             key: peer.address,
                             ...peer,
                         }))
@@ -113,42 +112,38 @@ class Raft extends CD_Component {
                 const columns = [
                     {
                         title: 'Address',
-                        dataIndex: 'addr',
-                        key: 'addr',
+                        dataIndex: 'address',
+                        key: 'address',
                         width: '10%',
                         render: text => <a href={"#!"}>{text}</a>,
-                        sorter: (a, b) => a.addr.localeCompare(b.addr),
-                        sortOrder: sortedInfo.columnKey === 'addr' && sortedInfo.order,
+                        sorter: (a, b) => a.address.localeCompare(b.address),
+                        sortOrder: sortedInfo.columnKey === 'address' && sortedInfo.order,
                     },
                     {
-                        title: 'Active',
+                        title: 'Connected',
                         width: '5%',
-                        dataIndex: 'active',
-                        key: 'active',
-                        render: (active, node) => active ? '🟢' : (node.spare ? '🟡' : '🔴'),
-                        sorter: (a, b) => (a.active ? 1 : 0) - (b.active ? 1 : 0),
-                        sortOrder: sortedInfo.columnKey === 'active' && sortedInfo.order,
+                        dataIndex: 'connected',
+                        key: 'connected',
+                        render: connected => connected ? '🟢' : '🔴',
+                        sorter: (a, b) => (a.connected ? 1 : 0) - (b.connected ? 1 : 0),
+                        sortOrder: sortedInfo.columnKey === 'connected' && sortedInfo.order,
                     },
                     {
-                        title: 'Available',
-                        dataIndex: 'available',
+                        title: 'Latency',
                         width: '5%',
-                        key: 'available',
-                        render: available => available ? '✅' : '❌'
+                        dataIndex: 'latency',
+                        key: 'latency',
+                        sorter: (a, b) => a.latency - b.latency,
+                        sortOrder: sortedInfo.columnKey === 'latency' && sortedInfo.order,
                     },
                     {
-                        title: 'Spare',
-                        dataIndex: 'spare',
-                        width: '5%',
-                        key: 'spare',
-                        render: spare => spare ? 'YES' : 'NO'
-                    },
-                    {
-                        title: 'Disabled',
-                        dataIndex: 'disabled',
-                        width: '5%',
-                        key: 'disabled',
-                        render: disabled => disabled ? 'YES' : 'NO'
+                        title: 'HTTP transport',
+                        width: '7%',
+                        dataIndex: 'http',
+                        key: 'http',
+                        render: connected => connected ? '🟢' : '🔴',
+                        sorter: (a, b) => (a.connected ? 1 : 0) - (b.connected ? 1 : 0),
+                        sortOrder: sortedInfo.columnKey === 'connected' && sortedInfo.order,
                     },
                     {
                         title: 'Action',

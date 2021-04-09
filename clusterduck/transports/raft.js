@@ -58,8 +58,13 @@ class RaftTransport extends Transport {
         })
     }
 
-    export() {
-        return {peers: this.peers}
+    /**
+     *
+     * @param withState
+     * @returns {{peers: (*[]|{})}}
+     */
+    export(withState) {
+        return {peers: this.peers.map(peer => peer.export(withState))}
     }
 
     /**
@@ -120,6 +125,7 @@ class RaftTransport extends Transport {
 
     _socket(address) {
         const socket = msg.socket('req')
+        socket.address = address
 
         socket.on('connect', () => {
             debugPeers('CONNECT EVENT: ' + address)
@@ -135,7 +141,7 @@ class RaftTransport extends Transport {
                     debug(address + ': error: ' + response)
                     return
                 }
-                socket.authenticated = true
+                socket.handshaked = true
                 this.raft.join(address)
                 response.peers.forEach(peer => this.join(peer))
             })
@@ -149,6 +155,12 @@ class RaftTransport extends Transport {
 
         socket.lastConnectAttempt = Date.now()
         socket.connect(address)
+        socket.export = (function(withState) {
+          return {
+              address: socket.address,
+              connected: socket.handshaked,
+          }
+        }).bind(socket)
 
         return socket
     }
@@ -246,11 +258,11 @@ class RaftTransport extends Transport {
                     })
                     boundSocket.on('connect', socket => {
                         const peer = socket.remoteAddress + ':' + socket.remotePort
-                        socket.authenticated = false
+                        socket.handshaked = false
                         debugPeers(`boundSocket: connection from ${peer}`)
                         socket.on('message', (data, fn) => {
                             try {
-                                if (socket.authenticated) {
+                                if (socket.handshaked) {
                                     debugDeep('caught ' + JSON.stringify(data.type) + ' packet from %s', data.address)
                                     this.emit('data', data, fn)
                                     return
@@ -264,7 +276,7 @@ class RaftTransport extends Transport {
                                     return
                                 }
 
-                                socket.authenticated = true
+                                socket.handshaked = true
 
                                 socket.raftAddress = data.address
                                 transport.join(data.address)

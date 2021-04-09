@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import {Switch, Route, Redirect} from 'react-router-dom';
 import {SidebarNav, Footer, PageContent, PageAlert, Page} from '../vibe';
-import Logo from '../assets/images/rubber-duck.svg';
+import Logo from '../assets/images/logo.svg';
 import routes from '../views';
 import ContextProviders from '../vibe/components/utilities/ContextProviders';
 

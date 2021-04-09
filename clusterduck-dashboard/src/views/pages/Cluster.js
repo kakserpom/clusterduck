@@ -56,7 +56,7 @@ class Cluster extends CD_Component {
             )
         })
 
-        const expandedRowRender = node => node.comment ? <p>{node.comment}</p> : <p><i>Empty</i></p>;
+        const expandedRowRender = node => node.comment ? <p>{node.comment}</p> : <p><i>Comment is empty</i></p>;
         const showHeader = true;
         const scroll = {y: 240};
         const pagination = {position: 'both'};
@@ -69,7 +69,7 @@ class Cluster extends CD_Component {
                 pagination,
                 size: 'default',
                 expandedRowRender,
-                rowSelection: {},
+                // rowSelection: {},
                 scroll: undefined,
                 tableLayout: undefined,
             };
@@ -87,13 +87,11 @@ class Cluster extends CD_Component {
             }
 
             handleChange = (pagination, filters, sorter) => {
-                console.log('Various parameters', pagination, filters, sorter);
                 this.setState({
                     pagination: pagination,
                     filteredInfo: filters,
                     sortedInfo: sorter,
                 });
-                //  this.fetch()
             }
 
             fetch(data) {
@@ -101,13 +99,6 @@ class Cluster extends CD_Component {
                     dataSource: data,
                 })
             }
-
-            handlePaginationChange = e => {
-                const {value} = e.target;
-                this.setState({
-                    pagination: value === 'none' ? false : {position: value},
-                });
-            };
 
             render() {
                 const {state} = this;
