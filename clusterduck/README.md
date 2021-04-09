@@ -20,11 +20,17 @@ clusterduck
 - **Health checks, real-time and voting-based.**
 
 
+- **Self-healing clusters.** When the number of active nodes in a cluster falls below a given threshold,
+  new nodes will be started automatically on the least loaded server(s) in a split second.
+  **Spare pools are supported.**
+
+
 - **Events and triggers**
-
-
-- __Easy to use and extend.__
-  Given its modular architecture you can hack up your own plugin in under an hour.
+Just about anything is an event that you can hook up your trigger on.
+  
+  
+- **KISS.**
+  Hacking up your own plugin is definitely not a rocket science.
 
 ### Featured extensions
 
