@@ -1,5 +1,6 @@
-clusterduck-dashboard [![total downloads of clusterduck-dashboard](https://img.shields.io/npm/dt/clusterduck-dashboard.svg)](https://www.npmjs.com/package/clusterduck-dashboard)
+clusterduck-dashboard
 =======
+[![total downloads of clusterduck-dashboard](https://img.shields.io/npm/dt/clusterduck-dashboard.svg)](https://www.npmjs.com/package/clusterduck-dashboard)
 [![clusterduck-dashboard's License](https://img.shields.io/npm/l/clusterduck-dashboard.svg)](https://www.npmjs.com/package/clusterduck-dashboard)
 [![latest version of clusterduck-dashboard](https://img.shields.io/npm/v/clusterduck-dashboard.svg)](https://www.npmjs.com/package/clusterduck-dashboard)
 
@@ -8,8 +9,7 @@ __A dashboard addon for [Clusterduck] which includes:__
 - Live logs
 - Cluster managemeent
 
-
-###_This is just a developement preview!_
+## This is just a developement preview!
 
 ## Table Of Contents
 
