@@ -26,7 +26,7 @@ clusterduck
 
 
 - **Events and triggers**
-Just about anything is an event that you can hook up your trigger on.
+Just about everything is an event that you can hook up your trigger on.
   
   
 - **KISS.**
