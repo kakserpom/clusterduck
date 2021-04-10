@@ -130,8 +130,8 @@ class Envoy {
                     }
                 })
 
-                this.process.on('error', () => {
-                    reject()
+                this.process.on('error', e => {
+                    reject({process_error: e})
                 })
             } catch (e) {
                 reject(e)

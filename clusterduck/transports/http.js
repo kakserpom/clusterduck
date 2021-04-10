@@ -1,8 +1,8 @@
-const Transport = require('../core/transport')
-const array = require('ensure-array')
+const Transport = require('../core/transport');
+const array = require('ensure-array');
 const crypto = require('crypto')
 const {spawn} = require('child_process')
-const readline = require('readline')
+const readline = require('readline');
 
 /**
  *
@@ -20,15 +20,15 @@ class Http extends Transport {
 
         (this.addons || []).forEach(addon => {
             if (typeof addon === 'string') {
-                new (require(addon))(this)
+                new (require(addon))(this);
             } else {
-                new (require(addon.require))(this, addon)
+                new (require(addon.require))(this, addon);
             }
-        })
+        });
     }
 
     doListen() {
-        this.fastify = require('fastify')()
+        this.fastify = require('fastify')();
 
         if (this.auth) {
             this.fastify.register(require('fastify-basic-auth'), {
@@ -36,18 +36,18 @@ class Http extends Transport {
                     const cmpUsername = username.length === this.auth.username.length && crypto.timingSafeEqual(
                         Buffer.from(username),
                         Buffer.from(this.auth.username)
-                    )
+                    );
                     const cmpPassword = password.length === this.auth.password.length && crypto.timingSafeEqual(
                         Buffer.from(password),
                         Buffer.from(this.auth.password)
-                    )
+                    );
                     if (cmpUsername && cmpPassword) {
-                        done()
+                        done();
                     } else {
-                        done(new Error('Winter is coming'))
+                        done(new Error('Winter is coming'));
                     }
                 }, authenticate: {realm: 'Clusterduck'}
-            })
+            });
         }
 
         const raft = this.clusterduck.transports.get('raft');
@@ -56,116 +56,125 @@ class Http extends Transport {
             if (this.auth) {
                 this.fastify.addHook('onRequest', (request, reply, done) => {
                     if (request.url === '/manifest.json') {
-                        done()
-                        return
+                        done();
+                        return;
                     }
-                    this.fastify.basicAuth(request, reply, done)
-                })
+                    this.fastify.basicAuth(request, reply, done);
+                });
             }
 
-            this.fastify.register(require('fastify-websocket'))
+            this.fastify.register(require('fastify-websocket'));
 
-            const api = this.clusterduck.api()
+            const api = this.clusterduck.api();
             this.fastify.get('/socket', {websocket: true}, stream => {
                 const send = (...args) => {
                     try {
-                        stream.socket.send(JSON.stringify(args))
+                        stream.socket.send(JSON.stringify(args));
                     } catch (e) {
-                        console.error(e)
+                        console.error(e);
                     }
-                }
-                this.on('broadcast', send)
+                };
+                this.on('broadcast', send);
 
-                this.clusterduck.clusters.forEach(cluster => send('cluster-state', cluster.export()))
+                this.clusterduck.clusters.forEach(cluster => send('cluster-state', cluster.export()));
 
                 if (raft) {
-                    send('raft-state', raft.export(true))
+                    send('raft-state', raft.export(true));
                 }
 
-                let tail
+                let tail;
 
-                stream.socket
-                    .on('message', message => {
-                        try {
-                            const packet = JSON.parse(message)
-                            const command = packet[0]
-                            const args = packet.slice(1)
+                stream.socket.on('message', message => {
+                    try {
+                        const packet = JSON.parse(message);
+                        const command = packet[0];
+                        const args = packet.slice(1);
 
-                            if (command === 'tail') {
-                                if (tail) {
-                                    tail.kill()
-                                }
-
-                                const type = args[0] === 'stderr' ? 'stderr' : 'stdout'
-
-                                tail = spawn('tail', [
-                                    '-n', 100,
-                                    '-f', this.clusterduck.argv.logDir + '/' + type + '.log'
-                                ])
-
-                                const rl = readline.createInterface({input: tail.stdout})
-                                let buf = ''
-                                let timer
-                                let bufCounter = 0
-                                const flushBuf = () => {
-                                    send('tail', type, buf)
-                                    buf = ''
-                                    bufCounter = 0
-                                }
-                                rl.on('line', line => {
-                                    buf += line + '\n'
-                                    ++bufCounter
-                                    clearTimeout(timer)
-                                    if (bufCounter > 10) {
-                                        flushBuf()
-                                    } else {
-                                        timer = setTimeout(flushBuf, 1)
-                                    }
-                                })
-                            } else {
-                                api[command](args)
+                        if (command === 'tail') {
+                            if (tail) {
+                                tail.kill();
                             }
 
-                        } catch (e) {
-                            send('error', e.toString())
+                            const type = args[0] === 'stderr' ? 'stderr' : 'stdout';
+
+                            tail = spawn('tail', [
+                                '-n', 100,
+                                '-f', this.clusterduck.argv.logDir + '/' + type + '.log'
+                            ]);
+
+                            const rl = readline.createInterface({input: tail.stdout});
+                            let buf = '';
+                            let timer;
+                            let bufCounter = 0;
+                            const flushBuf = () => {
+                                send('tail', type, buf);
+                                buf = '';
+                                bufCounter = 0;
+                            };
+                            rl.on('line', line => {
+                                buf += line + '\n';
+                                ++bufCounter;
+                                clearTimeout(timer);
+                                if (bufCounter > 10) {
+                                    flushBuf();
+                                } else {
+                                    timer = setTimeout(flushBuf, 1);
+                                }
+                            });
+                        } else {
+                            api[command](args);
                         }
-                    })
-                    .on('close', () => this.off('broadcast', send))
-            })
-        })
+
+                    } catch (e) {
+                        send('error', e.toString());
+                    }
+                }).on('close', () => this.off('broadcast', send));
+            });
+        });
 
         this.clusterduck.ready(clusterduck => {
-            clusterduck.clusters
-                .forEach(cluster => cluster.nodes
-                    .on('*', (...args) => {
+            clusterduck.clusters.forEach(cluster => {
+                    cluster.nodes.on('*', (...args) => {
                         try {
                             this.emit('broadcast', 'cluster-state', cluster.export())
                         } catch (e) {
                             console.error(e)
                         }
-                        //this.emit('broadcast', 'cluster-event', cluster.name, ...args)
                     })
-                )
+                    try {
+                        this.emit('broadcast', 'cluster-state', cluster.export())
+                    } catch (e) {
+                        console.error(e)
+                    }
+                }
+            );
             if (raft) {
+                raft.peers.on('all', () => {
+                    try {
+                        this.emit('broadcast', 'raft-state', raft.export(true))
+                    } catch (e) {
+                        console.error(e)
+                    }
+                })
                 this.emit('broadcast', 'raft-state', raft.export(true))
             }
-        })
+        });
 
-        this.emit('listen')
+        this.emit('listen');
 
-        const listen = array(this.listen)
-        this.debug('http: binding ', listen)
+        const listen = array(this.listen);
+        this.debug('http: binding ', listen);
         this.fastify.listen(...listen, err => {
             if (err) {
-                console.error(err)
+                console.error(err);
             }
-        })
+        });
 
         process.on('exit', () => {
-            this.fastify.close()
-        })
+            this.fastify.close();
+        });
     }
 }
 
-module.exports = Http
+module.exports = Http;
 

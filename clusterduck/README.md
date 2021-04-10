@@ -13,35 +13,35 @@ clusterduck
 **Clusterduck** is a robust solution for real-time distributed monitoring and self-healing clustering.
 
 - **[Raft] consensus algorithm. Ducks love them rafts 😉**
-
-  [liferaft] is running over a robust TLS transport with and **peer discovery** and **HMAC-based authentication**. 
+  [liferaft] is running over a robust TLS transport with **peer discovery** and **HMAC-based authentication**.
 
 
 - **Health checks, real-time and voting-based.**
 
 
-- **Self-healing clusters.** When the number of active nodes in a cluster falls below a given threshold,
-  new nodes will be started automatically on the least loaded server(s) in a split second.
+- **Self-healing clusters.** When the number of active nodes in a cluster falls below a given threshold, new nodes will
+  be started automatically on the least loaded server(s) in a split second.
   **Spare pools are supported.**
 
 
 - **Events and triggers**
-Just about everything is an event that you can hook up your trigger on.
-  
-  
+  Just about everything is an event that you can hook up your trigger on.
+
+
 - **KISS.**
   Hacking up your own plugin is definitely not a rocket science.
 
 ### Featured extensions
 
-🚀 [clusterduck-dashboard](https://www.npmjs.com/package/clusterduck-redis) — A full-fledged dashboard built with **React** and
+🚀 [clusterduck-dashboard](https://www.npmjs.com/package/clusterduck-redis) — A full-fledged dashboard built with **
+React** and
 **Websocket**.
 
- <img src="https://cdn.cdnlogo.com/logos/r/3/redis.svg" width=20 style="display:inline"></img> [clusterduck-redis](https://www.npmjs.com/package/clusterduck-redis) — Redis health checks and **envoy**-based
-  balancing
+<img src="https://cdn.cdnlogo.com/logos/r/3/redis.svg" width=20 style="display:inline"></img> [clusterduck-redis](https://www.npmjs.com/package/clusterduck-redis)
+— Redis health checks and **envoy**-based balancing
 
-🚀 [clusterduck-http](https://www.npmjs.com/package/clusterduck-http) — HTTP/Websocket health checks and **haproxy/nginx** support.
-
+🚀 [clusterduck-http](https://www.npmjs.com/package/clusterduck-http) — HTTP/Websocket health checks and **haproxy/nginx**
+support.
 
 ## Table Of Contents
 

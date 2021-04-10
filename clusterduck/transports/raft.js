@@ -13,6 +13,8 @@ const debugPeers = require('diagnostics')('raft-peers')
 const debugDeep = require('diagnostics')('raft-deep')
 const {SHA3} = require('sha3')
 const parseDuration = require('parse-duration')
+const array = require('ensure-array')
+const crypto = require('crypto')
 
 class RaftTransport extends Transport {
     /**
@@ -45,8 +47,11 @@ class RaftTransport extends Transport {
 
         this.peers = new Peers()
 
-        let saveTimeout
-        this.peers.on('all', () => {
+        let saveTimeout;
+
+        this.peers.on('changed', () => {
+            this.peers.emit('all')
+        }).on('all', () => {
             if (saveTimeout) {
                 return
             }
@@ -111,6 +116,10 @@ class RaftTransport extends Transport {
         return this.raft.state === Liferaft.CANDIDATE
     }
 
+    /**
+     *
+     * @returns {boolean}
+     */
     isLeaderOrLongCandidate() {
         return this.isLeader() || (this.isCandidate() && this.state_changed < Date.now() - 10e3)
     }
@@ -126,6 +135,8 @@ class RaftTransport extends Transport {
     _socket(address) {
         const socket = msg.socket('req')
         socket.address = address
+        socket.options = {}
+        socket.latencies = []
 
         socket.on('connect', () => {
             debugPeers('CONNECT EVENT: ' + address)
@@ -134,33 +145,54 @@ class RaftTransport extends Transport {
             socket.send({
                 hash: hash.digest('base64'),
                 address: this.address,
-                peers: this.peers.keys()
+                peers: this.peers.keys(),
             }, response => {
                 debugPeers('CONNECT EVENT: ' + address + ' RESPONSE', response)
                 if (typeof response === 'string') {
                     debug(address + ': error: ' + response)
                     return
                 }
-                socket.handshaked = true
+                socket.connected = true
+                socket.latencies = []
+                socket.pingInterval = setInterval(() => {
+                    const time = Date.now()
+                    socket.send({type: 'ping'}, response => {
+                        const latency = Date.now() - time
+                        socket.latencies.push(latency)
+                        if (socket.latencies.length > 5) {
+                            socket.latencies.shift()
+                        }
+                    })
+                }, 1e3)
+                socket.options = response.options
+                this.peers.emit('changed', socket)
                 this.raft.join(address)
                 response.peers.forEach(peer => this.join(peer))
             })
         })
 
         socket.on('socket error', err => {
-            this.raft.leave(address)
+            socket.connected = false
             socket.lastConnectAttempt = Date.now()
             debugDeep('failed to write to: %s: %s', address, err)
+            this.raft.leave(address)
         })
 
         socket.lastConnectAttempt = Date.now()
         socket.connect(address)
-        socket.export = (function(withState) {
-          return {
-              address: socket.address,
-              connected: socket.handshaked,
-          }
-        }).bind(socket)
+        socket.export = withState => ({
+            address: socket.address,
+            connected: socket.connected,
+            options: socket.options,
+            role: (() => {
+                if (socket.address === this.leader) {
+                    return 'LEADER'
+                } else {
+                    return 'FOLLOWER'
+                }
+            })(),
+            latency: socket.latencies.reduce((p, c) => p + c, 0) / socket.latencies.length,
+        })
 
         return socket
     }
@@ -258,11 +290,15 @@ class RaftTransport extends Transport {
                     })
                     boundSocket.on('connect', socket => {
                         const peer = socket.remoteAddress + ':' + socket.remotePort
-                        socket.handshaked = false
+                        socket.connected = false
                         debugPeers(`boundSocket: connection from ${peer}`)
                         socket.on('message', (data, fn) => {
                             try {
-                                if (socket.handshaked) {
+                                if (socket.connected) {
+                                    if (data.type === 'ping') {
+                                        fn()
+                                        return
+                                    }
                                     debugDeep('caught ' + JSON.stringify(data.type) + ' packet from %s', data.address)
                                     this.emit('data', data, fn)
                                     return
@@ -270,13 +306,27 @@ class RaftTransport extends Transport {
 
                                 const hash = new SHA3(224)
                                 hash.update(JSON.stringify([data.address, transport.passphrase, this.address]))
-                                if (hash.digest('base64') !== data.hash) {
+
+                                const validHash = hash.digest('base64')
+
+                                if (typeof data.hash !== 'string') {
+                                    debug(`boundSocket: ${peer}: protocol error`)
+                                    fn('auth_failed')
+                                    return
+                                }
+
+                                if (validHash.length !== data.hash.length || !crypto.timingSafeEqual(
+                                    Buffer.from(validHash),
+                                    Buffer.from(data.hash)
+                                )) {
                                     debug(`boundSocket: ${peer}: auth_failed`)
                                     fn('auth_failed')
                                     return
                                 }
 
-                                socket.handshaked = true
+                                socket.options = data.options
+
+                                socket.connected = true
 
                                 socket.raftAddress = data.address
                                 transport.join(data.address)
@@ -285,8 +335,18 @@ class RaftTransport extends Transport {
                                     data.peers.forEach(addr => transport.join(addr))
                                 }
 
+                                const options = {}
+                                const http = transport.clusterduck.transports.get('http')
+                                if (http) {
+                                    options.http = {
+                                        url: 'http://' + (new URL(this.address)).hostname + ':' + array(http.listen)[0],
+                                        addons: http.addons,
+                                    }
+                                }
+
                                 fn({
-                                    peers: transport.peers.keys()
+                                    peers: transport.peers.keys(),
+                                    options
                                 })
                             } catch (e) {
                                 debug('boundSocket: ' + (socket.raftAddress || peer) + ': error', e)
@@ -352,14 +412,13 @@ class RaftTransport extends Transport {
                 debug('HEART BEAT TIMEOUT, starting election')
             })
 
-            let following
-            let leader
-
+            this.following = false
+            this.leader = null
             const follow = () => {
-                if (following) {
+                if (this.following) {
                     return
                 }
-                following = true
+                this.following = true
                 setImmediate(() => {
                     transport.messageLeader('new-follower', raft.address)
                 })
@@ -369,8 +428,8 @@ class RaftTransport extends Transport {
                 debugDeep('were now running on term %s -- was %s', to, from)
             }).on('leader change', (to, from) => {
                 debug('NEW LEADER: %s (prior was %s)', to, from || 'unknown')
-                leader = to
-                following = false
+                this.leader = to
+                this.following = false
 
                 if (this.isFollower()) {
                     follow()

@@ -29,9 +29,8 @@ class Cluster extends CD_Component {
 
         const ActionButton = ({children, onClick, action, node, args, ...props}) => {
             return (
-                <Button style={{marginRight: "10px"}} onClick={() => {
-                    clusterduck.command(action, cluster.name, node.addr, ...(args || []))
-                }} {...props}>
+                <Button style={{marginRight: "10px"}} onClick={() =>
+                    clusterduck.command(action, cluster.name, node.addr, ...(args || []))} {...props}>
                     {children}
                 </Button>
             )

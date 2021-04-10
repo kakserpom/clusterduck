@@ -124,13 +124,13 @@ class Collection extends emitter {
     add() {
         for (let i = 0; i < arguments.length; ++i) {
             const object = this.hydrate(arguments[i])
-            if (object === null) {
+            if (!object) {
                 continue
             }
             const key = this.extractKey(object)
             if (!this._map.has(key)) {
                 this._map.set(key, object)
-                this.emit('inserted', object)
+                this.emit('inserted', object, key)
             }
         }
         this.emit('all')
@@ -293,19 +293,6 @@ class Collection extends emitter {
             this.add(entry)
         }
         return this
-    }
-
-    /**
-     *
-     * @param listener
-     */
-    addRangeChangeListener(listener) {
-        this.on('inserted', entry => {
-            listener([entry], [])
-        })
-        this.on('deleted', entry => {
-            listener([], [entry])
-        })
     }
 }
 

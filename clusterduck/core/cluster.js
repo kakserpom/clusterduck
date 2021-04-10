@@ -356,6 +356,10 @@ class Cluster extends Entity {
         this.nodes
             .on('inserted', node => {
 
+                if (!node) {
+                    return
+                }
+
                 if (node.start_cookie) {
                     if (this._starting_nodes.delete(node.start_cookie)) {
                         this.clusterduck.commit([
@@ -388,8 +392,6 @@ class Cluster extends Entity {
                         ])
                     })
                     .on('changed', (node, state) => this.nodes.emit('changed', node, state))
-
-
                     .on('passed', node => {
                         this.clusterduck.commit([
                             (new UpdateNode).target(node).setSharedState(this.clusterduck.id, {

@@ -1,6 +1,6 @@
 {
   "name": "clusterduck-dashboard",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "",
   "author": "Vasily Zorin",
   "homepage": "",
@@ -23,6 +23,7 @@
     "react-fontawesome": "1.6.1",
     "react-router-dom": "^5.2.0",
     "react-scripts": "^3.3.1",
+    "react-spinners": "^0.10.6",
     "reactstrap": "6.4.0",
     "sass": "^1.32.8",
     "ws": "^7.1.0"

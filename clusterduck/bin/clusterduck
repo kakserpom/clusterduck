@@ -96,9 +96,14 @@
             const tail = spawn('tail', [
                 '-f',
                 '-n', 100,
-                argv.logDir + '/' + (argv.type || 'debug') + '.log',
+                argv.logDir + '/' + (
+                    argv.type === 'stderr' ?
+                        argv.type
+                        : 'stdout'
+                ) + '.log',
             ])
             tail.stdout.pipe(process.stdout)
+            tail.stderr.pipe(process.stdout)
         })
 
         yargs.command('edit', 'edit configuration', yargs => {
@@ -225,6 +230,10 @@
         pid.acquireOrThrow()
 
         clusterduck.set_config(new ConfigFile(argv.configFile))
+
+        process.on('exit', code => {
+            console.log('Exited with code: ' + code)
+        })
 
         await clusterduck.run()
     } catch (err) {

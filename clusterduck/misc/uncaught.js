@@ -1,19 +1,20 @@
 const isObject = require('is-obj')
 module.exports = () => {
     process
-        .on('uncaughtException', e => {
-            console.error('Uncaught exception', e)
+        .on('uncaughtException', (err, origin) => {
+            console.log('Uncaught Exception:', err, 'origin:', origin)
+            console.error('Uncaught Exception:', err, 'origin:', origin)
         })
-        .on('unhandledRejection', e => {
-            if (isObject(e)) {
-                if (e.name) {
-                    process.emit('unhandledRejection:' + e.name, e)
+        .on('unhandledRejection', (reason, promise) => {
+            if (isObject(reason)) {
+                if (reason.name) {
+                    process.emit('unhandledRejection:' + reason.name, reason)
                 }
-                if (!e.hide) {
-                    console.error('Unhandled rejection', e)
+                if (reason.hide) {
+                    return
                 }
-            } else {
-                console.error('Unhandled rejection', e)
             }
+            console.log('Unhandled Rejection at:', promise, 'reason:', reason)
+            console.error('Unhandled Rejection at:', promise, 'reason:', reason)
         })
 }

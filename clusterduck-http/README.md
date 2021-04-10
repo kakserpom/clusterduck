@@ -3,7 +3,7 @@ clusterduck-http [![total downloads of clusterduck-http](https://img.shields.io/
 [![clusterduck-http's License](https://img.shields.io/npm/l/clusterduck-http.svg)](https://www.npmjs.com/package/clusterduck-http)
 [![latest version of clusterduck-http](https://img.shields.io/npm/v/clusterduck-http.svg)](https://www.npmjs.com/package/clusterduck-http)
 
-__An [http] extension for [Clusterduck] which includes:__
+__The HTTP extension for [Clusterduck] which includes:__
 
 - HTTP/WebSocket health checks
 - Balancer: [HAProxy] integration with seamless [hot restarting].

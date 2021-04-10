@@ -24,7 +24,9 @@ class Raft extends CD_Component {
         const ActionButton = ({children, onClick, action, node, args, ...props}) => {
             return (
                 <Button style={{marginRight: "10px"}} onClick={() => {
-                    //   clusterduck.command(action, cluster.name, node.addr, ...(args || []))
+                    if (action === 'switch') {
+                        window.location.href = node.http.url + '/raft'
+                    }
                 }} {...props}>
                     {children}
                 </Button>
@@ -50,17 +52,14 @@ class Raft extends CD_Component {
             )
         })
 
-        const expandedRowRender = node => node.comment ? <p>{node.comment}</p> : <p><i>Empty</i></p>;
-        const pagination = {position: 'both'};
-
         class NodesTable extends React.Component {
 
             state = {
                 bordered: true,
                 loading: false,
-                pagination,
+                pagination: {position: 'both'},
                 size: 'default',
-                expandedRowRender,
+                expandedRowRender: node => <p>{JSON.stringify(node.options)}</p>,
                 //   rowSelection: {},
                 scroll: undefined,
                 tableLayout: undefined,
@@ -68,10 +67,10 @@ class Raft extends CD_Component {
 
             componentDidMount() {
                 clusterduck.raft(raft => {
-                    console.log(raft)
                     this.fetch(raft.peers ?
                         raft.peers.map(peer => ({
                             key: peer.address,
+                            http: peer.options.http || false,
                             ...peer,
                         }))
                         : null
@@ -129,10 +128,19 @@ class Raft extends CD_Component {
                         sortOrder: sortedInfo.columnKey === 'connected' && sortedInfo.order,
                     },
                     {
+                        title: 'Role',
+                        width: '5%',
+                        dataIndex: 'role',
+                        key: 'role',
+                        sorter: (a, b) => a.role.localeCompare(b.role),
+                        sortOrder: sortedInfo.columnKey === 'role' && sortedInfo.order,
+                    },
+                    {
                         title: 'Latency',
                         width: '5%',
                         dataIndex: 'latency',
                         key: 'latency',
+                        render: latency => typeof latency === 'number' ? `${latency} ms` : '~',
                         sorter: (a, b) => a.latency - b.latency,
                         sortOrder: sortedInfo.columnKey === 'latency' && sortedInfo.order,
                     },
@@ -141,20 +149,16 @@ class Raft extends CD_Component {
                         width: '7%',
                         dataIndex: 'http',
                         key: 'http',
-                        render: connected => connected ? '🟢' : '🔴',
-                        sorter: (a, b) => (a.connected ? 1 : 0) - (b.connected ? 1 : 0),
-                        sortOrder: sortedInfo.columnKey === 'connected' && sortedInfo.order,
+                        render: http => http ? '🟢' : '🔴',
+                        sorter: (a, b) => (a.http ? 1 : 0) - (b.http ? 1 : 0),
+                        sortOrder: sortedInfo.columnKey === 'http' && sortedInfo.order,
                     },
                     {
                         title: 'Action',
                         key: 'action',
                         render: (text, node) => (
                             <span>
-                        {node.disabled ? <ActionButton action={"updateNode"} node={node}
-                                                       args={[{disabled: false}]}>Enable</ActionButton> :
-                            <ActionButton action={"updateNode"} node={node}
-                                          args={[{disabled: true}]}>Disable</ActionButton>}
-                                <ActionButton action={"deleteNode"} node={node}>Delete</ActionButton>
+                        {node.http ? <ActionButton action={"switch"} node={node}>Switch</ActionButton> : ''}
                     </span>),
                     },
                 ];
