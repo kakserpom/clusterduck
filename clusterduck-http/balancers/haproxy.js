@@ -32,8 +32,12 @@ class BasicBalancer extends Balancer {
             }
         }
 
-        this.cluster.nodes.on('changed', throttleEvent(() => {
-            this.listen()
+        this.cluster.nodes.on('all', throttleEvent(async () => {
+            try {
+                await this.listen()
+            } catch (e) {
+                console.error('Caught exception:', e)
+            }
         }))
 
     }

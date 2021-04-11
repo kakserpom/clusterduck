@@ -430,9 +430,7 @@ class Cluster extends Entity {
             setImmediate((async () => {
                 let changed = false
                 let finished = false
-                this.nodes.on('all', () => {
-                    changed = true
-                })
+                this.nodes.on('all', () => changed = true)
                 if (raft) {
                     raft.on('state', () => finished = false)
                 }
@@ -447,7 +445,7 @@ class Cluster extends Entity {
                         try {
                             finished = await this.check_nodes_limits()
                         } catch (e) {
-                            console.error(e)
+                            console.error('Caught exception:', e)
                             finished = false
                         }
                     }

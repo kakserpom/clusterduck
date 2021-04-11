@@ -9,7 +9,6 @@ import {
 import CD_Component from "../../CD_Component";
 import {Link} from "react-router-dom";
 import {Header, PageContent} from "../../vibe";
-import * as Feather from "react-feather";
 
 class Dashboard extends CD_Component {
     constructor() {

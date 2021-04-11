@@ -50,16 +50,16 @@ class Http extends Transport {
             });
         }
 
-        const raft = this.clusterduck.transports.get('raft');
+        const raft = this.clusterduck.transports.get('raft')
 
         this.fastify.after(() => {
             if (this.auth) {
                 this.fastify.addHook('onRequest', (request, reply, done) => {
                     if (request.url === '/manifest.json') {
-                        done();
-                        return;
+                        done()
+                        return
                     }
-                    this.fastify.basicAuth(request, reply, done);
+                    this.fastify.basicAuth(request, reply, done)
                 });
             }
 
@@ -69,9 +69,9 @@ class Http extends Transport {
             this.fastify.get('/socket', {websocket: true}, stream => {
                 const send = (...args) => {
                     try {
-                        stream.socket.send(JSON.stringify(args));
+                        stream.socket.send(JSON.stringify(args))
                     } catch (e) {
-                        console.error(e);
+                        console.error('Caught exception', e)
                     }
                 };
                 this.on('broadcast', send);

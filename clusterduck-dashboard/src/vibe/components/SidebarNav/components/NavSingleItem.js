@@ -8,7 +8,7 @@ const NavSingleItem = ({item}) => {
     if (item.icon) {
         if (item.icon.substr(0, 1) === '/') {
             Icon = props => {
-                return <img src={item.icon} {...props}/>
+                return <img alt="Icon" src={item.icon} {...props}/>
             }
         } else if (Feather[item.icon]) {
             Icon = Feather[item.icon]

@@ -1,27 +1,27 @@
-import React, {Component, createElement}                  from 'react';
-import {Switch, Route, Redirect}                          from 'react-router-dom';
-import {SidebarNav, Footer, PageContent, PageAlert, Page} from '../vibe';
-import Logo                                               from '../assets/images/logo.svg';
-import routes                                             from '../views';
-import ContextProviders                                   from '../vibe/components/utilities/ContextProviders';
-import clusterduck                                        from '../clusterduck';
-import RingLoader                                         from 'react-spinners/RingLoader';
-import {css}                                              from '@emotion/core';
+import React, {Component} from 'react';
+import {Switch, Route, Redirect} from 'react-router-dom';
+import {SidebarNav, PageAlert, Page} from '../vibe';
+import Logo from '../assets/images/logo.svg';
+import routes from '../views';
+import ContextProviders from '../vibe/components/utilities/ContextProviders';
+import clusterduck from '../clusterduck';
+import RingLoader from 'react-spinners/RingLoader';
+import {css} from '@emotion/core';
+import ErrorPage from "../views/pages/404";
 
 export default class DashboardLayout extends Component {
-    getSideBar () {
+    getSideBar() {
         return this.sideBar.current;
     }
 
-    constructor () {
+    constructor() {
         super();
         this.sideBar = React.createRef();
 
         let port;
         if (process.env.REACT_APP_WS_PORT) {
             port = process.env.REACT_APP_WS_PORT;
-        }
-        else if (window.location.port !== 80) {
+        } else if (window.location.port !== 80) {
             port = window.location.port;
         }
         clusterduck.connect('ws://' + window.location.hostname + (port ? ':' + port : '') + '/socket');
@@ -33,7 +33,7 @@ export default class DashboardLayout extends Component {
         });
     }
 
-    render () {
+    render() {
         const appDivRef = React.createRef();
 
         const override = css`
@@ -60,11 +60,14 @@ export default class DashboardLayout extends Component {
                         <Page>
                             <Switch>
                                 {routes.map((page, key) => (
-                                    <Route path={page.path} render={(props) => (
+                                    <Route exact path={page.path} render={(props) => (
                                         <page.component {...props} layout={this}/>
                                     )} key={key}/>
                                 ))}
-                                <Redirect from="/" to="/home"/>
+                                <Redirect exact from="/" to="/home"/>
+                                <Route path="/" render={(props) => (
+                                    <ErrorPage {...props} layout={this}/>
+                                )}/>
                             </Switch>
                         </Page>
                     </div>

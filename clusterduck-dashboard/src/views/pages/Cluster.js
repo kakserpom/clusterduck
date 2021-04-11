@@ -1,18 +1,18 @@
 import React from 'react';
 import clusterduck from '../../clusterduck'
-import {Row, Col, Nav, NavItem, NavLink, TabContent, TabPane} from 'reactstrap';
+import {Nav, NavItem, NavLink, TabContent, TabPane} from 'reactstrap';
 import CD_Component from "../../CD_Component";
 import classnames from "classnames";
 import {withRouter} from 'react-router-dom';
 import {Table, Button} from 'antd';
 import {Header} from "../../vibe/index";
-import {Page, PageContent} from "../../vibe";
-import * as Feather from 'react-feather';
+import {PageContent} from "../../vibe";
 
 class Cluster extends CD_Component {
     constructor(props) {
         super(props)
         this.tab = this.props.match.params.tab || 'nodes'
+        this.section = this.props.match.params.section || ''
     }
 
     componentDidMount() {
@@ -35,11 +35,11 @@ class Cluster extends CD_Component {
                 </Button>
             )
         }
-        const TabHeader = withRouter(({history, children, name}) => {
+        const TabHeader = withRouter(({history, children, name, section}) => {
             return (
                 <NavItem>
                     <NavLink
-                        href={'/clusters/' + cluster.name + '/' + name}
+                        href={'/clusters/' + encodeURIComponent(cluster.name) + '/' + encodeURIComponent(name) + (section ? '/' + encodeURIComponent(section) : '')}
                         className={classnames({active: this.tab === name})}
                         onClick={function (e) {
                             e.preventDefault()
@@ -56,8 +56,6 @@ class Cluster extends CD_Component {
         })
 
         const expandedRowRender = node => node.comment ? <p>{node.comment}</p> : <p><i>Comment is empty</i></p>;
-        const showHeader = true;
-        const scroll = {y: 240};
         const pagination = {position: 'both'};
 
         class NodesTable extends React.Component {
@@ -102,9 +100,10 @@ class Cluster extends CD_Component {
             render() {
                 const {state} = this;
                 let {sortedInfo} = state;
-                let {filteredInfo} = state;
                 sortedInfo = sortedInfo || {};
-                filteredInfo = filteredInfo || {};
+
+                //let {filteredInfo} = state;
+                //filteredInfo = filteredInfo || {};
 
                 const columns = [
                     {
@@ -179,20 +178,31 @@ class Cluster extends CD_Component {
                     /> {cluster.name}
                 </Header>
                 <PageContent>
+                    <div className="page-sub-nav">
+                        <Nav pills>
+                            <TabHeader name={"nodes"}>Nodes</TabHeader>
+                            <TabHeader name={"balancers"}>Balancers</TabHeader>
+                        </Nav>
+                    </div>
                     <div>
-                        <div>
-                            <Nav tabs>
-                                <TabHeader name={"nodes"}>Nodes</TabHeader>
-                            </Nav>
-                            <TabContent activeTab={this.tab}>
-                                <TabPane tabId="nodes">
-
-                                    <NodesTable/>
-
-                                </TabPane>
-                            </TabContent>
-                        </div>
-
+                        {this.tab === 'nodes' ? <NodesTable/> : ''}
+                        {this.tab === 'balancers' ? <div>
+                                <Nav tabs>
+                                    {Object.keys(cluster.balancers || {}).map(balancer =>
+                                        <TabHeader name={"balancers"} section={balancer} key={'balancers/'+ balancer}>{balancer}</TabHeader>
+                                    )}
+                                </Nav>
+                                <TabContent activeTab={this.section}>
+                                    {Object.keys(cluster.balancers || {}).map(name => {
+                                        const balancer = cluster.balancers[name]
+                                        console.log([this.section, name])
+                                        return <TabPane tabId={name} key={name}>
+                                           {JSON.stringify(balancer)}
+                                        </TabPane>
+                                    })}
+                                </TabContent>
+                            </div>
+                            : ''}
                     </div>
                 </PageContent>
             </div>

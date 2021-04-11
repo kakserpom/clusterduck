@@ -1,6 +1,6 @@
 {
   "name": "clusterduck",
-  "version": "0.1.74",
+  "version": "0.1.79",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck",
   "keywords": [
@@ -11,8 +11,7 @@
     "raft"
   ],
   "scripts": {
-    "test": "./node_modules/.bin/uvu tests",
-    "postinstall": "patch-package"
+    "test": "./node_modules/.bin/uvu tests", "postinstall": "patch-package"
   },
   "repository": {
     "type": "git",

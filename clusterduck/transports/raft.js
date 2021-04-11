@@ -49,9 +49,7 @@ class RaftTransport extends Transport {
 
         let saveTimeout;
 
-        this.peers.on('changed', () => {
-            this.peers.emit('all')
-        }).on('all', () => {
+        this.peers.on('all', () => {
             if (saveTimeout) {
                 return
             }
@@ -191,7 +189,7 @@ class RaftTransport extends Transport {
                     return 'FOLLOWER'
                 }
             })(),
-            latency: socket.latencies.reduce((p, c) => p + c, 0) / socket.latencies.length,
+            latency: Math.round(socket.latencies.reduce((p, c) => p + c, 0) / socket.latencies.length * 100) / 100,
         })
 
         return socket
@@ -294,11 +292,12 @@ class RaftTransport extends Transport {
                         debugPeers(`boundSocket: connection from ${peer}`)
                         socket.on('message', (data, fn) => {
                             try {
+                                if (data.type === 'ping') {
+                                    fn()
+                                    return
+                                }
+
                                 if (socket.connected) {
-                                    if (data.type === 'ping') {
-                                        fn()
-                                        return
-                                    }
                                     debugDeep('caught ' + JSON.stringify(data.type) + ' packet from %s', data.address)
                                     this.emit('data', data, fn)
                                     return
@@ -310,7 +309,7 @@ class RaftTransport extends Transport {
                                 const validHash = hash.digest('base64')
 
                                 if (typeof data.hash !== 'string') {
-                                    debug(`boundSocket: ${peer}: protocol error`)
+                                    debug(`boundSocket: ${peer}: protocol error: ${JSON.stringify(data)}`)
                                     fn('auth_failed')
                                     return
                                 }

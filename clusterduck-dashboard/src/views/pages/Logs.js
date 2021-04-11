@@ -1,9 +1,8 @@
 import React, {useEffect} from 'react';
 import clusterduck from '../../clusterduck.js'
 import CD_Component from "../../CD_Component";
-import * as Feather from 'react-feather';
 import {css} from '@emotion/css';
-import {Header, PageContent} from "../../vibe";
+import {Header} from "../../vibe";
 
 
 const AnsiConverter = require('ansi-to-html');

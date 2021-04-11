@@ -8,7 +8,6 @@ import App from './App';
 
 
 import "@fortawesome/fontawesome-free/css/all.min.css";
-import "antd/dist/antd.css";
 
 ReactDOM.render(<App/>, document.getElementById('app'));
 // If you want your app to work offline and load faster, you can change

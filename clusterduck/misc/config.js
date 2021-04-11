@@ -44,7 +44,7 @@ class ConfigFile extends emitter {
         try {
             await writeFileAtomic(fs.realpathSync(this.path), output)
         } catch (e) {
-            console.error(e)
+            console.warn('Caught exception:', e)
         }
     }
 }

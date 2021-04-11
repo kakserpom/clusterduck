@@ -17,16 +17,8 @@ class EnvoyBalancer extends Balancer {
      *
      */
     init() {
-
-        // https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-base-id
-        this.base_id = null
-
-        // https://www.envoyproxy.io/docs/envoy/latest/operations/cli#cmdoption-restart-epoch
-        this.restart_epoch = 0
-
         this.debug = require('diagnostics')('envoy')
         this.debugDeep = require('diagnostics')('envoy-deep')
-
         this._socket = null
     }
 
@@ -54,8 +46,7 @@ class EnvoyBalancer extends Balancer {
             this.config.socket_file || '/var/run/clusterduck/envoy-wrapper-%s.sock',
             this.cluster.clusterduck.config_id
         )
-        this._socket = net.createConnection(socketFile)
-        this._socket.on('connect', () => {
+        this._socket = net.connect(socketFile, () => {
             const rl = readline.createInterface({input: this._socket})
             send()
             rl.on('line', line => {
@@ -91,7 +82,11 @@ class EnvoyBalancer extends Balancer {
             for (; ;) {
                 if (changed) {
                     changed = false
-                    await this.listen()
+                    try {
+                        await this.listen()
+                    } catch (e) {
+                        console.error('Caught exception:', e)
+                    }
                 }
                 if (!changed) {
                     try {

@@ -1,6 +1,6 @@
 import React from 'react';
 import clusterduck from '../../clusterduck.js'
-import {Row, Col, Nav, NavItem, NavLink, TabContent, TabPane} from 'reactstrap';
+import {Nav, NavItem, NavLink} from 'reactstrap';
 import CD_Component from "../../CD_Component";
 import classnames from "classnames";
 import {withRouter} from 'react-router-dom';
@@ -104,9 +104,10 @@ class Raft extends CD_Component {
             render() {
                 const {state} = this;
                 let {sortedInfo} = state;
-                let {filteredInfo} = state;
                 sortedInfo = sortedInfo || {};
-                filteredInfo = filteredInfo || {};
+
+                //let {filteredInfo} = state;
+                //filteredInfo = filteredInfo || {};
 
                 const columns = [
                     {
@@ -149,7 +150,7 @@ class Raft extends CD_Component {
                         width: '7%',
                         dataIndex: 'http',
                         key: 'http',
-                        render: http => http ? '🟢' : '🔴',
+                        render: (http, node) => node.connected && http ? '🟢' : '🔴',
                         sorter: (a, b) => (a.http ? 1 : 0) - (b.http ? 1 : 0),
                         sortOrder: sortedInfo.columnKey === 'http' && sortedInfo.order,
                     },
@@ -182,18 +183,8 @@ class Raft extends CD_Component {
                 </Header>
                 <PageContent>
                     <div>
-                        <Nav tabs>
-                            <TabHeader name={"nodes"}>Nodes</TabHeader>
-                        </Nav>
-                        <TabContent activeTab={this.tab}>
-                            <TabPane tabId="nodes">
-
-                                <NodesTable/>
-
-                            </TabPane>
-                        </TabContent>
+                       <NodesTable/>
                     </div>
-
                 </PageContent>
             </div>
         )

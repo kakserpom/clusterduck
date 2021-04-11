@@ -4,12 +4,13 @@ clusterduck-dashboard
 [![clusterduck-dashboard's License](https://img.shields.io/npm/l/clusterduck-dashboard.svg)](https://www.npmjs.com/package/clusterduck-dashboard)
 [![latest version of clusterduck-dashboard](https://img.shields.io/npm/v/clusterduck-dashboard.svg)](https://www.npmjs.com/package/clusterduck-dashboard)
 
-__A dashboard addon for [Clusterduck] which includes:__
+__The dashboard addon for [Clusterduck] that features:__
 
 - Live logs
-- Cluster managemeent
+- Cluster management
+- Raft cluster view
 
-## This is just a developement preview!
+## *This is just a development preview!*
 
 ## Table Of Contents
 

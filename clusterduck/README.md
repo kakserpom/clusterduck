@@ -25,7 +25,7 @@ clusterduck
 
 
 - **Events and triggers**
-  Just about everything is an event that you can hook up your trigger on.
+  Just about everything is an event that you can hook up your trigger to.
 
 
 - **KISS.**
@@ -33,8 +33,7 @@ clusterduck
 
 ### Featured extensions
 
-🚀 [clusterduck-dashboard](https://www.npmjs.com/package/clusterduck-redis) — A full-fledged dashboard built with **
-React** and
+🚀 [clusterduck-dashboard](https://www.npmjs.com/package/clusterduck-redis) — A full-fledged dashboard built with **React** and
 **Websocket**.
 
 <img src="https://cdn.cdnlogo.com/logos/r/3/redis.svg" width=20 style="display:inline"></img> [clusterduck-redis](https://www.npmjs.com/package/clusterduck-redis)
@@ -224,10 +223,6 @@ Parameter           | Description
 
 - [express](https://www.npmjs.com/package/express)
 - [jayson](https://www.npmjs.com/package/jayson), [jayson-promise](https://www.npmjs.com/package/jayson-promise)
-
-## License
-
-LGPL 3.0 or later.
 
 [Raft]: https://ramcloud.stanford.edu/raft.pdf
 
