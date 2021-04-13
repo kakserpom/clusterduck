@@ -1,9 +1,7 @@
 import React from 'react';
 import clusterduck from '../../clusterduck.js'
-import {Nav, NavItem, NavLink} from 'reactstrap';
+import {Breadcrumb, BreadcrumbItem, Card, CardBody, CardHeader} from 'reactstrap';
 import CD_Component from "../../CD_Component";
-import classnames from "classnames";
-import {withRouter} from 'react-router-dom';
 import {Table, Button} from 'antd';
 import raftIcon from '../../assets/images/raft.svg'
 import {Header, PageContent} from "../../vibe";
@@ -19,7 +17,9 @@ class Raft extends CD_Component {
     }
 
     render() {
-        const that = this
+        if (!this.state) {
+            return <div/>
+        }
 
         const ActionButton = ({children, onClick, action, node, args, ...props}) => {
             return (
@@ -32,25 +32,31 @@ class Raft extends CD_Component {
                 </Button>
             )
         }
-        const TabHeader = withRouter(({history, children, name}) => {
-            return (
-                <NavItem>
-                    <NavLink
-                        href={'/raft/' + name}
-                        className={classnames({active: this.tab === name})}
-                        onClick={function (e) {
-                            e.preventDefault()
-                            history.push(this.href)
-                            that.tab = name
-                            that.render()
-                        }}
-                        aria-current="page"
-                    >
-                        {children}
-                    </NavLink>
-                </NavItem>
-            )
-        })
+
+        class Overview extends React.Component {
+            state = null
+
+            componentDidMount() {
+                clusterduck.raft(raft => {
+                    this.setState({raft})
+                })
+            }
+
+            render() {
+                if (!this.state) {
+                    return <div/>
+                }
+                const {raft} = this.state
+                return <div><Card>
+                    <CardHeader><strong>{raft.address}</strong></CardHeader>
+                    <CardBody>
+                        <div>
+                            <h3>Status: {raft.state}</h3>
+                        </div>
+                    </CardBody>
+                </Card></div>
+            }
+        }
 
         class NodesTable extends React.Component {
 
@@ -174,17 +180,18 @@ class Raft extends CD_Component {
 
         return (<div>
                 <Header {...this.props}>
-                    <img
-                        src={raftIcon}
-                        style={{width: 40, height: 40}}
-                        alt="Raft"
-                        aria-hidden={true}
-                    /> Raft
+                    <Breadcrumb>
+                        <BreadcrumbItem active={true}> <img
+                            src={raftIcon}
+                            style={{width: 40, height: 40}}
+                            alt="Raft"
+                            aria-hidden={true}
+                        /> Raft</BreadcrumbItem>
+                    </Breadcrumb>
                 </Header>
                 <PageContent>
-                    <div>
-                       <NodesTable/>
-                    </div>
+                    <Overview/>
+                    <NodesTable/>
                 </PageContent>
             </div>
         )

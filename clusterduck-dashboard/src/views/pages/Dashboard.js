@@ -4,7 +4,7 @@ import {
     Card,
     CardBody,
     Row,
-    Col
+    Col, Breadcrumb, BreadcrumbItem
 } from 'reactstrap';
 import CD_Component from "../../CD_Component";
 import {Link} from "react-router-dom";
@@ -25,21 +25,24 @@ class Dashboard extends CD_Component {
 
         return (
             <div>
-                <Header {...this.props}>Home</Header>
+                <Header {...this.props}>
+                    <Breadcrumb>
+                        <BreadcrumbItem active={true}>Home</BreadcrumbItem>
+                    </Breadcrumb>
+                </Header>
                 <PageContent>
                     <div>
                         <Row>
                             <Col md={6}>
                                 <div className="home-hero" style={heroStyles}>
-                                    <h1>Clusterduck</h1>
+                                    <h1>Dashboard <span role={"img"} aria-label={"rocket"}>🚀</span></h1>
                                     <p className="text-muted">
-                                        Dashboard
+
                                     </p>
                                 </div>
                             </Col>
                         </Row>
                         {Object.entries(clusters || {}).map(([name, cluster]) => {
-                            console.log(cluster)
                             return <Row key={'cluster_' + name}>
                                 <Col md={6}>
                                     <Card>

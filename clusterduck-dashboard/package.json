@@ -1,6 +1,6 @@
 {
   "name": "clusterduck-dashboard",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "",
   "author": "Vasily Zorin",
   "homepage": "",
@@ -14,8 +14,10 @@
     "bootstrap-css-only": "^4.4.1",
     "chart.js": "^2.7.3",
     "classnames": "^2.2.6",
+    "color-json": "^2.0.1",
     "eventemitter2": "^6.4.4",
     "fastify-static": "^4.0.1",
+    "js-cookie": "^2.2.1",
     "react": "^16.8.0",
     "react-chartjs-2": "2.6.4",
     "react-dom": "^16.8.1",

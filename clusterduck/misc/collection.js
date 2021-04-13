@@ -101,6 +101,24 @@ class Collection extends emitter {
 
     /**
      *
+     * @param callback
+     * @returns {number}
+     */
+    count(callback) {
+        if (!callback) {
+            return this.size
+        }
+        let count = 0
+        this._map.forEach((value, key) => {
+            if (callback(value, key, this)) {
+                ++count
+            }
+        })
+        return count
+    }
+
+    /**
+     *
      * @returns {Collection}
      */
     clear() {

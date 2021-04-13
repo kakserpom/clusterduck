@@ -25,6 +25,7 @@ class RaftTransport extends Transport {
     constructor(config, clusterduck) {
         super(config, clusterduck)
 
+        this.state = 'UNKNOWN'
         this.state_changed = Date.now()
 
         this.commitMode = this.commitMode || 'rpc'
@@ -67,7 +68,11 @@ class RaftTransport extends Transport {
      * @returns {{peers: (*[]|{})}}
      */
     export(withState) {
-        return {peers: this.peers.map(peer => peer.export(withState))}
+        return {
+            address: this.address,
+            state: this.state,
+            peers: this.peers.map(peer => peer.export(withState))
+        }
     }
 
     /**
@@ -185,8 +190,10 @@ class RaftTransport extends Transport {
             role: (() => {
                 if (socket.address === this.leader) {
                     return 'LEADER'
-                } else {
+                } else if (socket.connected) {
                     return 'FOLLOWER'
+                } else {
+                    return 'UNKNOWN'
                 }
             })(),
             latency: Math.round(socket.latencies.reduce((p, c) => p + c, 0) / socket.latencies.length * 100) / 100,
@@ -310,7 +317,7 @@ class RaftTransport extends Transport {
 
                                 if (typeof data.hash !== 'string') {
                                     debug(`boundSocket: ${peer}: protocol error: ${JSON.stringify(data)}`)
-                                    fn('auth_failed')
+                                    fn('protocol_error')
                                     return
                                 }
 
@@ -386,7 +393,20 @@ class RaftTransport extends Transport {
                         debug('SOCKET NOT CONNECTED, ' + JSON.stringify(packet.type) + ' packet %s', this.address)
                     }
 
-                    socket.send(packet, data => fn(undefined, data))
+                    socket.send(packet, data => {
+                        try {
+                            // If the connection went out of sync due to a quick node restart
+                            if (data === 'protocol_error') {
+                                socket.emit('socket error')
+                                this.join(this.address)
+                            } else {
+                                fn(undefined, data)
+                            }
+
+                        } catch (e) {
+                            console.error('Caught error:', e)
+                        }
+                    })
                 }
             }
 
@@ -435,8 +455,8 @@ class RaftTransport extends Transport {
                 }
             }).on('state change', (to, from) => {
                 this.state_changed = Date.now()
-
-                transport.emit('state', DuckRaft.states[to])
+                this.state = DuckRaft.states[to] || 'UNKNOWN'
+                transport.emit('state', this.state)
                 transport.emit(DuckRaft.states[to].toLowerCase())
 
                 if (this.isFollower()) {
@@ -444,8 +464,8 @@ class RaftTransport extends Transport {
                 }
 
                 transport.emit('state change', to, from)
-                transport.clusterduck.updateProcessTitle({RAFT: DuckRaft.states[to]})
-                debug('STATE CHANGE: %s (prior from %s)', DuckRaft.states[to], DuckRaft.states[from])
+                transport.clusterduck.updateProcessTitle({RAFT: this.state})
+                debug('STATE CHANGE: %s (prior from %s)', this.state, DuckRaft.states[from])
             })
 
             raft.on('commit', command => {

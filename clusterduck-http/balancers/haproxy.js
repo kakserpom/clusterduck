@@ -8,6 +8,7 @@ const debug = require('diagnostics')('haproxy')
 const debugDeep = require('diagnostics')('haproxy-deep')
 const md5 = require('md5')
 const array = require('ensure-array')
+const throttleEvent = require('clusterduck/misc/throttle-event')
 
 /**
  *
@@ -18,19 +19,6 @@ class BasicBalancer extends Balancer {
      * Start
      */
     start() {
-
-        const throttleEvent = callback => {
-            let timeout
-            return (...args) => {
-                if (timeout) {
-                    return
-                }
-                timeout = setTimeout(() => {
-                    timeout = null
-                    callback(...args)
-                }, 1)
-            }
-        }
 
         this.cluster.nodes.on('all', throttleEvent(async () => {
             try {

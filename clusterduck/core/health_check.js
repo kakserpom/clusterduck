@@ -10,9 +10,6 @@ const promiseWithTimeout = require('../misc/promise-with-timeout')
  */
 const parseDuration = require('parse-duration')
 const Entity = require("../misc/entity")
-const Thread = require("./thread");
-
-const debug = require('diagnostics')('health_checks')
 
 /**
  * HealthCheck model
@@ -77,7 +74,7 @@ class HealthCheck extends Entity {
             }
             throw error
         }).then(result => {
-
+            this.result = result
         })
     }
 }

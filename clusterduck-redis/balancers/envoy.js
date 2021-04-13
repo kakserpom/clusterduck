@@ -2,11 +2,12 @@ const Balancer = require('clusterduck/core/balancer')
 
 const parseAddr = require('clusterduck/misc/addr')
 
-const {spawn} = require('child_process')
+const {spawn, exec} = require('child_process')
 const array = require('ensure-array')
 const net = require('net');
 const readline = require('readline')
 const util = require('util')
+const axios = require('axios')
 
 /**
  *
@@ -20,6 +21,12 @@ class EnvoyBalancer extends Balancer {
         this.debug = require('diagnostics')('envoy')
         this.debugDeep = require('diagnostics')('envoy-deep')
         this._socket = null
+
+        this.software = {
+            logo: 'https://raw.githubusercontent.com/kakserpom/clusterduck/master/clusterduck-redis/icons/envoy.svg',
+            name: 'Envoy',
+            url: 'https://envoyproxy.io/',
+        }
     }
 
     /**
@@ -33,9 +40,46 @@ class EnvoyBalancer extends Balancer {
         return super._exportable(key, withState) && key !== 'cluster';
     }
 
+    /**
+     *
+     * @returns {string|null}
+     */
+    get baseUrl() {
+        if (!this.lastConfig || !this.lastConfig.admin) {
+            return null
+        }
+        let {address, port_value} = this.lastConfig.admin.address.socket_address
+        if (address === '0.0.0.0') {
+            address = '127.0.0.1'
+        }
+        return 'http://' + address + ':' + port_value
+    }
+
+    async fetchInfo(type) {
+        const baseUrl = this.baseUrl
+
+        if (!baseUrl) {
+            return null
+        }
+
+        try {
+            const {data} = await axios.get(baseUrl + '/' + type)
+        } catch (e) {
+            return null
+        }
+
+        const dotProp = this.cluster.clusterduck.require('dot-prop')
+        const obj = {}
+        for (let [, key, value] of data.matchAll(/^(?!#)([^\x20]+): (.+)$/gm)) {
+            key = key.replace(/(?<=listener.)[^_]+_\d+(?=.[a-z])/, match => dotProp.escape(match))
+            dotProp.set(obj, key, value)
+        }
+        return obj
+    }
 
     listen() {
-        const send = () => this._socket.write(JSON.stringify(this.envoy()) + '\n')
+        const config = this.lastConfig = this.envoy()
+        const send = () => this._socket.write(JSON.stringify(config) + '\n')
 
         if (this._socket) {
             send()
@@ -46,16 +90,9 @@ class EnvoyBalancer extends Balancer {
             this.config.socket_file || '/var/run/clusterduck/envoy-wrapper-%s.sock',
             this.cluster.clusterduck.config_id
         )
-        this._socket = net.connect(socketFile, () => {
-            const rl = readline.createInterface({input: this._socket})
-            send()
-            rl.on('line', line => {
-                const array = JSON.parse(line.trim())
-                if (['debug', 'debugDeep'].includes(array[0])) {
-                    this[array[0]](...array.slice(1))
-                }
-            })
-        }).on('error', (e) => {
+
+        const spawnWrapper = () => {
+            this.debugDeep('Spawning envoy-wrapper')
             this._socket = null
             const proc = spawn(this.config.envoy_wrapper_bin || __dirname + '/../bin/envoy-wrapper', [
                 'start',
@@ -69,7 +106,34 @@ class EnvoyBalancer extends Balancer {
             proc.stdout.on('data', data => this.debug(data.toString()))
             proc.stderr.on('data', data => console.error(data.toString()))
             setTimeout(() => this.listen(), 1e3)
-        })
+        }
+
+        this._socket = net.connect(socketFile, () => {
+            const rl = readline.createInterface({input: this._socket})
+            send()
+            const responseTimeout = setTimeout(async () => {
+                // Envoy-wrapper is not responding
+                this.debugDeep('Stopping unresponsive envoy-wrapper')
+                const proc = spawn(this.config.envoy_wrapper_bin || __dirname + '/../bin/envoy-wrapper', [
+                    'stop',
+                    '--pid-file', util.format(
+                        this.config.pid_file || '/var/run/clusterduck/envoy-wrapper-%s.pid',
+                        this.cluster.clusterduck.config_id
+                    ),
+                    '--socket-file', socketFile,
+                ])
+                proc.stdout.on('data', data => console.log(data.toString()))
+                proc.stderr.on('data', data => console.error(data.toString()))
+                this._socket.on('close', () => spawnWrapper())
+            }, 5e3)
+            rl.on('line', line => {
+                clearTimeout(responseTimeout)
+                const array = JSON.parse(line.trim())
+                if (['debug', 'debugDeep'].includes(array[0])) {
+                    this[array[0]](...array.slice(1))
+                }
+            })
+        }).on('error', () => spawnWrapper())
     }
 
     /**
@@ -82,10 +146,13 @@ class EnvoyBalancer extends Balancer {
             for (; ;) {
                 if (changed) {
                     changed = false
-                    try {
-                        await this.listen()
-                    } catch (e) {
-                        console.error('Caught exception:', e)
+
+                    if (this.cluster.initialized) {
+                        try {
+                            await this.listen()
+                        } catch (e) {
+                            console.error('Caught exception:', e)
+                        }
                     }
                 }
                 if (!changed) {
@@ -146,7 +213,7 @@ class EnvoyBalancer extends Balancer {
             name: this.cluster.name + '__' + this.name,
 
             // Connect timeout
-            connect_timeout: this.config.connect_timeout || '1s',
+            connect_timeout: this.config.connect_timeout || '5s',
             type: this.config.dns_type || 'strict_dns',
 
             // Load balancing polocy

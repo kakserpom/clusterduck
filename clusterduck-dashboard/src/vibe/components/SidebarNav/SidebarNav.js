@@ -9,13 +9,15 @@ import PageAlertContext from '../PageAlert/PageAlertContext';
 import clusterduck from "../../../clusterduck";
 import handleKeyAccessibility, {handleClickAccessibility} from "../../helpers/handleTabAccessibility";
 import RaftIcon from '../../../assets/images/raft.svg';
+import Cookies from 'js-cookie'
 
 const MOBILE_SIZE = 992;
+
 export default class SidebarNav extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            sidebarCollapsed: false,
+            sidebarCollapsed: Cookies.get('sidebarCollapsed') === 'y',
             isMobile: window.innerWidth <= MOBILE_SIZE,
         }
     }
@@ -55,8 +57,9 @@ export default class SidebarNav extends Component {
 
     toggleSideCollapse() {
         this.setState(prevState => {
-            console.log('set = ',  !prevState.sidebarCollapsed)
-            return {sidebarCollapsed: !prevState.sidebarCollapsed}
+            const sidebarCollapsed = !prevState.sidebarCollapsed
+            Cookies.set('sidebarCollapsed', sidebarCollapsed ? 'y' : 'n')
+            return {sidebarCollapsed}
         })
         return !this.state.sidebarCollapsed
     };

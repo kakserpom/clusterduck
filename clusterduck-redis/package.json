@@ -1,6 +1,6 @@
 {
   "name": "clusterduck-redis",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck-redis",
   "keywords": [
@@ -25,9 +25,11 @@
   "author": "Vasily Zorin",
   "license": "LGPL-3.0-or-later",
   "dependencies": {
+    "axios": "^0.21.1",
     "clusterduck": "^0.1",
     "daemonize-process": "^3.0.0",
     "diagnostics": "^2.0.2",
+    "dot-prop": "^6.0.1",
     "ensure-array": "^1.0.0",
     "hashring": "^3.2.0",
     "ioredis": "^4.23.0",

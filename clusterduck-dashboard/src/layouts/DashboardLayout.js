@@ -26,7 +26,7 @@ export default class DashboardLayout extends Component {
         }
         clusterduck.connect('ws://' + window.location.hostname + (port ? ':' + port : '') + '/socket');
         clusterduck.on('connected', () => {
-            document.getElementById('overlay').style.display = 'none';
+                document.getElementById('overlay').style.display = 'none';
         });
         clusterduck.on('disconnected', () => {
             document.getElementById('overlay').style.display = 'block';

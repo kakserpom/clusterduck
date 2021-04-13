@@ -8,8 +8,9 @@ class Clusterduck extends emitter {
     /**
      *
      */
-    constructor () {
+    constructor() {
         super();
+        this.seqId = 0
         this.clusters = {};
         this.on('connect', () => {
             this.clusters = {};
@@ -19,14 +20,14 @@ class Clusterduck extends emitter {
                 this.clusters[cluster.name] = cluster;
                 this.emit('state', this);
                 this.emit('cluster:' + cluster.name, cluster);
-            }
-            else if (packet[0] === 'raft-state') {
+            } else if (packet[0] === 'raft-state') {
                 this.raftState = packet[1];
                 this.emit('state', this);
                 this.emit('raft', this.raftState);
-            }
-            else if (packet[0] === 'tail') {
+            } else if (packet[0] === 'tail') {
                 this.emit('tail:' + packet[1], packet[2]);
+            } else if (packet[0] === 'callback') {
+                this.emit('callback:' + packet[1], ...packet[2]);
             }
         });
     }
@@ -35,7 +36,7 @@ class Clusterduck extends emitter {
      *
      * @param callback
      */
-    connected (callback) {
+    connected(callback) {
         if (this.socket && this.socket.readyState === 1) {
             callback(this.socket);
         }
@@ -46,12 +47,16 @@ class Clusterduck extends emitter {
      *
      * @param url
      */
-    connect (url) {
+    connect(url) {
         if (url) {
             this.ws_url = url;
         }
         const socket = this.socket = new WebSocket(this.ws_url);
-        socket.addEventListener('open', () => this.emit('connected', socket));
+        socket.addEventListener('open', () => {
+            if (socket.readyState === 1) {
+                this.emit('connected', socket)
+            }
+        });
 
         socket.addEventListener('message', ({data}) => {
             const packet = JSON.parse(data);
@@ -70,18 +75,28 @@ class Clusterduck extends emitter {
      *
      * @param args
      */
-    command (...args) {
+    command(...args) {
         if (!this.socket) {
             throw new Error('Connection is not established');
         }
+        if (this.socket.readyState !== 1) {
+            return
+        }
+
+        if (args.length && typeof args[args.length - 1] === 'function') {
+            const id = ++this.seqId
+            this.once('callback:' + id, args[args.length - 1])
+            args[args.length - 1] = id
+        }
         this.socket.send(JSON.stringify(args));
+
     }
 
     /**
      *
      * @param func
      */
-    state (func) {
+    state(func) {
         func(this);
         this.on('state', func);
     }
@@ -91,11 +106,10 @@ class Clusterduck extends emitter {
      * @param name
      * @param func
      */
-    clusterOnce (name, func) {
+    clusterOnce(name, func) {
         if (this.clusters[name]) {
             func(this.clusters[name]);
-        }
-        else {
+        } else {
             this.once('cluster:' + name, func);
         }
     }
@@ -105,7 +119,7 @@ class Clusterduck extends emitter {
      * @param name
      * @param func
      */
-    cluster (name, func) {
+    cluster(name, func) {
         if (this.clusters[name]) {
             func(this.clusters[name]);
         }
@@ -116,7 +130,7 @@ class Clusterduck extends emitter {
      *
      * @param func
      */
-    raft (func) {
+    raft(func) {
         if (this.raftState) {
             func(this.raftState);
         }

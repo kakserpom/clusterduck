@@ -8,10 +8,14 @@ const NavSingleItem = ({item}) => {
     if (item.icon) {
         if (item.icon.substr(0, 1) === '/') {
             Icon = props => {
-                return <img alt="Icon" src={item.icon} {...props}/>
+                return <img alt="Icon" src={item.icon} {...props} aria-hidden={true}/>
             }
         } else if (Feather[item.icon]) {
             Icon = Feather[item.icon]
+        }
+    } else if (item.icon_url) {
+        Icon = props => {
+            return <img alt="Icon" src={item.icon_url} {...props} aria-hidden={true}/>
         }
     }
     if (item.external) {
@@ -20,7 +24,7 @@ const NavSingleItem = ({item}) => {
         return (
             <li className="nav-item">
                 <a href={item.url} target={item.target} rel={rel}>
-                    {item.icon && Icon && <Icon className="side-nav-icon"/>}
+                    {Icon && <Icon className="side-nav-icon"/>}
                     <span className="nav-item-label">{item.name}</span>
                     {item.badge && <NavBadge color={item.badge.variant} text={item.badge.text}/>}
                 </a>
@@ -29,23 +33,10 @@ const NavSingleItem = ({item}) => {
     } else {
         // Force relative URLs to start with a slash
         const url = item.url.charAt(0) === '/' ? item.url : `/${item.url}`;
-
-        let jsxIcon
-        if (item.icon && Icon) {
-            jsxIcon = <Icon className="side-nav-icon"/>
-        } else if (item.icon_url) {
-            jsxIcon = <img
-                className={"side-nav-icon"}
-                src={item.icon_url}
-                alt={""}
-                aria-hidden={true}
-            />
-        }
-
         return (
             <li className="nav-item">
                 <NavLink to={url} activeClassName="active">
-                    {jsxIcon}
+                    {Icon && <Icon className="side-nav-icon"/>}
                     <span className="nav-item-label">{item.name}</span>
                     {item.badge && <NavBadge color={item.badge.variant} text={item.badge.text}/>}
                 </NavLink>

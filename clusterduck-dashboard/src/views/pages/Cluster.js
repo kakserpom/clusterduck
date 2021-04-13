@@ -1,12 +1,13 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import clusterduck from '../../clusterduck'
-import {Nav, NavItem, NavLink, TabContent, TabPane} from 'reactstrap';
+import {Breadcrumb, BreadcrumbItem, CardBody, Nav, NavItem, NavLink, TabContent, TabPane} from 'reactstrap';
 import CD_Component from "../../CD_Component";
 import classnames from "classnames";
 import {withRouter} from 'react-router-dom';
 import {Table, Button} from 'antd';
 import {Header} from "../../vibe/index";
 import {PageContent} from "../../vibe";
+import JsonBox from "../../components/json-box";
 
 class Cluster extends CD_Component {
     constructor(props) {
@@ -129,21 +130,27 @@ class Cluster extends CD_Component {
                         dataIndex: 'available',
                         width: '5%',
                         key: 'available',
-                        render: available => available ? '✅' : '❌'
+                        render: available => available ? '✅' : '❌',
+                        sorter: (a, b) => (a.available ? 1 : 0) - (b.available ? 1 : 0),
+                        sortOrder: sortedInfo.columnKey === 'available' && sortedInfo.order,
                     },
                     {
                         title: 'Spare',
                         dataIndex: 'spare',
                         width: '5%',
                         key: 'spare',
-                        render: spare => spare ? 'YES' : 'NO'
+                        render: spare => spare ? 'YES' : 'NO',
+                        sorter: (a, b) => (a.spare ? 1 : 0) - (b.spare ? 1 : 0),
+                        sortOrder: sortedInfo.columnKey === 'spare' && sortedInfo.order,
                     },
                     {
                         title: 'Disabled',
                         dataIndex: 'disabled',
                         width: '5%',
                         key: 'disabled',
-                        render: disabled => disabled ? 'YES' : 'NO'
+                        render: disabled => disabled ? 'YES' : 'NO',
+                        sorter: (a, b) => (a.disabled ? 1 : 0) - (b.disabled ? 1 : 0),
+                        sortOrder: sortedInfo.columnKey === 'disabled' && sortedInfo.order,
                     },
                     {
                         title: 'Action',
@@ -167,15 +174,48 @@ class Cluster extends CD_Component {
             }
         }
 
+        /**
+         *
+         * @type {{envoy: (function({balancer: *}))}}
+         */
+        const Balancers = {
+            envoy: ({balancer}) => {
+
+                const Stats = ({cluster, balancer}) => {
+                    const [state, setState] = useState({})
+                    useEffect(() => {
+                        let previous = []
+                        const fetch = () => {
+                            clusterduck.command('balancerFetchInfo', cluster, balancer, 'stats', info => {
+                                const stat = info.redis.egress_redis
+                                previous.push(stat)
+                                setState(stat)
+                            })
+                        }
+                        setTimeout(() => {
+                            fetch()
+                        }, 0.5e3)
+
+                        //   const interval = setTimeout(fetch, 1e3)
+                        //    return () => clearInterval(interval)
+                    })
+
+                    return <JsonBox value={state}/>
+                }
+
+                return <div>
+                    <Stats cluster={cluster.name} balancer={balancer.name}/>
+                    <JsonBox value={balancer.lastConfig || null}/>
+                </div>
+            }
+        }
+
         return (<div>
                 <Header {...this.props}>
-                    Clusters&nbsp;&nbsp;❯&nbsp;&nbsp;
-                    <img
-                        src={cluster.software.logo}
-                        style={{width: 30, height: 30}}
-                        alt={cluster.software.name}
-                        aria-hidden={true}
-                    /> {cluster.name}
+                    <Breadcrumb>
+                        <BreadcrumbItem><a href={"#!"}>Clusters</a></BreadcrumbItem>
+                        <BreadcrumbItem active={true}>{cluster.name}</BreadcrumbItem>
+                    </Breadcrumb>
                 </Header>
                 <PageContent>
                     <div className="page-sub-nav">
@@ -188,16 +228,26 @@ class Cluster extends CD_Component {
                         {this.tab === 'nodes' ? <NodesTable/> : ''}
                         {this.tab === 'balancers' ? <div>
                                 <Nav tabs>
-                                    {Object.keys(cluster.balancers || {}).map(balancer =>
-                                        <TabHeader name={"balancers"} section={balancer} key={'balancers/'+ balancer}>{balancer}</TabHeader>
-                                    )}
-                                </Nav>
-                                <TabContent activeTab={this.section}>
                                     {Object.keys(cluster.balancers || {}).map(name => {
                                         const balancer = cluster.balancers[name]
-                                        console.log([this.section, name])
+                                        return <TabHeader name={"balancers"} section={name}
+                                                          key={'balancers/' + balancer}>
+                                            <img src={balancer.software.logo}
+                                                 style={{width: 80, height: 80}}
+                                                 alt={balancer.software.name}
+                                                 aria-hidden={true}
+                                            /> {name}</TabHeader>
+                                    })}
+                                </Nav>
+                                <TabContent activeTab={this.section || Object.keys(cluster.balancers || {})[0] || ''}>
+                                    {Object.keys(cluster.balancers || {}).map(name => {
+                                        const balancer = cluster.balancers[name]
+                                        balancer.name = name // @todo remove
+                                        const type = balancer.config.type
+                                        const Balancer = Balancers[type] || null
                                         return <TabPane tabId={name} key={name}>
-                                           {JSON.stringify(balancer)}
+                                            {Balancer ? <Balancer balancer={balancer}/> :
+                                                <i>Balancer "{type}" is not supported.</i>}
                                         </TabPane>
                                     })}
                                 </TabContent>

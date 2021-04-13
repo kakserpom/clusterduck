@@ -14,6 +14,7 @@ const {quote} = require('shell-quote')
 const parseDuration = require('parse-duration')
 const DeleteNode = require('./commands/delete-node')
 const {v4: uuidv4} = require('uuid')
+const throttleEvent = require('../misc/throttle-event')
 
 /**
  * Cluster model
@@ -153,9 +154,9 @@ class Cluster extends Entity {
 
         // Active nodes
 
-        const nodes_active = this.nodes.filter(node =>
+        const nodes_active = this.nodes.count(node =>
             node.active || (!node.checked && !node.disabled && !node.spare)
-        ).length
+        )
 
 
         const countStarting = spare => {
@@ -172,7 +173,7 @@ class Cluster extends Entity {
 
         let nodes_active_deficit = (this.config.min_active_nodes || 0) - nodes_active - nodes_starting
 
-        let nodes_spare_count = this.nodes.filter(node => node.spare && !node.disabled && (node.available || !node.checked)).length
+        let nodes_spare_count = this.nodes.count(node => node.spare && !node.disabled && (node.available || !node.checked))
 
         while (nodes_active_deficit > 0) {
             const spare = nodes_spare_count > 0 ? this.nodes.one(node => node.available && node.spare) : false
@@ -258,6 +259,7 @@ class Cluster extends Entity {
     set_config(config) {
         this.config = config
 
+        this.initialized = false
 
         this.shared_state_timeout = 30e3
 
@@ -392,7 +394,7 @@ class Cluster extends Entity {
                         ])
                     })
                     .on('changed', (node, state) => this.nodes.emit('changed', node, state))
-                    .on('passed', node => {
+                    .on('passed', list => {
                         this.clusterduck.commit([
                             (new UpdateNode).target(node).setSharedState(this.clusterduck.id, {
                                 available: true,
@@ -400,7 +402,7 @@ class Cluster extends Entity {
                             })
                         ])
                     })
-                    .on('failed', (node, error) => {
+                    .on('failed', error => {
                         this.clusterduck.commit([
                             (new UpdateNode).target(node).setSharedState(this.clusterduck.id, {
                                 available: false,
@@ -420,10 +422,17 @@ class Cluster extends Entity {
             .on('changed', (node, state) => {
                 this.nodes.debugDeep('CHANGED %s:', node.addr, state)
             })
-            .on('all', () => {
+            .on('all', throttleEvent(() => {
                 this.config.nodes = this.nodes.map(node => node.export())
                 this.clusterduck.emit('config:changed')
-            })
+                if (!this.initialized) {
+                    const unchecked = this.nodes.count(node => !node.checked)
+                    if (unchecked === 0) {
+                        this.initialized = true
+                        this.nodes.emit('all')
+                    }
+                }
+            }, 0.1e3))
             .addFromArray(this.config.nodes || [])
 
         setTimeout(() => {
@@ -513,8 +522,8 @@ class Cluster extends Entity {
             }
 
             const allNodeChecks = Promise.all(nodeChecks)
-                .then(list => node.emit('passed', node))
-                .catch(error => node.emit('failed', node, error))
+                .then(list => node.emit('passed', list))
+                .catch(error => node.emit('failed', error))
             clusterChecks.push(allNodeChecks)
         })
 

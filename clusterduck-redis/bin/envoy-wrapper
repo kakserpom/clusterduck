@@ -27,19 +27,26 @@ class Envoy {
 
         this.queued = null
 
+        this.lastRawPacket = null
         this.sockets = new Set()
         this.server = net.createServer(socket => {
             this.sockets.add(socket)
             socket.on('end', () => this.sockets.delete(socket))
             const rl = readline.createInterface({input: socket})
-            rl.on('line', async line => {
-                const packet = JSON.parse(line.trim())
+            rl.on('line', async rawPacket => {
+                if (rawPacket === this.lastRawPacket) {
+                    return
+                }
+
+                this.lastRawPacket = rawPacket
+
+                const packet = JSON.parse(rawPacket.trim())
                 if (this.starting) {
                     this.queued = packet
                 } else {
-                    const dequeue = async (packet) => {
+                    const dequeue = async config => {
                         this.starting = true
-                        await this.start(packet).catch(e => {
+                        await this.start(config).catch(e => {
                         })
                         this.starting = false
 
@@ -81,7 +88,9 @@ class Envoy {
      */
     start(envoyConfig) {
 
-        return new Promise(async (resolve, reject) => {
+        const promise = new Promise(async (resolve, reject) => {
+
+            const timeout = setTimeout(() => reject(), 5e3)
 
             let args = [
                 '--config-yaml', JSON.stringify(envoyConfig),
@@ -116,7 +125,7 @@ class Envoy {
                     ))
 
                     if (data.match(/previous envoy process is still initializing/)) {
-                        console.error(data)
+                        reject({error: 'previous envoy process is still initializing'})
                     } else if (data.match(/\] starting main dispatch loop/)) {
 
                         if (base_id_file) {
@@ -126,6 +135,7 @@ class Envoy {
 
                             await base_id_file.cleanup()
                         }
+                        clearTimeout(timeout)
                         resolve()
                     }
                 })
@@ -137,6 +147,8 @@ class Envoy {
                 reject(e)
             }
         })
+
+        return promise
     }
 }
 

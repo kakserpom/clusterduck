@@ -3,6 +3,7 @@ import clusterduck from '../../clusterduck.js'
 import CD_Component from "../../CD_Component";
 import {css} from '@emotion/css';
 import {Header} from "../../vibe";
+import {Breadcrumb, BreadcrumbItem} from "reactstrap";
 
 
 const AnsiConverter = require('ansi-to-html');
@@ -31,7 +32,6 @@ class Logs extends CD_Component {
     }
 
     render() {
-        console.log({logs_render: this.props.layout})
         const {tab} = this.state
 
         const LogStream = (props) => {
@@ -46,20 +46,21 @@ class Logs extends CD_Component {
                 }
 
                 const handleResize = () => {
-                    code.current.style.height = window.innerHeight - 50;
+                    code.current.style.height = window.innerHeight - 50
 
                 }
-                window.addEventListener('resize', handleResize);
+                window.addEventListener('resize', handleResize)
 
                 const tailHandler = chunk => {
                     content.current.innerHTML += ansiConvert.toHtml(chunk)
-                    anchor.current.scrollIntoView({behavior: "smooth"});
+                    anchor.current.scrollIntoView({behavior: 'smooth'})
                 }
 
                 clusterduck.on('tail:' + type, tailHandler)
                 clusterduck.connected(connectedHandler)
 
                 return () => {
+                    clusterduck.command('tail')
                     window.removeEventListener('resize', handleResize);
                     clusterduck.off('tail:' + type, tailHandler)
                     clusterduck.off('connected', connectedHandler)
@@ -75,7 +76,6 @@ class Logs extends CD_Component {
                 padding: '10px',
             });
 
-
             return <code className={'bg-dark ' + ROOT_CSS} ref={code}>
                 <div ref={content}/>
                 <div style={{float: "left", clear: "both", height: "100px"}} ref={anchor}/>
@@ -84,7 +84,12 @@ class Logs extends CD_Component {
 
 
         return (<div>
-                <Header {...this.props}>Logs&nbsp;&nbsp;❯&nbsp;&nbsp;{tab}</Header>
+                <Header {...this.props}>
+                    <Breadcrumb>
+                        <BreadcrumbItem><a href={"#!"}>Logs</a></BreadcrumbItem>
+                        <BreadcrumbItem active={true}>{tab}</BreadcrumbItem>
+                    </Breadcrumb>
+                </Header>
                 <LogStream type={tab}/>
             </div>
         )
