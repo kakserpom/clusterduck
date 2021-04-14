@@ -64,17 +64,24 @@ class EnvoyBalancer extends Balancer {
 
         try {
             const {data} = await axios.get(baseUrl + '/' + type)
+            const dotProp = this.cluster.clusterduck.require('dot-prop')
+            const obj = {}
+            for (let [, key, value] of data.matchAll(/^(?!#)([^\x20]+): (.+)$/gm)) {
+                key = key.replace(/(?<=listener.)[^_]+_\d+(?=.[a-z])/, match => dotProp.escape(match))
+                const numeric = value.match(/^-?\d+(\.\d+)?$/)
+                if (numeric) {
+                    if (numeric[1]) {
+                        value = parseFloat(value)
+                    } else {
+                        value = parseInt(value)
+                    }
+                }
+                dotProp.set(obj, key, value)
+            }
+            return obj
         } catch (e) {
             return null
         }
-
-        const dotProp = this.cluster.clusterduck.require('dot-prop')
-        const obj = {}
-        for (let [, key, value] of data.matchAll(/^(?!#)([^\x20]+): (.+)$/gm)) {
-            key = key.replace(/(?<=listener.)[^_]+_\d+(?=.[a-z])/, match => dotProp.escape(match))
-            dotProp.set(obj, key, value)
-        }
-        return obj
     }
 
     listen() {

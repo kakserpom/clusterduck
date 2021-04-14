@@ -1,6 +1,4 @@
 const Balancer = require('clusterduck/core/balancer')
-
-
 const fs = require('fs')
 const util = require('util')
 const {quote} = require('shell-quote')
@@ -8,7 +6,7 @@ const debug = require('diagnostics')('haproxy')
 const debugDeep = require('diagnostics')('haproxy-deep')
 const md5 = require('md5')
 const array = require('ensure-array')
-const throttleEvent = require('clusterduck/misc/throttle-event')
+const throttleCallback = require('throttle-callback')
 
 /**
  *
@@ -20,7 +18,7 @@ class BasicBalancer extends Balancer {
      */
     start() {
 
-        this.cluster.nodes.on('all', throttleEvent(async () => {
+        this.cluster.nodes.on('all', throttleCallback(async () => {
             try {
                 await this.listen()
             } catch (e) {

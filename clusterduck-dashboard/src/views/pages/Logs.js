@@ -4,6 +4,7 @@ import CD_Component from "../../CD_Component";
 import {css} from '@emotion/css';
 import {Header} from "../../vibe";
 import {Breadcrumb, BreadcrumbItem} from "reactstrap";
+import * as Feather from 'react-feather';
 
 
 const AnsiConverter = require('ansi-to-html');
@@ -86,7 +87,7 @@ class Logs extends CD_Component {
         return (<div>
                 <Header {...this.props}>
                     <Breadcrumb>
-                        <BreadcrumbItem><a href={"#!"}>Logs</a></BreadcrumbItem>
+                        <BreadcrumbItem><Feather.File style={{width: 20, height: 20}}/> <a href={"#!"}>Logs</a></BreadcrumbItem>
                         <BreadcrumbItem active={true}>{tab}</BreadcrumbItem>
                     </Breadcrumb>
                 </Header>

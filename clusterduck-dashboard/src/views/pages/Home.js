@@ -9,8 +9,9 @@ import {
 import CD_Component from "../../CD_Component";
 import {Link} from "react-router-dom";
 import {Header, PageContent} from "../../vibe";
+import * as Feather from "react-feather";
 
-class Dashboard extends CD_Component {
+class Home extends CD_Component {
     constructor() {
         super()
         clusterduck.state(state => this.safeSetState(state))
@@ -27,7 +28,7 @@ class Dashboard extends CD_Component {
             <div>
                 <Header {...this.props}>
                     <Breadcrumb>
-                        <BreadcrumbItem active={true}>Home</BreadcrumbItem>
+                        <BreadcrumbItem active={true}><Feather.Home style={{width: 20, height: 20}}/> Home</BreadcrumbItem>
                     </Breadcrumb>
                 </Header>
                 <PageContent>
@@ -76,4 +77,4 @@ class Dashboard extends CD_Component {
     }
 }
 
-export default Dashboard;
+export default Home;

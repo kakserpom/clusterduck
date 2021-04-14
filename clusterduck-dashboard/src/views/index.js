@@ -1,4 +1,4 @@
-import Dashboard from './pages/Dashboard';
+import Home from './pages/Home';
 import Cluster from './pages/Cluster';
 import Logs from './pages/Logs';
 import ErrorPage from './pages/404';
@@ -8,7 +8,7 @@ import Raft from "./pages/Raft";
 const pageList = [
     {
         path: '/home',
-        component: Dashboard,
+        component: Home,
     },
     {
         path: '/clusters/:cluster/:tab/:section',

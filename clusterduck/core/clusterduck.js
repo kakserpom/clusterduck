@@ -12,7 +12,7 @@ const {v4: uuidv4} = require('uuid')
 const uncaught = require('../misc/uncaught')
 const array = require('ensure-array')
 const md5 = require('md5')
-const throttleEvent = require('../misc/throttle-event')
+const throttleCallback = require('throttle-callback')
 
 /**
  * Main class
@@ -302,7 +302,7 @@ class ClusterDuck extends emitter {
         this.clusters.setExportMode('object')
 
 
-        this.on('config:changed', throttleEvent(() => {
+        this.on('config:changed', throttleCallback(() => {
             this.config.clusters = this.clusters.mapObj(cluster => [cluster.name, cluster.config])
             this.config.write()
         }, 1e3))

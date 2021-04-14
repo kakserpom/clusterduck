@@ -1,6 +1,6 @@
 {
   "name": "clusterduck-dashboard",
-  "version": "0.1.8",
+  "version": "0.1.12",
   "description": "",
   "author": "Vasily Zorin",
   "homepage": "",
@@ -28,6 +28,7 @@
     "react-spinners": "^0.10.6",
     "reactstrap": "6.4.0",
     "sass": "^1.32.8",
+    "timeago.js": "^4.0.2",
     "ws": "^7.1.0"
   },
   "license": "MIT",

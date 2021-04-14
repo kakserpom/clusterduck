@@ -1,6 +1,6 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import clusterduck from '../../clusterduck'
-import {Breadcrumb, BreadcrumbItem, CardBody, Nav, NavItem, NavLink, TabContent, TabPane} from 'reactstrap';
+import {Breadcrumb, BreadcrumbItem, Nav, NavItem, NavLink, TabContent, TabPane} from 'reactstrap';
 import CD_Component from "../../CD_Component";
 import classnames from "classnames";
 import {withRouter} from 'react-router-dom';
@@ -8,6 +8,9 @@ import {Table, Button} from 'antd';
 import {Header} from "../../vibe/index";
 import {PageContent} from "../../vibe";
 import JsonBox from "../../components/json-box";
+import * as timeago from 'timeago.js';
+import * as ReactDOM from "react-dom";
+import * as Feather from "react-feather";
 
 class Cluster extends CD_Component {
     constructor(props) {
@@ -26,6 +29,16 @@ class Cluster extends CD_Component {
         const that = this
         if (!cluster) {
             return <div></div>
+        }
+
+
+        const renderNumber = number => number === '~' ? number : Intl.NumberFormat().format(number)
+        const renderList = list => {
+            list = list || []
+            if (!list.length) {
+                return <i>None</i>
+            }
+            return <ul>{list.map(item => <li>{item}</li>)}</ul>
         }
 
         const ActionButton = ({children, onClick, action, node, args, ...props}) => {
@@ -56,7 +69,12 @@ class Cluster extends CD_Component {
             )
         })
 
-        const expandedRowRender = node => node.comment ? <p>{node.comment}</p> : <p><i>Comment is empty</i></p>;
+        const expandedRowRender = node => {
+            return <span>
+                <p>{node.comment ? <span>{node.comment}</span> : <i>Comment is empty</i>}</p>
+                 <JsonBox value={node.attrs || {}}/>
+            </span>;
+        }
         const pagination = {position: 'both'};
 
         class NodesTable extends React.Component {
@@ -77,6 +95,7 @@ class Cluster extends CD_Component {
                     this.fetch(cluster.nodes ?
                         cluster.nodes.map(node => ({
                             key: node.addr,
+                            error: '',
                             ...node,
                         }))
                         : null
@@ -121,7 +140,15 @@ class Cluster extends CD_Component {
                         width: '5%',
                         dataIndex: 'active',
                         key: 'active',
-                        render: (active, node) => active ? '🟢' : (node.spare ? '🟡' : '🔴'),
+                        render: (active, node) => {
+                            if (active) {
+                                return <span aria-label="Active" role={"img"}>🟢</span>
+                            } else if (node.spare) {
+                                return <span aria-label="Spare" role={"img"}>🟡</span>
+                            } else {
+                                return <span aria-label="Not active" role={"img"}>🔴</span>
+                            }
+                        },
                         sorter: (a, b) => (a.active ? 1 : 0) - (b.active ? 1 : 0),
                         sortOrder: sortedInfo.columnKey === 'active' && sortedInfo.order,
                     },
@@ -130,7 +157,13 @@ class Cluster extends CD_Component {
                         dataIndex: 'available',
                         width: '5%',
                         key: 'available',
-                        render: available => available ? '✅' : '❌',
+                        render: (available, node) => {
+                            if (available) {
+                                return <span aria-label="Available" role={"img"}>✅</span>
+                            } else {
+                                return <span aria-label="Not available" role={"img"}>❌</span>
+                            }
+                        },
                         sorter: (a, b) => (a.available ? 1 : 0) - (b.available ? 1 : 0),
                         sortOrder: sortedInfo.columnKey === 'available' && sortedInfo.order,
                     },
@@ -151,6 +184,24 @@ class Cluster extends CD_Component {
                         render: disabled => disabled ? 'YES' : 'NO',
                         sorter: (a, b) => (a.disabled ? 1 : 0) - (b.disabled ? 1 : 0),
                         sortOrder: sortedInfo.columnKey === 'disabled' && sortedInfo.order,
+                    },
+                    {
+                        title: 'Errors',
+                        width: '10%',
+                        dataIndex: 'errors',
+                        key: 'errors',
+                        render: renderList,
+                        sorter: (a, b) => a.errors.length - b.errors.length,
+                        sortOrder: sortedInfo.columnKey === 'errors' && sortedInfo.order,
+                    },
+                    {
+                        title: 'Warnings',
+                        width: '10%',
+                        dataIndex: 'warnings',
+                        key: 'warnings',
+                        render: renderList,
+                        sorter: (a, b) => a.warnings - b.warnings,
+                        sortOrder: sortedInfo.columnKey === 'warnings' && sortedInfo.order,
                     },
                     {
                         title: 'Action',
@@ -181,30 +232,193 @@ class Cluster extends CD_Component {
         const Balancers = {
             envoy: ({balancer}) => {
 
-                const Stats = ({cluster, balancer}) => {
-                    const [state, setState] = useState({})
-                    useEffect(() => {
+                const pRef = React.createRef()
+
+                class QueryStats extends React.Component {
+
+                    state = {
+                        bordered: true,
+                        loading: false,
+                        pagination,
+                        size: 'default',
+                        scroll: undefined,
+                        tableLayout: undefined,
+                    };
+
+                    componentDidMount() {
+
                         let previous = []
+                        let generation
                         const fetch = () => {
                             clusterduck.command('balancerFetchInfo', cluster, balancer, 'stats', info => {
+
+                                if (!info.server || !info.redis) {
+                                    return
+                                }
+
+                                if (pRef.current) {
+                                    ReactDOM.render
+                                    (<i>Statistics are shown since the last Envoy restart.
+                                        Envoy has
+                                        started {timeago.format(Date.now() - info.server.uptime * 1e3)}.
+                                    </i>, pRef.current)
+                                }
+
                                 const stat = info.redis.egress_redis
+
+                                if (generation !== info.hot_restart_generation) {
+                                    generation = info.hot_restart_generation
+                                    previous = []
+                                }
+
                                 previous.push(stat)
-                                setState(stat)
+                                if (previous.length > 3) {
+                                    previous.shift()
+                                }
+
+                                const all = {
+                                    command: 'ALL COMMANDS',
+                                    total: 0,
+                                    success: 0,
+                                    error: 0,
+                                    rps: 0,
+                                }
+                                if (!stat.command) {
+                                    return
+                                }
+                                if (this.state.loading) {
+                                    this.setState({loading: false})
+                                }
+                                this.fetch(stat ?
+                                    Object.entries(stat.command)
+                                        .filter(([name, command]) => {
+                                            return command.total > 0
+                                        }).map(([name, command]) => {
+                                        all.total += command.total
+                                        all.success += command.success
+                                        all.error += command.error
+
+                                        let rps
+
+                                        if (previous.length > 1) {
+                                            rps = (command.total - previous[0].command[name].total) / (previous.length - 1)
+                                            all.rps += rps
+                                        } else {
+                                            rps = '~'
+                                        }
+
+                                        return {
+                                            key: name,
+                                            command: name,
+                                            rps,
+                                            ...command,
+                                        }
+                                    }).concat(all)
+                                    : null
+                                )
                             })
+                            setTimeout(() => fetch(), 1e3)
                         }
-                        setTimeout(() => {
-                            fetch()
-                        }, 0.5e3)
+                        fetch()
+                    }
 
-                        //   const interval = setTimeout(fetch, 1e3)
-                        //    return () => clearInterval(interval)
-                    })
+                    handleChange = (pagination, filters, sorter) => {
+                        this.setState({
+                            pagination: pagination,
+                            filteredInfo: filters,
+                            sortedInfo: sorter,
+                        });
+                    }
 
-                    return <JsonBox value={state}/>
+                    fetch(data) {
+                        this.setState({
+                            dataSource: data,
+                        })
+                    }
+
+                    render() {
+                        const {state} = this;
+                        let {sortedInfo} = state;
+                        sortedInfo = sortedInfo || {};
+
+                        //let {filteredInfo} = state;
+                        //filteredInfo = filteredInfo || {};
+
+                        const columns = [
+                            {
+                                title: 'Command',
+                                dataIndex: 'command',
+                                key: 'command',
+                                width: '10%',
+                                sorter: (a, b) => a.command.localeCompare(b.command),
+                                sortOrder: sortedInfo.columnKey === 'command' && sortedInfo.order,
+                            },
+                            {
+                                title: 'Total',
+                                width: '5%',
+                                dataIndex: 'total',
+                                key: 'total',
+                                render: renderNumber,
+                                sorter: (a, b) => a.total - b.total,
+                                sortOrder: sortedInfo.columnKey === 'total' && sortedInfo.order,
+                            },
+                            {
+                                title: 'Success',
+                                width: '5%',
+                                dataIndex: 'success',
+                                key: 'success',
+                                render: renderNumber,
+                                sorter: (a, b) => a.success - b.success,
+                                sortOrder: sortedInfo.columnKey === 'success' && sortedInfo.order,
+                            },
+                            {
+                                title: 'Error',
+                                width: '5%',
+                                dataIndex: 'error',
+                                key: 'total',
+                                render: renderNumber,
+                                sorter: (a, b) => a.error - b.error,
+                                sortOrder: sortedInfo.columnKey === 'error' && sortedInfo.order,
+                            },
+                            {
+                                title: 'Per second',
+                                width: '5%',
+                                dataIndex: 'rps',
+                                key: 'rps',
+                                render: renderNumber,
+                                sorter: (a, b) => a.rps - b.rps,
+                                sortOrder: sortedInfo.columnKey === 'rps' && sortedInfo.order,
+                            },
+
+                            {
+                                title: 'Latency',
+                                width: '40%',
+                                dataIndex: 'latency',
+                                key: 'latency',
+                                sorter: (a, b) => a.command.localeCompare(b.command),
+                                sortOrder: sortedInfo.columnKey === 'latency' && sortedInfo.order,
+                            },
+                            {
+                                title: '',
+                                render: (text, node) => (
+                                    <span/>
+                                ),
+                            },
+                        ];
+                        return <span>
+                            <p ref={pRef}></p>
+                        <Table
+                            {...this.state}
+                            columns={columns.map(item => ({...item}))}
+                            dataSource={this.state.dataSource}
+                            onChange={this.handleChange}
+                        /></span>;
+                    }
                 }
 
                 return <div>
-                    <Stats cluster={cluster.name} balancer={balancer.name}/>
+                    <QueryStats/>
+                    <p><i>Current configuration:</i></p>
                     <JsonBox value={balancer.lastConfig || null}/>
                 </div>
             }
@@ -213,8 +427,15 @@ class Cluster extends CD_Component {
         return (<div>
                 <Header {...this.props}>
                     <Breadcrumb>
-                        <BreadcrumbItem><a href={"#!"}>Clusters</a></BreadcrumbItem>
-                        <BreadcrumbItem active={true}>{cluster.name}</BreadcrumbItem>
+                        <BreadcrumbItem><Feather.Layers style={{width: 20, height: 20}}/> <a
+                            href={"#!"}>Clusters</a></BreadcrumbItem>
+                        <BreadcrumbItem active={true}>
+                            <img
+                                src={cluster.software.logo}
+                                style={{width: 20, height: 20}}
+                                alt={cluster.software.name}
+                                aria-hidden={true}
+                            />&nbsp;{cluster.name}</BreadcrumbItem>
                     </Breadcrumb>
                 </Header>
                 <PageContent>

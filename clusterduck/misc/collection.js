@@ -156,7 +156,6 @@ class Collection extends emitter {
     }
 
     /**
-     * @param ...entries
      * @returns {Collection}
      */
     remove() {
@@ -231,7 +230,7 @@ class Collection extends emitter {
     /**
      *
      * @param callback
-     * @returns {[]}
+     * @returns {{}}
      */
     mapObj(callback) {
         const obj = {}

@@ -2,7 +2,7 @@
  *
  * @type {function(*=, *): Promise<*>}
  */
-const promiseWithTimeout = require('../misc/promise-with-timeout')
+const {timeout, TimeoutError} = require('promise-timeout')
 
 /**
  *
@@ -62,19 +62,17 @@ class HealthCheck extends Entity {
         this.result = null
 
         const timeoutMs = parseDuration(this.config.timeout)
-        // promiseWithTimeout hard caps the execution time
-        return promiseWithTimeout(
-            timeoutMs,
-            this.thread.run(this.path, [this.node.export(), this.config, timeoutMs])
-        ).finally(() => {
-
-        }).catch(error => {
+        return timeout(
+            this.thread.run(this.path, [this.node.export(), this.config, timeoutMs]),
+            timeoutMs
+        ).then(result => {
+            this.result = result
+            return result
+        }, error => {
             if (this.result == null) {
                 this.result = error
             }
             throw error
-        }).then(result => {
-            this.result = result
         })
     }
 }

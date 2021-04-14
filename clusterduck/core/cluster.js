@@ -5,7 +5,7 @@ const HealthCheck = require('./health_check');
 const UpdateNode = require('./commands/update-node')
 const ClusterNodes = require('./collections/cluster_nodes')
 const Entity = require('../misc/entity')
-const Majority = require('../misc/majority')
+const Majority = require('majority')
 const SetClusterState = require('./commands/set-cluster-state')
 const Commit = require('./commit')
 const deepCopy = require('deep-copy')
@@ -14,7 +14,8 @@ const {quote} = require('shell-quote')
 const parseDuration = require('parse-duration')
 const DeleteNode = require('./commands/delete-node')
 const {v4: uuidv4} = require('uuid')
-const throttleEvent = require('../misc/throttle-event')
+const throttleCallback = require('throttle-callback')
+const dotProp = require("dot-prop");
 
 /**
  * Cluster model
@@ -332,8 +333,12 @@ class Cluster extends Entity {
         this.triggers = new Collection('id')
         this.triggers.addFromArray(this.config.triggers || [])
         this.triggers.forEach(trigger => {
+            if (!Array.isArray(trigger.on)) {
+                throw new Error('triggers[].on must be an array: ' + JSON.stringify(trigger))
+            }
+
             const [prop, event] = trigger.on
-            this[prop].on(event, (...args) => {
+            const handler = (...args) => {
                 let env = deepCopy(trigger.env || {})
 
                 env.CLUSTER = this.name
@@ -352,7 +357,12 @@ class Cluster extends Entity {
                     const action = new (require('../actions/' + cfgAction.type))(cfgAction)
                     action.invoke(env, ...args)
                 })
-            });
+            }
+            if (trigger.throttle) {
+                this[prop].on(event, throttleCallback(handler, parseDuration(trigger.throttle)))
+            } else {
+                this[prop].on(event, handler)
+            }
         })
 
         this.nodes
@@ -377,27 +387,56 @@ class Cluster extends Entity {
                             return
                         }
 
-                        let tsThreshold = Date.now() - this.shared_state_timeout
-                        let available = new Majority()
-                        Object.values(node.shared_state).forEach(opinion => {
-                            if (opinion.ts < tsThreshold) {
-                                return
-                            }
-                            available.feed(opinion.available)
-                        })
+                        const tsThreshold = Date.now() - this.shared_state_timeout
+                        const available = new Majority()
+                        const errors = new Set()
+
+                        const attrs = {}
+
+                        Object
+                            .values(node.shared_state)
+                            .sort((a, b) => a.ts - b.ts)
+                            .forEach(opinion => {
+                                if (opinion.ts < tsThreshold) {
+                                    return
+                                }
+                                for (const [key, value] of Object.entries(opinion.attrs || {})) {
+                                    dotProp.set(attrs, key, value)
+                                }
+
+                                available.feed(opinion.available)
+                                if (opinion.error) {
+                                    errors.add(opinion.error)
+                                }
+                            })
 
                         this.clusterduck.commit([
                             (new UpdateNode).target(node).attr({
                                 available: available.value(false),
-                                checked: true
+                                errors: Array.from(errors),
+                                checked: true,
+                                attrs
                             })
                         ])
                     })
                     .on('changed', (node, state) => this.nodes.emit('changed', node, state))
                     .on('passed', list => {
+                        const warnings = new Set()
+                        const attrs = {}
+                        list.forEach(check => {
+                            for (const [key, value] of Object.entries(check.node_attrs || {})) {
+                                attrs[key] = value
+                            }
+
+                            (check.warnings || []).forEach(warning => warnings.add(warning))
+                        })
+
                         this.clusterduck.commit([
                             (new UpdateNode).target(node).setSharedState(this.clusterduck.id, {
                                 available: true,
+                                error: null,
+                                attrs,
+                                warnings: Array.from(warnings),
                                 checked: true,
                             })
                         ])
@@ -406,6 +445,8 @@ class Cluster extends Entity {
                         this.clusterduck.commit([
                             (new UpdateNode).target(node).setSharedState(this.clusterduck.id, {
                                 available: false,
+                                error: error.message,
+                                warnings: [],
                                 checked: true,
                             })
                         ])
@@ -422,7 +463,7 @@ class Cluster extends Entity {
             .on('changed', (node, state) => {
                 this.nodes.debugDeep('CHANGED %s:', node.addr, state)
             })
-            .on('all', throttleEvent(() => {
+            .on('all', throttleCallback(() => {
                 this.config.nodes = this.nodes.map(node => node.export())
                 this.clusterduck.emit('config:changed')
                 if (!this.initialized) {
