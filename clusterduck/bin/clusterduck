@@ -60,12 +60,16 @@
     let argv = yargs.parse()
 
     try {
-        process.on('SIGTERM', () => {
-            process.emit('exit', 'SIGTERM')
-            setTimeout(() => {
-                process.exit()
-            }, 200)
-        })
+        for (const sig of ['SIGTERM', 'SIGINT', 'SIGQUIT']) {
+            process.on(sig, () => {
+                console.log('Caught ' + sig)
+                process.emit('beforeExit', 0)
+                setTimeout(() => process.exit(), 100)
+            })
+        }
+        process
+            .on('SIGHUP', () => console.log('Caught SIGHUP'))
+            .on('SIGUSR2', () => console.log('Caught SIGUSR2'))
 
         const clusterduck = new ClusterDuck(argv)
 
@@ -231,9 +235,7 @@
 
         clusterduck.set_config(new ConfigFile(argv.configFile))
 
-        process.on('exit', code => {
-            console.log('Exited with code: ' + code)
-        })
+        process.on('exit', code => console.log('Exited with code: ' + code))
 
         await clusterduck.run()
     } catch (err) {

@@ -15,7 +15,7 @@ const parseDuration = require('parse-duration')
 const DeleteNode = require('./commands/delete-node')
 const {v4: uuidv4} = require('uuid')
 const throttleCallback = require('throttle-callback')
-const dotProp = require("dot-prop");
+const dotProp = require("../misc/dot-prop")
 
 /**
  * Cluster model
@@ -393,6 +393,10 @@ class Cluster extends Entity {
 
                         const attrs = {}
 
+                        if (node.addr === '127.0.0.1:6380') {
+                            console.log([node.addr, node.shared_state])
+                        }
+
                         Object
                             .values(node.shared_state)
                             .sort((a, b) => a.ts - b.ts)
@@ -424,6 +428,9 @@ class Cluster extends Entity {
                         const warnings = new Set()
                         const attrs = {}
                         list.forEach(check => {
+                            if (!check) {
+                                return
+                            }
                             for (const [key, value] of Object.entries(check.node_attrs || {})) {
                                 attrs[key] = value
                             }
@@ -442,6 +449,7 @@ class Cluster extends Entity {
                         ])
                     })
                     .on('failed', error => {
+                        this.debug('health-check failed: ', error)
                         this.clusterduck.commit([
                             (new UpdateNode).target(node).setSharedState(this.clusterduck.id, {
                                 available: false,

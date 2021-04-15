@@ -69,6 +69,10 @@ class HealthCheck extends Entity {
             this.result = result
             return result
         }, error => {
+            if (error instanceof TimeoutError) {
+                console.log(error)
+                error.message = 'Timed out'
+            }
             if (this.result == null) {
                 this.result = error
             }

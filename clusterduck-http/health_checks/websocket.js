@@ -12,6 +12,8 @@ module.exports = (node, config, timeoutMs) =>
                     return
                 }
 
+                const warnings = []
+
                 evilDns.add(url.host, addr.hostname)
 
                 const client = new WebSocket(config.url)
@@ -27,7 +29,7 @@ module.exports = (node, config, timeoutMs) =>
 
                         reject(error)
                     })
-                    const dotProp = require('dot-prop')
+                    const dotProp = require('clusterduck/misc/dot-prop')
                     client.on('open', () => {
                         evilDns.remove(url.host)
                         setTimeout(() => {
@@ -73,7 +75,7 @@ module.exports = (node, config, timeoutMs) =>
                                 }
                                 ++i
                             }
-                            resolve()
+                            resolve({warnings})
                             destroy()
                         }
 

@@ -11,7 +11,22 @@ const throttleCallback = require('throttle-callback')
 /**
  *
  */
-class BasicBalancer extends Balancer {
+class HaproxyBalancer extends Balancer {
+    /**
+     *
+     */
+    init() {
+        this.debug = require('diagnostics')('envoy')
+        this.debugDeep = require('diagnostics')('envoy-deep')
+        this._socket = null
+
+        this.software = {
+            logo: 'https://symbols.getvecta.com/stencil_83/11_haproxy-icon.4cfc81197b.svg',
+            name: 'Haproxy',
+            url: 'https://haproxy.com/',
+        }
+    }
+
 
     /**
      * Start
@@ -28,21 +43,22 @@ class BasicBalancer extends Balancer {
 
     }
 
+    /**
+     *
+     * @param node
+     * @returns {string}
+     * @private
+     */
     _node_conf(node) {
         const name = 'websrv_' + md5(node.addr)
 
         let line = 'server ' + name + ' ' + node.addr
 
-        if (node.maxconn) {
-            line += 'maxconn ' + node.maxconn
-        }
 
-        if (node.weight) {
-            line += ' weight ' + node.weight
-        }
-
-        if (node.cookie) {
-            line += 'cookie ' + name
+        for (const key in ['maxconn', 'weight', 'cookie']) {
+            if (node[key]) {
+                line += key + ' ' + node[key]
+            }
         }
 
         if (node.check) {
@@ -152,4 +168,5 @@ class BasicBalancer extends Balancer {
     }
 }
 
-module.exports = BasicBalancer
+module.exports = HaproxyBalancer
+

@@ -1,5 +1,3 @@
-const isObject = require("is-obj");
-const {quote} = require('shell-quote')
 const exec = require('child_process').exec
 
 /**

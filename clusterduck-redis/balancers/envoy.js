@@ -2,7 +2,7 @@ const Balancer = require('clusterduck/core/balancer')
 
 const parseAddr = require('clusterduck/misc/addr')
 
-const {spawn, exec} = require('child_process')
+const {spawn} = require('child_process')
 const array = require('ensure-array')
 const net = require('net');
 const readline = require('readline')
@@ -64,7 +64,7 @@ class EnvoyBalancer extends Balancer {
 
         try {
             const {data} = await axios.get(baseUrl + '/' + type)
-            const dotProp = this.cluster.clusterduck.require('dot-prop')
+            const dotProp = require('clusterduck/misc/dot-prop')
             const obj = {}
             for (let [, key, value] of data.matchAll(/^(?!#)([^\x20]+): (.+)$/gm)) {
                 key = key.replace(/(?<=listener.)[^_]+_\d+(?=.[a-z])/, match => dotProp.escape(match))

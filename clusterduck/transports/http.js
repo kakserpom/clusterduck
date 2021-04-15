@@ -3,6 +3,7 @@ const array = require('ensure-array');
 const crypto = require('crypto')
 const {spawn} = require('child_process')
 const readline = require('readline');
+const throttleCallback = require("throttle-callback");
 
 /**
  *
@@ -161,18 +162,16 @@ class Http extends Transport {
 
         this.clusterduck.ready(clusterduck => {
             clusterduck.clusters.forEach(cluster => {
-                cluster.nodes.on('*', (...args) => {
+                const handler = throttleCallback(() => {
                     try {
                         this.emit('broadcast', 'cluster-state', cluster.export())
                     } catch (e) {
                         console.error(e)
                     }
-                })
-                try {
-                    this.emit('broadcast', 'cluster-state', cluster.export())
-                } catch (e) {
-                    console.error(e)
-                }
+                }, 0.5e3)
+                cluster.nodes.on('*', handler)
+                cluster.balancers.on('change', handler)
+                handler()
             });
             if (raft) {
                 const handler = () => {

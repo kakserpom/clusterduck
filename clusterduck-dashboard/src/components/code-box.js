@@ -15,21 +15,16 @@ function escapeHtml(text) {
     });
 }
 
-export default function JsonBox({value}) {
-    const AnsiConverter = require('ansi-to-html')
-    const cj = require('color-json')
-    const ansiConvert = new AnsiConverter({
-        newline: true,
-        escapeXML: false
-    });
+export default function CodeBox({value}) {
 
-    const ansi = escapeHtml(cj(value)).replaceAll(/^\s+/mg, match => {
+    const __html = escapeHtml(value).replaceAll(/^[\s]+/mg, match => {
         return match.replaceAll(/\x20|\t/g, match => (
-            {'\x20': '&nbsp;', '\t': '&nbsp;&nbsp;&nbsp;'}[match]
+            {
+                '\x20': '&nbsp;',
+                '\t': '&nbsp;&nbsp;&nbsp;',
+            }[match]
         ))
-    })
-
-    const __html = ansiConvert.toHtml(ansi)
+    }).replaceAll(/\n/g, '<br/>')
 
     const ROOT_CSS = css({
         display: 'block',

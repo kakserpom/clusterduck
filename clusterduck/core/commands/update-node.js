@@ -1,5 +1,5 @@
 const Command = require('./command')
-const dotProp = require('dot-prop')
+const dotProp = require('../../misc/dot-prop')
 
 /**
  *
@@ -129,9 +129,9 @@ class UpdateNode extends Command {
     setSharedState(id, state) {
 
         const attr = {}
-        id = dotProp.escape(id)
         state.ts = Date.now()
-        attr[`shared_state.${id}`] = state
+        state.id = id
+        attr['shared_state.' + dotProp.escape(id)] = state
         this.attr(attr)
         return this
     }

@@ -57,7 +57,7 @@ class NativeBalancer extends Balancer {
         worker.on('error', error => {
             console.error(error)
         });
-        worker.on('exit', (code) => {
+        worker.on('exit', code => {
             console.log('exit ' + code)
         });
 

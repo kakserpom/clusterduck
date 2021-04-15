@@ -11,6 +11,18 @@ import JsonBox from "../../components/json-box";
 import * as timeago from 'timeago.js';
 import * as ReactDOM from "react-dom";
 import * as Feather from "react-feather";
+import {css} from "@emotion/css";
+import CodeBox from "../../components/code-box";
+
+const fixPagination = table => {
+    Array.from(ReactDOM.findDOMNode(table).getElementsByClassName('ant-table-pagination'))
+        .forEach(el => {
+            console.log('test')
+            el.classList.remove('ant-table-pagination-right')
+            el.classList.add('ant-table-pagination-left')
+        })
+}
+
 
 class Cluster extends CD_Component {
     constructor(props) {
@@ -38,7 +50,7 @@ class Cluster extends CD_Component {
             if (!list.length) {
                 return <i>None</i>
             }
-            return <ul>{list.map(item => <li>{item}</li>)}</ul>
+            return <ul>{list.map((item, i) => <li key={i}>{item}</li>)}</ul>
         }
 
         const ActionButton = ({children, onClick, action, node, args, ...props}) => {
@@ -90,8 +102,9 @@ class Cluster extends CD_Component {
                 tableLayout: undefined,
             };
 
-            componentDidMount() {
-                clusterduck.cluster(that.state.cluster.name, cluster => {
+            constructor(props) {
+                super(props);
+                this.handler = cluster => {
                     this.fetch(cluster.nodes ?
                         cluster.nodes.map(node => ({
                             key: node.addr,
@@ -100,7 +113,16 @@ class Cluster extends CD_Component {
                         }))
                         : null
                     )
-                })
+                }
+            }
+
+            componentDidMount() {
+                setTimeout(() => fixPagination(this), 100)
+                clusterduck.cluster(that.state.cluster.name, this.handler)
+            }
+
+            componentWillUnmount() {
+                clusterduck.off('cluster:' + that.state.cluster.name, this.handler)
             }
 
             handleChange = (pagination, filters, sorter) => {
@@ -230,6 +252,37 @@ class Cluster extends CD_Component {
          * @type {{envoy: (function({balancer: *}))}}
          */
         const Balancers = {
+            nginx: ({balancer}) => {
+                class Config extends React.Component {
+
+                    constructor(props) {
+                        super(props);
+                        this.state = {config: props.config}
+                        this.handler = cluster => {
+                            console.log('handler: ', {config: cluster.balancers[balancer.name].lastConfig})
+                            this.setState({config: cluster.balancers[balancer.name].lastConfig})
+                        }
+                    }
+
+                    componentDidMount() {
+                        clusterduck.cluster(that.state.cluster.name, this.handler)
+                    }
+
+                    componentWillUnmount() {
+                        clusterduck.off('cluster:' + that.state.cluster.name, this.handler)
+                    }
+
+                    render() {
+                        return <CodeBox value={this.state.config}/>
+                    }
+
+                }
+
+                return <div>
+                    <p><i>Current configuration:</i></p>
+                    <Config config={balancer.lastConfig || {}}/>
+                </div>
+            },
             envoy: ({balancer}) => {
 
                 const pRef = React.createRef()
@@ -238,7 +291,7 @@ class Cluster extends CD_Component {
 
                     state = {
                         bordered: true,
-                        loading: false,
+                        loading: true,
                         pagination,
                         size: 'default',
                         scroll: undefined,
@@ -247,12 +300,14 @@ class Cluster extends CD_Component {
 
                     componentDidMount() {
 
+                        setTimeout(() => fixPagination(this), 100)
+
                         let previous = []
                         let generation
                         const fetch = () => {
                             clusterduck.command('balancerFetchInfo', cluster, balancer, 'stats', info => {
 
-                                if (!info.server || !info.redis) {
+                                if (!info || !info.server || !info.redis) {
                                     return
                                 }
 
@@ -282,6 +337,7 @@ class Cluster extends CD_Component {
                                     success: 0,
                                     error: 0,
                                     rps: 0,
+                                    key: 'ALL COMMANDS',
                                 }
                                 if (!stat.command) {
                                     return
@@ -468,7 +524,7 @@ class Cluster extends CD_Component {
                                         const Balancer = Balancers[type] || null
                                         return <TabPane tabId={name} key={name}>
                                             {Balancer ? <Balancer balancer={balancer}/> :
-                                                <i>Balancer "{type}" is not supported.</i>}
+                                                <i>Balancer "{type}" is not supported by the Dashboard.</i>}
                                         </TabPane>
                                     })}
                                 </TabContent>

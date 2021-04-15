@@ -48,7 +48,7 @@ module.exports = (node, config, timeoutMs) =>
                     )
                 )
             }
-            resolve('ok')
+            resolve({})
             destroy()
         } catch (error) {
             reject(error)

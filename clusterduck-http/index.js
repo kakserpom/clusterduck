@@ -4,6 +4,11 @@ class HttpCluster extends Cluster {
     constructor(config, clusterduck) {
         super(config, clusterduck)
         this.__dirname = __dirname
+        this.software = {
+            name: 'HTTP',
+            logo: 'https://upload.wikimedia.org/wikipedia/commons/8/81/Http_icon.svg',
+            url: 'https://ru.wikipedia.org/wiki/HTTP',
+        }
     }
 
     require(what) {
