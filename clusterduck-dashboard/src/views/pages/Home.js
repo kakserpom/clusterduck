@@ -10,6 +10,9 @@ import CD_Component from "../../CD_Component";
 import {Link} from "react-router-dom";
 import {Header, PageContent} from "../../vibe";
 import * as Feather from "react-feather";
+import JsonBox from "../../components/json-box";
+import prettyBytes from "pretty-bytes";
+import CodeBox from "../../components/code-box";
 
 class Home extends CD_Component {
     constructor() {
@@ -28,7 +31,8 @@ class Home extends CD_Component {
             <div>
                 <Header {...this.props}>
                     <Breadcrumb>
-                        <BreadcrumbItem active={true}><Feather.Home style={{width: 20, height: 20}}/> Home</BreadcrumbItem>
+                        <BreadcrumbItem active={true}><Feather.Home
+                            style={{width: 20, height: 20}}/> Home</BreadcrumbItem>
                     </Breadcrumb>
                 </Header>
                 <PageContent>
@@ -41,6 +45,36 @@ class Home extends CD_Component {
 
                                     </p>
                                 </div>
+                            </Col>
+                        </Row>
+                        <Row key={'memory'}>
+                            <Col md={1.7}>
+                                <Card>
+                                    <CardBody className="display-flex">
+                                        <div className="m-l">
+                                            <h2 className="h4">Memory usage</h2>
+                                            <CodeBox theme={'light'}>
+                                            {Object.entries(clusterduck.memory.usage || {}).map(([key, value]) =>
+                                                <p key={key}>{key}: {prettyBytes(value)}</p>
+                                            )}
+                                            </CodeBox>
+                                        </div>
+                                    </CardBody>
+                                </Card>
+                            </Col>
+                            <Col md={1.7}>
+                                <Card>
+                                    <CardBody className="display-flex">
+                                        <div className="m-l">
+                                            <h2 className="h4">Memory Statistics</h2>
+                                            <CodeBox theme={'light'}>
+                                                {Object.entries(clusterduck.memory.stat || {}).map(([key, value]) =>
+                                                    <p key={key}>{key}: {prettyBytes(value)}</p>
+                                                )}
+                                            </CodeBox>
+                                        </div>
+                                    </CardBody>
+                                </Card>
                             </Col>
                         </Row>
                         {Object.entries(clusters || {}).map(([name, cluster]) => {

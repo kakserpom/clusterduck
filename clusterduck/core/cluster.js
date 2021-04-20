@@ -381,7 +381,7 @@ class Cluster extends Entity {
                 }
 
                 node
-                    .on('changed_shared_state', node => {
+                    .on('changed_shared_state', throttleCallback(node => {
                         if (raft && !raft.isLeader() && !raft.isCandidate()) {
                             // We are a non-leader instance, let the leader handle this
                             return
@@ -393,10 +393,6 @@ class Cluster extends Entity {
 
                         const attrs = {}
 
-                        if (node.addr === '127.0.0.1:6380') {
-                            console.log([node.addr, node.shared_state])
-                        }
-
                         Object
                             .values(node.shared_state)
                             .sort((a, b) => a.ts - b.ts)
@@ -404,6 +400,7 @@ class Cluster extends Entity {
                                 if (opinion.ts < tsThreshold) {
                                     return
                                 }
+
                                 for (const [key, value] of Object.entries(opinion.attrs || {})) {
                                     dotProp.set(attrs, key, value)
                                 }
@@ -422,26 +419,29 @@ class Cluster extends Entity {
                                 attrs
                             })
                         ])
-                    })
+                    }, 100))
                     .on('changed', (node, state) => this.nodes.emit('changed', node, state))
-                    .on('passed', list => {
+                    .on('passed', () => {
                         const warnings = new Set()
                         const attrs = {}
-                        list.forEach(check => {
-                            if (!check) {
-                                return
-                            }
-                            for (const [key, value] of Object.entries(check.node_attrs || {})) {
+
+                        let error = null
+                        let available = true
+                        node._health_checks.forEach(check => {
+                            for (const [key, value] of Object.entries( check.node_attrs || {})) {
                                 attrs[key] = value
                             }
-
+                            if (check.error) {
+                                available = false
+                                error = check.error
+                            }
                             (check.warnings || []).forEach(warning => warnings.add(warning))
                         })
 
                         this.clusterduck.commit([
                             (new UpdateNode).target(node).setSharedState(this.clusterduck.id, {
-                                available: true,
-                                error: null,
+                                available,
+                                error,
                                 attrs,
                                 warnings: Array.from(warnings),
                                 checked: true,
@@ -519,8 +519,6 @@ class Cluster extends Entity {
 
         }, 5e3)
 
-        this.nodesHealthChecks = new Map()
-
         this.balancers = new Collection('name', config => Balancer.factory(config, this))
         this.balancers.addFromObject(this.config.balancers || {})
 
@@ -535,16 +533,15 @@ class Cluster extends Entity {
 
     /**
      *
-     * @param type
      * @returns {*}
+     * @param node
+     * @param config
      */
     health_check(node, config) {
-        const key = node.addr + '__' + config.id;
-        let hc = this.nodesHealthChecks.get(key)
+        let hc = node._health_checks.get(config.id)
         if (!hc) {
             hc = new HealthCheck(node, config, this.__dirname + '/health_checks/' + config.type + '.js')
-            hc.cluster = this
-            this.nodesHealthChecks.set(key, hc)
+            node._health_checks.set(config.id, hc)
         }
 
         return hc

@@ -30,8 +30,6 @@ class ClusterDuck extends emitter {
         this.statuses = {}
         this.updateProcessTitle()
 
-        this.threads = new Threads
-
         this._ready = false
     }
 
@@ -57,6 +55,10 @@ class ClusterDuck extends emitter {
 
 
         this.config = config
+
+        if (!this.threads) {
+            this.threads = new Threads(this.config.threads || 4)
+        }
 
         Object.entries(config.env || {}).map(([key, value]) => {
             if (key === 'DEBUG') {

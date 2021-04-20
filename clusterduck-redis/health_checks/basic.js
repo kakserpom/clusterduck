@@ -30,7 +30,7 @@ module.exports = (node, config, timeoutMs) =>
         setTimeout(() => {
             reject(new Error('timeout'))
             destroy()
-        }, timeoutMs)
+        }, timeoutMs + 100)
 
         try {
             client.on('error', error => {

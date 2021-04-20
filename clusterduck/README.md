@@ -33,7 +33,7 @@ clusterduck
 
 ### Featured extensions
 
-🚀 [clusterduck-dashboard](https://www.npmjs.com/package/clusterduck-redis) — A full-fledged dashboard built with **React** and
+🚀 [clusterduck-dashboard](https://www.npmjs.com/package/clusterduck-dashboard) — A full-fledged dashboard built with **React** and
 **Websocket**.
 
 <img src="https://cdn.cdnlogo.com/logos/r/3/redis.svg" width=20 style="display:inline"></img> [clusterduck-redis](https://www.npmjs.com/package/clusterduck-redis)
@@ -51,8 +51,6 @@ support.
     - [Node events](#node-events)
     - [Cluster events](#cluster-events)
 - [Transports](#transports)
-- [Dependencies](#dependencies)
-- [License](#license)
 
 ## Installation
 
@@ -197,27 +195,7 @@ Parameter           | Description
 
 - CLI
 - Live config updates (i.e. more Commands)
-- Web-interface with websocket
 - REST API
-
-## Dependencies
-
-### Raft
-
-- [liferaft](https://www.npmjs.com/package/liferaft) — Raft protocol implementation (kudos to 3d-Eden and @bergos)
-- [axon-tls](https://www.npmjs.com/package/axon-tls) — Transport library
-- [leveldown](https://www.npmjs.com/package/leveldown) — DB for log persistence
-
-### Misc
-
-- [uuid](https://www.npmjs.com/package/uuid) — uuid generation
-- [yargs](https://www.npmjs.com/package/yargs) — command-line argument parser
-- [js-yaml](https://www.npmjs.com/package/js-yaml), [yaml](https://www.npmjs.com/package/yaml)  — configuration files
-- [daemonize-process](https://www.npmjs.com/package/daemonize-process)
-- [diagnostics](https://www.npmjs.com/package/diagnostics) - debug output
-- [md5](https://www.npmjs.com/package/md5), [sha3](https://www.npmjs.com/package/sha3)
-- [shell-quote](https://www.npmjs.com/package/shell-quote)
-  , [parse-duration](https://www.npmjs.com/package/parse-duration)
 
 ### Transports
 

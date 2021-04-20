@@ -67,7 +67,7 @@ class EnvoyBalancer extends Balancer {
             const dotProp = require('clusterduck/misc/dot-prop')
             const obj = {}
             for (let [, key, value] of data.matchAll(/^(?!#)([^\x20]+): (.+)$/gm)) {
-                key = key.replace(/(?<=listener.)[^_]+_\d+(?=.[a-z])/, match => dotProp.escape(match))
+                key = key.replace(/(?<=listener.)[^_]+_\d+(?=.[a-z])/, match => dotProp.escapeKeyProp(match))
                 const numeric = value.match(/^-?\d+(\.\d+)?$/)
                 if (numeric) {
                     if (numeric[1]) {

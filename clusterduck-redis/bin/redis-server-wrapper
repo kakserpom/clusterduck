@@ -8,6 +8,7 @@ const yargs = require('yargs/yargs')
 const {hideBin} = require('yargs/helpers')
 const fs = require('fs')
 const tcpPortUsed = require('tcp-port-used')
+const path = require('path')
 
 const start = (argv, port) => {
     return new Promise(async (resolve, reject) => {
@@ -61,9 +62,9 @@ const start = (argv, port) => {
             let exited = false
             let started = false
 
-            process.on('SIGTERM', () => process.kill(process.pid, 'SIGINT'))
+            process.on('SIGINT', () => process.kill(process.pid, 'SIGTERM'))
 
-            process.on('SIGINT', (ev) => {
+            process.on('SIGTERM', () => {
                 if (shutdown || !started) {
                     return
                 }
@@ -212,6 +213,14 @@ const Yargs = yargs(hideBin(process.argv)).strict()
     }, async argv => {
         argv.daemonize && daemonizeProcess()
 
+
+        const pidFileDir = path.dirname(argv.pidFile);
+        try {
+            await fs.promises.stat(pidFileDir)
+        } catch (e) {
+            await fs.promises.mkdir(pidFileDir)
+        }
+
         let redis, port
         if (argv.port) {
             try {
@@ -234,7 +243,7 @@ const Yargs = yargs(hideBin(process.argv)).strict()
                         break
                     }
                 } catch (e) {
-                    if (e.code === 'EACCES') {
+                    if (e.code === 'EACCES' || e.code === 'ENOENT') {
                         console.log(e.message)
                         return
                     }

@@ -26,7 +26,7 @@ class HealthCheck extends Entity {
         this.node = node
         this.config = config
         this.path = path
-        this.last_triggered = null
+        this.trigger_at = null
     }
 
     /**
@@ -34,7 +34,7 @@ class HealthCheck extends Entity {
      * @returns {boolean}
      */
     get due() {
-        return this.last_triggered == null || (this.last_triggered + parseDuration(this.config.every) < Date.now())
+        return this.trigger_at === null || this.trigger_at < Date.now()
     }
 
     /**
@@ -58,24 +58,22 @@ class HealthCheck extends Entity {
      * @returns {Promise<* | void>}
      */
     trigger() {
-        this.last_triggered = Date.now()
-        this.result = null
-
+        this.trigger_at = Date.now() + parseDuration(this.config.interval || this.config.every)
         const timeoutMs = parseDuration(this.config.timeout)
         return timeout(
             this.thread.run(this.path, [this.node.export(), this.config, timeoutMs]),
             timeoutMs
         ).then(result => {
-            this.result = result
+            this.error = null
             return result
         }, error => {
+            if (this.config.interval_after_fail) {
+                this.trigger_at = Date.now() + parseDuration(this.config.wait_after_fail)
+            }
             if (error instanceof TimeoutError) {
-                console.log(error)
                 error.message = 'Timed out'
             }
-            if (this.result == null) {
-                this.result = error
-            }
+            this.error = error
             throw error
         })
     }

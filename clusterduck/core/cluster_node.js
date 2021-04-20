@@ -10,6 +10,7 @@ const Entity = require('../misc/entity')
 class ClusterNode extends Entity {
     constructor(entry, cluster) {
         super()
+        this._health_checks = new Map()
         this.cluster = cluster
         this.available = false
         this.active = false

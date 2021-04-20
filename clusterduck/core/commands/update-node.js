@@ -131,7 +131,7 @@ class UpdateNode extends Command {
         const attr = {}
         state.ts = Date.now()
         state.id = id
-        attr['shared_state.' + dotProp.escape(id)] = state
+        attr['shared_state.' + dotProp.escapeKeyProp(id)] = state
         this.attr(attr)
         return this
     }

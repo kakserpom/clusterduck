@@ -9,12 +9,13 @@ class Threads extends Collection {
     /**
      *
      */
-    constructor() {
+    constructor(maxThreads) {
         super('id', entry => {
             entry.id = ++this.seq
             return entry
         })
         this.seq = 0
+        this.maxThreads = maxThreads
     }
 
     /**
@@ -22,7 +23,7 @@ class Threads extends Collection {
      * @returns {Thread|*}
      */
     get thread() {
-        if (this.length < 4) {
+        if (this.length < this.maxThreads) {
             const worker = new Thread
             this.add(worker)
             return worker

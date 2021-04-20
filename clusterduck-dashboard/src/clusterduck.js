@@ -12,22 +12,28 @@ class Clusterduck extends emitter {
         super();
         this.seqId = 0
         this.clusters = {};
+        this.memory = {usage: null, stat: null}
         this.on('connect', () => {
             this.clusters = {};
         }).on('packet', packet => {
-            if (packet[0] === 'cluster-state') {
-                const cluster = packet[1];
+            const type = packet[0]
+            const args = packet.slice(1)
+            if (type === 'cluster-state') {
+                const cluster = args[0]
                 this.clusters[cluster.name] = cluster;
                 this.emit('state', this);
                 this.emit('cluster:' + cluster.name, cluster);
-            } else if (packet[0] === 'raft-state') {
-                this.raftState = packet[1];
+            } else if (type === 'raft-state') {
+                this.raftState = args[0];
                 this.emit('state', this);
                 this.emit('raft', this.raftState);
-            } else if (packet[0] === 'tail') {
-                this.emit('tail:' + packet[1], packet[2]);
-            } else if (packet[0] === 'callback') {
-                this.emit('callback:' + packet[1], ...packet[2]);
+            } else if (type === 'tail') {
+                this.emit('tail:' + args[0], args[1]);
+            } else if (type === 'callback') {
+                this.emit('callback:' + args[0], ...args[1]);
+            } else if (type === 'memory') {
+                this.memory = args[0]
+                this.emit('state', this)
             }
         });
     }

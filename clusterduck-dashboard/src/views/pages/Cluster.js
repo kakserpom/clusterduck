@@ -11,13 +11,11 @@ import JsonBox from "../../components/json-box";
 import * as timeago from 'timeago.js';
 import * as ReactDOM from "react-dom";
 import * as Feather from "react-feather";
-import {css} from "@emotion/css";
 import CodeBox from "../../components/code-box";
 
 const fixPagination = table => {
     Array.from(ReactDOM.findDOMNode(table).getElementsByClassName('ant-table-pagination'))
         .forEach(el => {
-            console.log('test')
             el.classList.remove('ant-table-pagination-right')
             el.classList.add('ant-table-pagination-left')
         })
@@ -82,6 +80,7 @@ class Cluster extends CD_Component {
         })
 
         const expandedRowRender = node => {
+            console.log(node)
             return <span>
                 <p>{node.comment ? <span>{node.comment}</span> : <i>Comment is empty</i>}</p>
                  <JsonBox value={node.attrs || {}}/>
@@ -259,7 +258,6 @@ class Cluster extends CD_Component {
                         super(props);
                         this.state = {config: props.config}
                         this.handler = cluster => {
-                            console.log('handler: ', {config: cluster.balancers[balancer.name].lastConfig})
                             this.setState({config: cluster.balancers[balancer.name].lastConfig})
                         }
                     }
@@ -305,7 +303,7 @@ class Cluster extends CD_Component {
                         let previous = []
                         let generation
                         const fetch = () => {
-                            clusterduck.command('balancerFetchInfo', cluster, balancer, 'stats', info => {
+                            clusterduck.command('balancerFetchInfo', cluster.name, balancer.name, 'stats', info => {
 
                                 if (!info || !info.server || !info.redis) {
                                     return

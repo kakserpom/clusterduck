@@ -15,21 +15,25 @@ function escapeHtml(text) {
     });
 }
 
-export default function CodeBox({value}) {
-
-    const __html = escapeHtml(value).replaceAll(/^[\s]+/mg, match => {
-        return match.replaceAll(/\x20|\t/g, match => (
-            {
-                '\x20': '&nbsp;',
-                '\t': '&nbsp;&nbsp;&nbsp;',
-            }[match]
-        ))
-    }).replaceAll(/\n/g, '<br/>')
-
+export default function CodeBox({value, children, theme}) {
     const ROOT_CSS = css({
         display: 'block',
         padding: '10px',
     });
-    return <code className={'bg-dark ' + ROOT_CSS}
-                 dangerouslySetInnerHTML={{__html}}/>
+    theme = theme || 'dark'
+    if (value) {
+        const __html = escapeHtml(value).replaceAll(/^[\s]+/mg, match => {
+            return match.replaceAll(/\x20|\t/g, match => (
+                {
+                    '\x20': '&nbsp;',
+                    '\t': '&nbsp;&nbsp;&nbsp;',
+                }[match]
+            ))
+        }).replaceAll(/\n/g, '<br/>')
+        return <code className={'bg-' + theme + ' ' + ROOT_CSS}
+                     dangerouslySetInnerHTML={{__html}}/>
+    } else {
+        return <code className={'bg-' + theme + ' ' + ROOT_CSS}>{children}</code>
+    }
+
 }

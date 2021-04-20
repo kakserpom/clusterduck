@@ -1,6 +1,6 @@
 {
   "name": "clusterduck-redis",
-  "version": "0.1.26",
+  "version": "0.1.27",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck-redis",
   "keywords": [
@@ -23,7 +23,7 @@
     "url": "https://github.com/kakserpom/clusterduck"
   },
   "author": "Vasily Zorin",
-  "license": "LGPL-3.0-or-later",
+  "license": "GPL-3.0-only",
   "dependencies": {
     "axios": "^0.21.1",
     "clusterduck": "^0.1",

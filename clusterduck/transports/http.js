@@ -4,6 +4,7 @@ const crypto = require('crypto')
 const {spawn} = require('child_process')
 const readline = require('readline');
 const throttleCallback = require("throttle-callback");
+const v8 = require('v8')
 
 /**
  *
@@ -53,6 +54,11 @@ class Http extends Transport {
 
         const raft = this.clusterduck.transports.get('raft')
 
+        const memory = () => ({
+            usage: process.memoryUsage(),
+            stat: v8.getHeapStatistics(),
+        })
+
         this.fastify.after(() => {
             if (this.auth) {
                 this.fastify.addHook('onRequest', (request, reply, done) => {
@@ -76,6 +82,7 @@ class Http extends Transport {
                     }
                 };
                 this.on('broadcast', send);
+                send('memory', memory())
 
                 this.clusterduck.clusters.forEach(cluster => send('cluster-state', cluster.export()));
 
@@ -185,6 +192,8 @@ class Http extends Transport {
                 raft.on('state', handler)
                 this.emit('broadcast', 'raft-state', raft.export(true))
             }
+
+            setInterval(() => this.emit('broadcast', 'memory', memory()), 5e3)
         });
 
         this.emit('listen');
