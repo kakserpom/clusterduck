@@ -53,7 +53,7 @@ class Home extends CD_Component {
                                     <CardBody className="display-flex">
                                         <div className="m-l">
                                             <h2 className="h4">Memory usage</h2>
-                                            <CodeBox theme={'light'}>
+                                            <CodeBox>
                                             {Object.entries(clusterduck.memory.usage || {}).map(([key, value]) =>
                                                 <p key={key}>{key}: {prettyBytes(value)}</p>
                                             )}
@@ -67,7 +67,7 @@ class Home extends CD_Component {
                                     <CardBody className="display-flex">
                                         <div className="m-l">
                                             <h2 className="h4">Memory Statistics</h2>
-                                            <CodeBox theme={'light'}>
+                                            <CodeBox>
                                                 {Object.entries(clusterduck.memory.stat || {}).map(([key, value]) =>
                                                     <p key={key}>{key}: {prettyBytes(value)}</p>
                                                 )}

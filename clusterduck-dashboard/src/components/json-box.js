@@ -15,13 +15,14 @@ function escapeHtml(text) {
     });
 }
 
-export default function JsonBox({value}) {
+export default function JsonBox({value, theme}) {
     const AnsiConverter = require('ansi-to-html')
     const cj = require('color-json')
     const ansiConvert = new AnsiConverter({
         newline: true,
         escapeXML: false
     });
+    theme = theme || 'light'
 
     const ansi = escapeHtml(cj(value)).replaceAll(/^\s+/mg, match => {
         return match.replaceAll(/\x20|\t/g, match => (
@@ -35,6 +36,6 @@ export default function JsonBox({value}) {
         display: 'block',
         padding: '10px',
     });
-    return <code className={'bg-dark ' + ROOT_CSS}
+    return <code className={'bg-' + theme + ' ' + ROOT_CSS}
                  dangerouslySetInnerHTML={{__html}}/>
 }

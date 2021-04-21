@@ -2,6 +2,7 @@ const Entity = require('./entity')
 const {SHAKE} = require('sha3');
 const emitter = require('eventemitter2')
 const isObject = require('is-obj')
+const deepCopy = require('deep-copy')
 
 class Collection extends emitter {
     constructor(key, hydrate) {
@@ -42,7 +43,7 @@ class Collection extends emitter {
 
             this.forEach((value, key) => {
                 if (typeof value === 'object') {
-                    const entry = value instanceof Entity ? value.export(withState) : value
+                    const entry = deepCopy(value instanceof Entity ? value.export(withState) : value)
                     delete entry[this.key]
                     obj[key] = entry
                 } else {

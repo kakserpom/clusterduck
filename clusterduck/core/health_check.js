@@ -27,6 +27,7 @@ class HealthCheck extends Entity {
         this.config = config
         this.path = path
         this.trigger_at = null
+        this.in_progress = false
     }
 
     /**
@@ -34,7 +35,20 @@ class HealthCheck extends Entity {
      * @returns {boolean}
      */
     get due() {
-        return this.trigger_at === null || this.trigger_at < Date.now()
+
+        if (this.in_progress) {
+            return false
+        }
+
+        if (this.trigger_at === null) {
+            return true
+        }
+
+        if (this.trigger_at < Date.now()) {
+            return true
+        }
+
+        return false
     }
 
     /**
@@ -54,19 +68,38 @@ class HealthCheck extends Entity {
     }
 
     /**
+     *
+     * @param key
+     * @param withState
+     * @returns {*}
+     * @private
+     */
+    _exportable(key, withState) {
+        if (key !== 'node') {
+            return super._exportable(key, withState)
+        }
+    }
+
+    /**
      * Trigger this health check
      * @returns {Promise<* | void>}
      */
     trigger() {
+        this.in_progress = true
         this.trigger_at = Date.now() + parseDuration(this.config.interval || this.config.every)
         const timeoutMs = parseDuration(this.config.timeout)
         return timeout(
             this.thread.run(this.path, [this.node.export(), this.config, timeoutMs]),
             timeoutMs
         ).then(result => {
+            this.in_progress = false
+            this.node_attrs = result.node_attrs || {}
             this.error = null
             return result
         }, error => {
+            this.in_progress = false
+            console.log(error)
+            this.node_attrs = {}
             if (this.config.interval_after_fail) {
                 this.trigger_at = Date.now() + parseDuration(this.config.wait_after_fail)
             }

@@ -35,7 +35,9 @@ class NativeBalancer extends Balancer {
     }
 
     _exportable(key, withState) {
-        return super._exportable(key, withState) && key !== 'workers';
+        if (key !== 'workers') {
+            return super._exportable(key, withState)
+        }
     }
 
 

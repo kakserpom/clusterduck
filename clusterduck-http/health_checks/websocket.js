@@ -7,6 +7,7 @@ module.exports = (node, config, timeoutMs) =>
             const url = new URL(config.url)
             const addr = parseAddr(node.addr)
             const run = () => {
+
                 if (evilDns.domains.filter(item => item.source === url.host).length) {
                     setTimeout(run, 30)
                     return
@@ -30,16 +31,22 @@ module.exports = (node, config, timeoutMs) =>
                         reject(error)
                     })
                     const dotProp = require('clusterduck/misc/dot-prop')
+
+                    setTimeout(() => {
+                        reject(new Error('timeout'))
+                        destroy()
+                    }, timeoutMs)
+
                     client.on('open', () => {
                         evilDns.remove(url.host)
-                        setTimeout(() => {
-                            reject(new Error('timeout'))
-                            destroy()
-                        }, timeoutMs)
 
                         const flow = config.flow || []
                         let i = 0
+                        let finished = false
                         const flowControl = message => {
+                            if (finished) {
+                                return
+                            }
                             while (i < flow.length) {
                                 const item = flow[i]
                                 if (item.type === 'send_json') {
@@ -77,13 +84,11 @@ module.exports = (node, config, timeoutMs) =>
                             }
                             resolve({warnings})
                             destroy()
+                            finished = true
                         }
 
                         flowControl()
-
-                        client.on('message', message => {
-                            flowControl(message)
-                        })
+                        client.on('message', flowControl)
                     })
 
 

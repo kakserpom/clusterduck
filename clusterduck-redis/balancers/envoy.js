@@ -31,17 +31,6 @@ class EnvoyBalancer extends Balancer {
 
     /**
      *
-     * @param key
-     * @param withState
-     * @returns {*|boolean}
-     * @private
-     */
-    _exportable(key, withState) {
-        return super._exportable(key, withState) && key !== 'cluster';
-    }
-
-    /**
-     *
      * @returns {string|null}
      */
     get baseUrl() {

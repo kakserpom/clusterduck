@@ -51,11 +51,9 @@ class Cluster extends Entity {
      * @private
      */
     _exportable(key, withState) {
-        return super._exportable(key, withState)
-            && key !== 'clusterduck'
-            && key !== 'debug'
-            && key !== 'debugDeep'
-            && key !== 'nodesHealthChecks'
+        if (!['clusterduck', 'debug', 'debugDeep', 'nodesHealthChecks'].includes(key)) {
+            return super._exportable(key, withState)
+        }
     }
 
 
@@ -427,8 +425,8 @@ class Cluster extends Entity {
 
                         let error = null
                         let available = true
-                        node._health_checks.forEach(check => {
-                            for (const [key, value] of Object.entries( check.node_attrs || {})) {
+                        node.health_checks.forEach(check => {
+                            for (const [key, value] of Object.entries(check.node_attrs || {})) {
                                 attrs[key] = value
                             }
                             if (check.error) {
@@ -538,10 +536,10 @@ class Cluster extends Entity {
      * @param config
      */
     health_check(node, config) {
-        let hc = node._health_checks.get(config.id)
+        let hc = node.health_checks.get(config.id)
         if (!hc) {
             hc = new HealthCheck(node, config, this.__dirname + '/health_checks/' + config.type + '.js')
-            node._health_checks.set(config.id, hc)
+            node.health_checks.set(config.id, hc)
         }
 
         return hc

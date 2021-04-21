@@ -19,7 +19,9 @@ class Entity {
 
 
     _exportable(key, withState) {
-        return !key.match(/^_/)
+        if (!key.match(/^_/)) {
+            return this[key]
+        }
     }
 
     /**
@@ -28,12 +30,21 @@ class Entity {
      */
     export(withState) {
         const obj = {}
-        for (const [key, value] of Object.entries(this)) {
-            if (!this._exportable(key, withState)) {
+        for (const key of Object.keys(this)) {
+            const value = this._exportable(key, withState)
+            if (value === undefined) {
                 continue
             }
-            if (isObj(value) && typeof value.export === 'function') {
-                obj[key] = value.export(true)
+            if (isObj(value)) {
+                if (typeof value.export === 'function') {
+                    obj[key] = value.export(true)
+                } else if (value instanceof Map) {
+                    obj[key] = Array.from(value.entries()).map(([key, value]) => {
+                        return [key, value.export(withState)]
+                    })
+                } else {
+                    obj[key] = value
+                }
             } else {
                 obj[key] = value
             }

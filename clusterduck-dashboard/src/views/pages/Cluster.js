@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import clusterduck from '../../clusterduck'
 import {Breadcrumb, BreadcrumbItem, Nav, NavItem, NavLink, TabContent, TabPane} from 'reactstrap';
 import CD_Component from "../../CD_Component";
@@ -48,7 +48,8 @@ class Cluster extends CD_Component {
             if (!list.length) {
                 return <i>None</i>
             }
-            return <ul>{list.map((item, i) => <li key={i}>{item}</li>)}</ul>
+            return <ul>{list.map((item, i) => <li
+                key={i}>{typeof item === 'string' ? item : JSON.stringify(item)}</li>)}</ul>
         }
 
         const ActionButton = ({children, onClick, action, node, args, ...props}) => {
@@ -79,14 +80,55 @@ class Cluster extends CD_Component {
             )
         })
 
-        const expandedRowRender = node => {
-            console.log(node)
-            return <span>
-                <p>{node.comment ? <span>{node.comment}</span> : <i>Comment is empty</i>}</p>
-                 <JsonBox value={node.attrs || {}}/>
-            </span>;
-        }
         const pagination = {position: 'both'};
+
+        const tabs = {}
+        let nodesTable
+
+        const Expander = ({node}) => {
+
+            const [state,setState] = useState({})
+            const TabHeader = ({name, children}) => {
+                return (
+                    <NavItem>
+                        <NavLink
+                            href={'#!'}
+                            className={classnames({active: tabs[node.addr] === name})}
+                            onClick={function (e) {
+                                e.preventDefault()
+                                tabs[node.addr] = name
+                                setState({tab: name})
+                            }}
+                            aria-current="page"
+                        >
+                            {children}
+                        </NavLink>
+                    </NavItem>
+                )
+            }
+
+            const json =
+            tabs[node.addr] = tabs[node.addr] || 'attrs'
+
+            const tabContent = {
+                attrs: () => <JsonBox value={
+                    node ? node.attrs : {}
+                }/>,
+                health_checks: () => <JsonBox value={
+                    node ? node.health_checks : {}
+                }/>
+            }[tabs[node.addr]]()
+            return <div>
+                <p>{node.comment ? <span>{node.comment}</span> : <i>Comment is empty</i>}</p>
+                <Nav pills>
+                    <TabHeader name={"attrs"}>Status attributes</TabHeader>
+                    <TabHeader name={"health_checks"}>Health Checks</TabHeader>
+                </Nav>
+                <span>
+                    {tabContent}
+                </span>
+            </div>
+        }
 
         class NodesTable extends React.Component {
 
@@ -95,7 +137,9 @@ class Cluster extends CD_Component {
                 loading: false,
                 pagination,
                 size: 'default',
-                expandedRowRender,
+                expandedRowRender: node => {
+                    return <Expander node={node}/>;
+                },
                 // rowSelection: {},
                 scroll: undefined,
                 tableLayout: undefined,
@@ -103,6 +147,7 @@ class Cluster extends CD_Component {
 
             constructor(props) {
                 super(props);
+                nodesTable = this
                 this.handler = cluster => {
                     this.fetch(cluster.nodes ?
                         cluster.nodes.map(node => ({

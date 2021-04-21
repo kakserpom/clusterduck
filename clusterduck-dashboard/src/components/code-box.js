@@ -20,7 +20,7 @@ export default function CodeBox({value, children, theme}) {
         display: 'block',
         padding: '10px',
     });
-    theme = theme || 'dark'
+    theme = theme || 'light'
     if (value) {
         const __html = escapeHtml(value).replaceAll(/^[\s]+/mg, match => {
             return match.replaceAll(/\x20|\t/g, match => (

@@ -96,7 +96,12 @@ class Http extends Transport {
                     balancerFetchInfo: args => {
                         try {
                             let [clusterName, balancerName, type, callback] = args
-                            const balancer = this.clusterduck.clusters.get(clusterName).balancers.get(balancerName)
+                            const cluster = this.clusterduck.clusters.get(clusterName)
+                            if (!cluster) {
+                                send('callback', callback, false)
+                                return
+                            }
+                            const balancer = cluster.balancers.get(balancerName)
                             balancer.fetchInfo(type).then(info =>
                                 send('callback', callback, [info]))
                         } catch (e) {

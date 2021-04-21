@@ -10,7 +10,7 @@ const Entity = require('../misc/entity')
 class ClusterNode extends Entity {
     constructor(entry, cluster) {
         super()
-        this._health_checks = new Map()
+        this.health_checks = new Map()
         this.cluster = cluster
         this.available = false
         this.active = false
@@ -65,14 +65,15 @@ class ClusterNode extends Entity {
     /**
      *
      * @param key
-     * @returns {boolean}
      * @private
      */
     _exportable(key, withState) {
         if (key === 'spare' && !this.spare) {
-            return false
+            return
         }
-        return super._exportable(key, withState) && key !== 'cluster' && (withState || !ClusterNode.volatile.includes(key))
+        if (key !== 'cluster' && (withState || !ClusterNode.volatile.includes(key))) {
+            return super._exportable(key, withState)
+        }
     }
 }
 
@@ -85,5 +86,6 @@ ClusterNode.volatile = [
     'errors',
     'warnings',
     'attrs',
+    'health_checks'
 ]
 module.exports = ClusterNode
