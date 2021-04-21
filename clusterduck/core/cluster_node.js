@@ -1,4 +1,5 @@
 const Entity = require('../misc/entity')
+const isObject = require("is-obj");
 
 /**
  * Cluster node representation
@@ -70,6 +71,15 @@ class ClusterNode extends Entity {
     _exportable(key, withState) {
         if (key === 'spare' && !this.spare) {
             return
+        }
+        if (key === 'health_checks') {
+            if (withState) {
+                return Array.from(this[key].values()).map(
+                    item => isObject(item) && typeof item.export === 'function'
+                        ? item.export(withState)
+                        : item
+                )
+            }
         }
         if (key !== 'cluster' && (withState || !ClusterNode.volatile.includes(key))) {
             return super._exportable(key, withState)

@@ -86,7 +86,6 @@ class Cluster extends CD_Component {
         let nodesTable
 
         const Expander = ({node}) => {
-
             const [state,setState] = useState({})
             const TabHeader = ({name, children}) => {
                 return (

@@ -84,7 +84,7 @@ class Http extends Transport {
                 this.on('broadcast', send);
                 send('memory', memory())
 
-                this.clusterduck.clusters.forEach(cluster => send('cluster-state', cluster.export()));
+                this.clusterduck.clusters.forEach(cluster => send('cluster-state', cluster.export(true)));
 
                 if (raft) {
                     send('raft-state', raft.export(true));
@@ -176,7 +176,7 @@ class Http extends Transport {
             clusterduck.clusters.forEach(cluster => {
                 const handler = throttleCallback(() => {
                     try {
-                        this.emit('broadcast', 'cluster-state', cluster.export())
+                        this.emit('broadcast', 'cluster-state', cluster.export(true))
                     } catch (e) {
                         console.error(e)
                     }

@@ -75,6 +75,9 @@ class HealthCheck extends Entity {
      * @private
      */
     _exportable(key, withState) {
+        if (key === 'node_attrs') {
+            return Object.keys(this.node_attrs || {})
+        }
         if (key !== 'node') {
             return super._exportable(key, withState)
         }
@@ -98,7 +101,6 @@ class HealthCheck extends Entity {
             return result
         }, error => {
             this.in_progress = false
-            console.log(error)
             this.node_attrs = {}
             if (this.config.interval_after_fail) {
                 this.trigger_at = Date.now() + parseDuration(this.config.wait_after_fail)

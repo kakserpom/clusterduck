@@ -38,10 +38,6 @@ class Entity {
             if (isObj(value)) {
                 if (typeof value.export === 'function') {
                     obj[key] = value.export(true)
-                } else if (value instanceof Map) {
-                    obj[key] = Array.from(value.entries()).map(([key, value]) => {
-                        return [key, value.export(withState)]
-                    })
                 } else {
                     obj[key] = value
                 }

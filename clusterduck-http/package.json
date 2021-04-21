@@ -1,6 +1,6 @@
 {
   "name": "clusterduck-http",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck-http",
   "keywords": [
@@ -28,7 +28,7 @@
     "md5": "^2.3.0",
     "shell-quote": "^1.7.2",
     "tcp-port-used": "^1.0.2",
-    "throttle-callback": "^1.0.4",
+    "throttle-callback": "^1.1.0",
     "tmp-promise": "^3.0.2",
     "write-file-atomic": "^3.0.3",
     "ws": "^7.4.4"

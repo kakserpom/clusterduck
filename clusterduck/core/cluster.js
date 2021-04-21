@@ -51,7 +51,7 @@ class Cluster extends Entity {
      * @private
      */
     _exportable(key, withState) {
-        if (!['clusterduck', 'debug', 'debugDeep', 'nodesHealthChecks'].includes(key)) {
+        if (!['clusterduck', 'debug', 'debugDeep'].includes(key)) {
             return super._exportable(key, withState)
         }
     }
