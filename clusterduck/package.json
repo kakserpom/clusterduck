@@ -1,6 +1,6 @@
 {
   "name": "clusterduck",
-  "version": "0.1.93",
+  "version": "0.1.94",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck",
   "keywords": [
@@ -39,6 +39,7 @@
     "fastify-websocket": "^3.1.0",
     "hashring": "^3.2.0",
     "is-obj": "^2.0.0",
+    "is-scalar": "^1.0.2",
     "jayson": "^3.4.4",
     "js-yaml": "^4.0.0",
     "json-to-pretty-yaml": "^1.2.2",

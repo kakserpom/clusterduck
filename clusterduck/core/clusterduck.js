@@ -84,7 +84,7 @@ class ClusterDuck extends emitter {
             if (forceProp) {
                 key = key.slice(1)
             }
-            if (!forceProp && typeof ptr === 'object' && ptr instanceof Collection) {
+            if (!forceProp && typeof ptr === 'object' && typeof ptr.get === 'function') {
                 ptr = ptr.get(key)
                 if (ptr === null) {
                     throw new Error(key + ' not found')
@@ -110,6 +110,7 @@ class ClusterDuck extends emitter {
         }
 
         return {
+
             /**
              *
              * @param args

@@ -8,10 +8,14 @@
     const pidFileClass = require('../misc/pid-file')
     const md5 = require('md5')
 
+    const isScalar = require('is-scalar')
+
     const {exec, spawn} = require('child_process')
     const {quote} = require('shell-quote')
     const path = require('path')
     const fs = require('fs')
+
+    const YAML = require('js-yaml')
 
     const Yargs = require('yargs')
 
@@ -179,13 +183,42 @@
                 response.forEach(result => {
                     // console.log(result)
                     // process.stdout.write(treeify.asTree(result, true))
-
-                    treeify.asLines(result, true, true, line => {
-                        console.log(line)
-                    })
+                    if (isScalar(result)) {
+                        console.log(result)
+                    } else {
+                        treeify.asLines(result, true, true, line => {
+                            console.log(line)
+                        })
+                    }
                 })
             }
         })
+
+
+        yargs.command(
+            'node-info [cluster] [addr]',
+            'Get a node with [addr] from [cluster]',
+            yargs => {
+                yargs
+                    .positional('cluster', {
+                        describe: 'cluster name',
+                        demandOption: true
+                    })
+                    .positional('addr', {
+                        describe: 'Node address',
+                        demandOption: true
+                    })
+            },
+            async argv => {
+                const client = await clusterduck.jayson.client()
+                const {error, result} = await client.request('ls', [`clusters/${argv.cluster}/nodes/${argv.addr}`])
+                if (error) {
+                    console.error(clusterduck.argv.verbose ? error : error.message)
+                    return
+                }
+                process.stdout.write(YAML.dump(result))
+            }
+        )
 
         argv = yargs
             .help()

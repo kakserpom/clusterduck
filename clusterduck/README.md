@@ -94,10 +94,10 @@ The default config file path is `/etc/clusterduck/clusterduck.yaml`
 Let's define a Redis cluster named `my_redis_cluster`:
 
 ```yaml
-# clusters:
-
-my_redis_cluster:
-  type: clusterduck-redis
+clusters:
+  
+  my_redis_cluster:
+    type: clusterduck-redis
 ```
 
 ### Nodes
@@ -121,12 +121,13 @@ Now let's set up a simple __health check__.
     health_checks:
       - type: basic
         timeout: 1s
-        every: 1s
+        interval: 10s
+        interval_after_fail: 1s
         commands:
           - [ 'SET', 'x', 'y' ]
 ```
 
-*Now every second each node in the cluster will get checked on.*
+*Now every 10 secs each node in the cluster will get checked on. If the check fails, a retry happens after 1 sec.*
 
 ### Triggers
 

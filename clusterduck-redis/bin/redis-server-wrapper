@@ -62,6 +62,8 @@ const start = (argv, port) => {
             let exited = false
             let started = false
 
+            let checkInterval
+
             process.on('SIGINT', () => process.kill(process.pid, 'SIGTERM'))
 
             process.on('SIGTERM', () => {
@@ -69,10 +71,12 @@ const start = (argv, port) => {
                     return
                 }
 
+                clearInterval(checkInterval)
+
                 const cmd = argv.stopTrigger.replace('$CD_OPTS', process.env.CD_OPTS || '')
                 console.log('STOP TRIGGER: ' + cmd)
                 exec(cmd, {
-                    env: Object.assign(process.env, {
+                    env: Object.assign({}, process.env, {
                         'NODE': JSON.stringify({addr: argv.addr + ':' + port})
                     })
                 }, (error, stdout, stderr) => {
@@ -103,11 +107,25 @@ const start = (argv, port) => {
 
                     const nodeParams = JSON.parse(process.env.CD_NODE_PARAMS || '{}')
                     exec(cmd, {
-                        env: Object.assign(process.env, {
+                        env: Object.assign({}, process.env, {
                             'NODE': JSON.stringify(Object.assign({}, nodeParams, {addr: argv.addr + ':' + port}))
                         })
                     }, (error, stdout, stderr) => {
                         console.log('START TRIGGER: ', stdout, stderr)
+
+                        checkInterval = setInterval(() => {
+                            const cmd = argv.checkTrigger.replace('$CD_OPTS', process.env.CD_OPTS || '')
+                            exec(cmd, {
+                                env: Object.assign({}, process.env, {
+                                    'NODE': argv.addr + ':' + port,
+                                })
+                            }, (error, stdout, stderr) => {
+                                if (!stdout.toString().match(/^\s+available:/m)) {
+                                    console.log('CHECK FAILED. EXITING...')
+                                    process.kill(process.pid, 'SIGINT')
+                                }
+                            })
+                        }, 10e3)
                     })
                     resolve(redis)
                 }
@@ -174,6 +192,11 @@ const Yargs = yargs(hideBin(process.argv)).strict()
         description: 'Command to run before stopping',
         type: 'string',
     })
+    .option('check-trigger', {
+        default: 'clusterduck $CD_OPTS node-info $CLUSTER $NODE',
+        description: 'Command to run periodically to check if Redis should quit',
+        type: 'string',
+    })
     .command('stop [port]', 'stop an instance', yargs => {
         yargs
             .positional('port', {
@@ -212,7 +235,6 @@ const Yargs = yargs(hideBin(process.argv)).strict()
             })
     }, async argv => {
         argv.daemonize && daemonizeProcess()
-
 
         const pidFileDir = path.dirname(argv.pidFile);
         try {
