@@ -8,6 +8,7 @@ const net = require('net');
 const readline = require('readline')
 const util = require('util')
 const axios = require('axios')
+const deepCopy = require('deep-copy')
 
 /**
  *
@@ -118,8 +119,8 @@ class EnvoyBalancer extends Balancer {
                     ),
                     '--socket-file', socketFile,
                 ])
-                proc.stdout.on('data', data => console.log(data.toString()))
-                proc.stderr.on('data', data => console.error(data.toString()))
+                proc.stdout.pipe(process.stdout, {end: false})
+                proc.stderr.pipe(process.stderr, {end: false})
                 this._socket.on('close', () => spawnWrapper())
             }, 5e3)
             rl.on('line', line => {
@@ -261,24 +262,20 @@ class EnvoyBalancer extends Balancer {
             }
         })
 
-        // Now we make the final object
-        let envoy = {
-
-            // Let's group up static resources
-            static_resources: {
-                listeners: listeners,
-                clusters: [
-                    cluster
-                ]
-            }
+        // Web-interface config
+        const admin = this.config.admin ? deepCopy(this.config.admin) : undefined
+        if (admin.listen) {
+            admin.address = address(admin.listen, 9990)
+            delete admin.listen
         }
 
-        // Administrative interface config
-        if (this.config.admin) {
-            envoy.admin = this.config.admin
-        }
+        // Clusters
+        const clusters = [cluster]
 
-        return envoy
+        // Let's group up static resources
+        const static_resources = {listeners, clusters}
+
+        return {admin, static_resources}
     }
 }
 

@@ -26,17 +26,29 @@ class ClusterNode extends Entity {
 
     /**
      *
+     * @returns {{}}
+     */
+    exportForSync() {
+        const obj = this.export(true)
+        delete obj.health_checks
+        return obj
+    }
+
+    /**
+     *
      * @param entry
      * @param skipCheck
      */
     entry(entry, skipCheck) {
+
+        delete entry.health_checks // @hotfix
+
         for (const [key, value] of Object.entries(entry)) {
             if (!skipCheck) {
                 if (ClusterNode.volatile.includes(key)) {
                     throw new Error('Property ' + JSON.stringify(key) + ' is volatile and cannot be set in constructor')
                 }
             }
-
             this[key] = value
         }
 

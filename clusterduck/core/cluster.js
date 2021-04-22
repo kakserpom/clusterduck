@@ -549,9 +549,6 @@ class Cluster extends Entity {
      * Run health checks on the cluster
      */
     run_health_checks() {
-
-        let clusterChecks = []
-
         this.nodes.forEach(node => {
             let nodeChecks = []
             this.health_checks.forEach(hc => {
@@ -565,14 +562,9 @@ class Cluster extends Entity {
                 return
             }
 
-            const allNodeChecks = Promise.all(nodeChecks)
+            Promise.all(nodeChecks)
                 .then(list => node.emit('passed', list))
                 .catch(error => node.emit('failed', error))
-            clusterChecks.push(allNodeChecks)
-        })
-
-        Promise.all(clusterChecks).then(list => {
-
         })
     }
 }

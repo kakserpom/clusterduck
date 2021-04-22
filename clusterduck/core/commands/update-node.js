@@ -20,9 +20,9 @@ class UpdateNode extends Command {
         this.delete = []
         this.command = 'update-node'
         this._ev.once('beforeCommit', () => {
-            Array.prototype.includesAny = function () {
-                for (let i = 0; i < arguments.length; ++i) {
-                    if (this.includes(arguments[i])) {
+            const includesAny = (array, values) => {
+                for (let i = 0; i < values.length; ++i) {
+                    if (array.includes(values[i])) {
                         return true
                     }
                 }
@@ -31,11 +31,11 @@ class UpdateNode extends Command {
 
             const setKeys = Object.keys(this.set)
 
-            if (setKeys.includesAny('available', 'checked')) {
+            if (includesAny(setKeys, ['available', 'checked'])) {
                 this.set.available_changed = Date.now()
             }
 
-            if (setKeys.includesAny('available', 'disabled', 'spare')) {
+            if (includesAny(setKeys, ['available', 'disabled', 'spare'])) {
                 this.set.active = Boolean(this._proxy.available && !this._proxy.disabled && !this._proxy.spare)
             }
         })

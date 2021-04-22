@@ -41,7 +41,7 @@ class SetClusterState extends Command {
      * @returns {SetClusterState}
      */
     addNode(node) {
-        this.nodes.push(node.export(true))
+        this.nodes.push(node.exportForSync())
         return this
     }
 

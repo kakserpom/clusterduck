@@ -1,6 +1,6 @@
 {
   "name": "clusterduck-redis",
-  "version": "0.1.28",
+  "version": "0.1.31",
   "description": "",
   "homepage": "https://npmjs.com/package/clusterduck-redis",
   "keywords": [
@@ -28,6 +28,7 @@
     "axios": "^0.21.1",
     "clusterduck": "^0.1",
     "daemonize-process": "^3.0.0",
+    "deep-copy": "^1.4.2",
     "diagnostics": "^2.0.2",
     "dot-prop": "^6.0.1",
     "ensure-array": "^1.0.0",
