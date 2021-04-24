@@ -289,8 +289,8 @@ class ClusterDuck extends emitter {
 
         this.transports = (new Collection('type', config => Transport.factory(config, this)))
             .addFromArray(this.config.transports || [])
-        this.transports.forEach(transport => transport.doListen())
 
+        await Promise.all(this.transports.map(transport => transport.doListen()))
 
         /**
          *
@@ -311,9 +311,7 @@ class ClusterDuck extends emitter {
         }, 1e3))
 
         this.clusters.forEach(cluster => cluster.run_health_checks())
-        setInterval(() => {
-            this.clusters.forEach(cluster => cluster.run_health_checks())
-        }, 1000)
+        setInterval(() => this.clusters.forEach(cluster => cluster.run_health_checks()), 1000)
 
         uncaught()
 

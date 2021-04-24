@@ -264,7 +264,7 @@ class EnvoyBalancer extends Balancer {
 
         // Web-interface config
         const admin = this.config.admin ? deepCopy(this.config.admin) : undefined
-        if (admin.listen) {
+        if (admin && admin.listen) {
             admin.address = address(admin.listen, 9990)
             delete admin.listen
         }

@@ -522,6 +522,39 @@ class Cluster extends CD_Component {
             }
         }
 
+        const BalancersBlock = () => {
+            if (!Object.keys(cluster.balancers || {}).length) {
+                return <i>No balancers are configured in the cluster.</i>
+            }
+            return (<div>
+
+                <Nav tabs>
+                    {Object.keys(cluster.balancers || {}).map(name => {
+                        const balancer = cluster.balancers[name]
+                        return <TabHeader name={"balancers"} section={name}
+                                          key={'balancers/' + balancer}>
+                            <img src={balancer.software.logo}
+                                 style={{width: 80, height: 80}}
+                                 alt={balancer.software.name}
+                                 aria-hidden={true}
+                            /> {name}</TabHeader>
+                    })}
+                </Nav>
+                <TabContent activeTab={this.section || Object.keys(cluster.balancers || {})[0] || ''}>
+                    {Object.keys(cluster.balancers || {}).map(name => {
+                        const balancer = cluster.balancers[name]
+                        balancer.name = name // @todo remove
+                        const type = balancer.config.type
+                        const Balancer = Balancers[type] || null
+                        return <TabPane tabId={name} key={name}>
+                            {Balancer ? <Balancer balancer={balancer}/> :
+                                <i>Balancer "{type}" is not supported by the Dashboard.</i>}
+                        </TabPane>
+                    })}
+                </TabContent>
+            </div>)
+        }
+
         return (<div>
                 <Header {...this.props}>
                     <Breadcrumb>
@@ -545,33 +578,7 @@ class Cluster extends CD_Component {
                     </div>
                     <div>
                         {this.tab === 'nodes' ? <NodesTable/> : ''}
-                        {this.tab === 'balancers' ? <div>
-                                <Nav tabs>
-                                    {Object.keys(cluster.balancers || {}).map(name => {
-                                        const balancer = cluster.balancers[name]
-                                        return <TabHeader name={"balancers"} section={name}
-                                                          key={'balancers/' + balancer}>
-                                            <img src={balancer.software.logo}
-                                                 style={{width: 80, height: 80}}
-                                                 alt={balancer.software.name}
-                                                 aria-hidden={true}
-                                            /> {name}</TabHeader>
-                                    })}
-                                </Nav>
-                                <TabContent activeTab={this.section || Object.keys(cluster.balancers || {})[0] || ''}>
-                                    {Object.keys(cluster.balancers || {}).map(name => {
-                                        const balancer = cluster.balancers[name]
-                                        balancer.name = name // @todo remove
-                                        const type = balancer.config.type
-                                        const Balancer = Balancers[type] || null
-                                        return <TabPane tabId={name} key={name}>
-                                            {Balancer ? <Balancer balancer={balancer}/> :
-                                                <i>Balancer "{type}" is not supported by the Dashboard.</i>}
-                                        </TabPane>
-                                    })}
-                                </TabContent>
-                            </div>
-                            : ''}
+                        {this.tab === 'balancers' ? <BalancersBlock/>: ''}
                     </div>
                 </PageContent>
             </div>

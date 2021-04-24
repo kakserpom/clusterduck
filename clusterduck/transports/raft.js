@@ -438,9 +438,7 @@ class RaftTransport extends Transport {
                     return
                 }
                 this.following = true
-                setImmediate(() => {
-                    transport.messageLeader('new-follower', raft.address)
-                })
+                setImmediate(() => transport.messageLeader('new-follower', raft.address))
             }
 
             raft.on('term change', (to, from) => {

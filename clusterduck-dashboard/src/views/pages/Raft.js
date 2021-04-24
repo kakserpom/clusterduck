@@ -110,7 +110,7 @@ class Raft extends CD_Component {
             render() {
                 const {state} = this;
                 let {sortedInfo} = state;
-                sortedInfo = sortedInfo || {};
+                sortedInfo = sortedInfo || {columnKey: 'address', order: 'ascend'};
 
                 //let {filteredInfo} = state;
                 //filteredInfo = filteredInfo || {};
