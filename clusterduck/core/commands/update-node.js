@@ -87,13 +87,21 @@ class UpdateNode extends Command {
 
                 const prev = dotProp.get(node, key, null)
 
-                if (prev === value) {
+                if (Array.isArray(value) && Array.isArray(prev)) {
+                    if (JSON.stringify(value) === JSON.stringify(prev)) {
+                        continue
+                    }
+                }
+                else if (prev === value) {
                     continue
                 }
 
                 dotProp.set(node, key, value)
-                if (!key.match(/^shared_state\./)) {
-                    changed = true
+                const keySplit = key.split('.')
+                if (keySplit[0] !== 'shared_state') {
+                    if (keySplit[0] !== 'attrs') {
+                        changed = true
+                    }
                 } else {
                     changed_ss = true
                 }

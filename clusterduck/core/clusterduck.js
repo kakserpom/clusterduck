@@ -49,18 +49,19 @@ class ClusterDuck extends emitter {
 
     /**
      * Set config
-     * @param config
+     * @param configFile
      */
-    set_config(config) {
+    async set_config_file(configFile) {
 
-
-        this.config = config
+        this.configFile = configFile
+        await this.configFile.load()
+        this.config = configFile.getData()
 
         if (!this.threads) {
             this.threads = new Threads(this.config.threads || 4)
         }
 
-        Object.entries(config.env || {}).map(([key, value]) => {
+        Object.entries(this.config.env || {}).map(([key, value]) => {
             if (key === 'DEBUG') {
                 process.env[key] =
                     (process.env[key] ? process.env[key] + ',' : '')
@@ -307,7 +308,7 @@ class ClusterDuck extends emitter {
 
         this.on('config:changed', throttleCallback(() => {
             this.config.clusters = this.clusters.mapObj(cluster => [cluster.name, cluster.config])
-            this.config.write()
+            this.configFile.write()
         }, 1e3))
 
         this.clusters.forEach(cluster => cluster.run_health_checks())

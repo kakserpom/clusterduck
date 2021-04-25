@@ -11,17 +11,29 @@ class ConfigFile extends emitter {
     constructor(path) {
         super()
         this.path = path
-        this.load()
-        return new Proxy(this, {
-            get: (target, prop) => {
-                return this[prop] || target.data[prop]
-            },
-            set: (target, prop, value) => target.data[prop] = value,
-        })
     }
 
-    load() {
-        this.data = YAML.load(fs.readFileSync(this.path, 'utf8'))
+    async load() {
+        const contents = await fs.promises.readFile(this.path, 'utf8')
+
+        function File(path) {
+            this.path = path
+        }
+
+        const FileYamlType = new YAML.Type('!file', {
+            kind: 'scalar',
+            resolve: path => typeof path === 'string',
+            construct: path => new File(path),
+            instanceOf: File,
+            represent: file => file.path,
+        })
+
+        const schema = YAML.DEFAULT_SCHEMA.extend([FileYamlType]);
+        this.data = YAML.load(contents, {schema})
+    }
+
+    getData() {
+        return this.data
     }
 
     async write() {

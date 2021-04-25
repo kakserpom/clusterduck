@@ -54,9 +54,9 @@ class Home extends CD_Component {
                                         <div className="m-l">
                                             <h2 className="h4">Memory usage</h2>
                                             <CodeBox>
-                                            {Object.entries(clusterduck.memory.usage || {}).map(([key, value]) =>
-                                                <p key={key}>{key}: {prettyBytes(value)}</p>
-                                            )}
+                                                {Object.entries(clusterduck.memory.usage || {}).map(([key, value]) =>
+                                                    <p key={key}>{key}: {prettyBytes(value)}</p>
+                                                )}
                                             </CodeBox>
                                         </div>
                                     </CardBody>
@@ -69,7 +69,11 @@ class Home extends CD_Component {
                                             <h2 className="h4">Memory Statistics</h2>
                                             <CodeBox>
                                                 {Object.entries(clusterduck.memory.stat || {}).map(([key, value]) =>
-                                                    <p key={key}>{key}: {prettyBytes(value)}</p>
+                                                    <p key={key}>{key}: {[
+                                                        'does_zap_garbage',
+                                                        'number_of_native_contexts',
+                                                        'number_of_detached_contexts',
+                                                    ].includes(key) ? value : prettyBytes(value)}</p>
                                                 )}
                                             </CodeBox>
                                         </div>

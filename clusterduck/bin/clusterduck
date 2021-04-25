@@ -137,8 +137,8 @@
                 .pipe(editor)
 
             editor.on('close', async () => {
-                const orig = ConfigFile.fromString(originalConfig)
-                const changed = ConfigFile.fromString(await fs.promises.readFile(tmpFile.path))
+                const orig = ConfigFile.fromString(originalConfig).getData()
+                const changed = ConfigFile.fromString(await fs.promises.readFile(tmpFile.path)).getData()
                 const difference = diff(orig, changed)
                 console.log(JSON.stringify(difference))
                 process.exit()
@@ -266,9 +266,32 @@
 
         pid.acquireOrThrow()
 
-        clusterduck.set_config(new ConfigFile(argv.configFile))
+
+        await clusterduck.set_config_file(new ConfigFile(argv.configFile))
 
         process.on('exit', code => console.log('Exited with code: ' + code))
+
+        const debugMemory = require('../core/logger')('memory')
+        const prettyBytes = require('pretty-bytes')
+
+
+        let lastOutput = 0
+        let exceededOneGB = false
+        setInterval(() => {
+            if (!exceededOneGB) {
+                if (Object.values(process.memoryUsage()).reduce((n, c) => n + c, 0) >= 1024 * 1024 * 1024) {
+                    lastOutput = 0
+                    exceededOneGB = true
+                    debugMemory('Memory usage exceeded 1 gb')
+                }
+            }
+            if (lastOutput + 300e3 < Date.now()) {
+                lastOutput = Date.now()
+                debugMemory(`Memory usage:`, Object.fromEntries(
+                    Object.entries(process.memoryUsage()).map(([key, value]) => [key, prettyBytes(value)])
+                ))
+            }
+        }, 10e3)
 
         await clusterduck.run()
     } catch (err) {

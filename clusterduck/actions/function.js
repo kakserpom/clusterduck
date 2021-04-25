@@ -23,7 +23,8 @@ class FunctionAction {
     async invoke(env, ...args) {
         try {
             const os = require('os')
-            const exec = this._exec_shell_command
+            const exec = this._exec_shell_command.bind(this)
+            const cwd = this.config.cwd || process.cwd()
             await eval('(async ' + this.config.func + ')')(...args)
         } catch (error) {
             console.error(error)
@@ -37,11 +38,14 @@ class FunctionAction {
      * @return {Promise<string>}
      */
     _exec_shell_command(cmd, options) {
+        options = options || {}
+        options.cwd = options.cwd || this.config.cwd || process.cwd()
         return new Promise((resolve, reject) => {
-            exec(cmd, options || {}, (error, stdout, stderr) => {
+            exec(cmd, options, (error, stdout, stderr) => {
                 if (error) {
                     console.warn(error);
                 }
+                console.log(stdout)
                 resolve(stdout ? stdout : stderr);
             });
         });

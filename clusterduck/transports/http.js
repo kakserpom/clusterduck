@@ -1,10 +1,10 @@
 const Transport = require('../core/transport');
 const array = require('ensure-array');
-const crypto = require('crypto')
 const {spawn} = require('child_process')
 const readline = require('readline');
 const throttleCallback = require("throttle-callback");
 const v8 = require('v8')
+const timingSafeEqual = require('../misc/timing-safe-compare')
 
 /**
  *
@@ -35,16 +35,10 @@ class Http extends Transport {
         if (this.auth) {
             this.fastify.register(require('fastify-basic-auth'), {
                 validate: (username, password, req, reply, done) => {
-                    const cmpUsername = username.length === this.auth.username.length && crypto.timingSafeEqual(
-                        Buffer.from(username),
-                        Buffer.from(this.auth.username)
-                    );
-                    const cmpPassword = password.length === this.auth.password.length && crypto.timingSafeEqual(
-                        Buffer.from(password),
-                        Buffer.from(this.auth.password)
-                    );
+                    const cmpUsername = timingSafeEqual(username, this.auth.username)
+                    const cmpPassword = timingSafeEqual(password, this.auth.password)
                     if (cmpUsername && cmpPassword) {
-                        done();
+                        done()
                     } else {
                         done(new Error('Winter is coming'));
                     }

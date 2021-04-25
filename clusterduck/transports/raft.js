@@ -14,7 +14,7 @@ const debugDeep = require('diagnostics')('raft-deep')
 const {SHA3} = require('sha3')
 const parseDuration = require('parse-duration')
 const array = require('ensure-array')
-const crypto = require('crypto')
+const timingSafeEqual = require('../misc/timing-safe-compare')
 
 class RaftTransport extends Transport {
     /**
@@ -320,11 +320,8 @@ class RaftTransport extends Transport {
                                     fn('protocol_error')
                                     return
                                 }
-
-                                if (validHash.length !== data.hash.length || !crypto.timingSafeEqual(
-                                    Buffer.from(validHash),
-                                    Buffer.from(data.hash)
-                                )) {
+                                if (!timingSafeEqual(validHash, data.hash))
+                                {
                                     debug(`boundSocket: ${peer}: auth_failed`)
                                     fn('auth_failed')
                                     return

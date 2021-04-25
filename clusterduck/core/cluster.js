@@ -337,6 +337,9 @@ class Cluster extends Entity {
 
             const [prop, event] = trigger.on
             const handler = (...args) => {
+                if (!this.initialized) {
+                    return
+                }
                 let env = deepCopy(trigger.env || {})
 
                 env.CLUSTER = this.name
@@ -477,6 +480,12 @@ class Cluster extends Entity {
                     if (unchecked === 0) {
                         this.initialized = true
                         this.nodes.emit('all')
+                    }
+                } else {
+                    const json = JSON.stringify(this.nodes.active.map(node => node.addr))
+                    if (!this.last_active_nodes || this.last_active_nodes !== json) {
+                        this.last_active_nodes = json
+                        this.nodes.emit('active')
                     }
                 }
             }, 0.1e3))

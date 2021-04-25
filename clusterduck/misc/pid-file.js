@@ -1,4 +1,5 @@
 const fs = require('fs')
+const path = require('path')
 
 /**
  *
@@ -18,7 +19,7 @@ class PidFile {
      * @returns {boolean|int}
      */
     get pid() {
-        if (!fs.existsSync(this.path))  {
+        if (!fs.existsSync(this.path)) {
             return false
         }
         return parseInt(fs.readFileSync(this.path).toString())
@@ -66,8 +67,12 @@ class PidFile {
                 return false
             }
             try {
+                const dir = path.dirname(this.path)
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, {recursive: true})
+                }
                 fs.writeFileSync(this.path, process.pid.toString(), {flag: 'wx+'})
-                process.on('exit',  () => {
+                process.on('exit', () => {
                     fs.existsSync(this.path) && fs.unlinkSync(this.path)
                 })
                 return true
