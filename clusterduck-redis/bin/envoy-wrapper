@@ -194,6 +194,8 @@ const Yargs = yargs(hideBin(process.argv)).strict()
             argv.daemonize && daemonizeProcess()
             const pidFile = new pidFileClass(argv.pidFile)
             pidFile.acquireOrThrow()
+
+            process.title = 'envoy-wrapper'
             const envoy = new Envoy(argv)
         } catch (e) {
             console.error(e)

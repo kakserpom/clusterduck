@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+
 (async () => {
 
     const ConfigFile = require("../misc/config")
@@ -8,9 +9,11 @@
     const pidFileClass = require('../misc/pid-file')
     const md5 = require('md5')
 
+    const Watchdog = require("../core/watchdog")
+
     const isScalar = require('is-scalar')
 
-    const {exec, spawn} = require('child_process')
+    const {exec, spawn, execFile} = require('child_process')
     const {quote} = require('shell-quote')
     const path = require('path')
     const fs = require('fs')
@@ -27,6 +30,21 @@
             alias: 'd',
             description: 'Daemonize',
             type: 'boolean',
+        })
+        .option('dont-fork', {
+            description: 'Don\'t fork in daemonize mode',
+            type: 'boolean',
+            hidden: true,
+        })
+        .option('filler', {
+            description: 'This option is ignored',
+            type: 'string',
+            hidden: true,
+        })
+        .option('child', {
+            description: 'Child',
+            type: 'boolean',
+            hidden: true,
         })
         .option('config-file', {
             alias: 'c',
@@ -231,42 +249,69 @@
         }
 
 
-        const pid = new pidFileClass(argv.pidFile)
-
-        if (pid.running) {
-            console.error('An instance is already running. Abort.')
-            return
+        const acquirePid = () => {
+            const pid = new pidFileClass(argv.pidFile)
+            if (pid.running) {
+                throw new Error('An instance is already running. Abort.')
+            }
+            pid.acquireOrThrow()
         }
 
-        const debugStream = fs.createWriteStream(argv.logDir + '/stdout.log', {flags: 'a'})
-            , errorStream = fs.createWriteStream(argv.logDir + '/stderr.log', {flags: 'a'});
+        const stdoutLog = argv.logDir + '/stdout.log'
+        const stderrLog = argv.logDir + '/stderr.log'
 
-        process.stdout.writeReal = process.stdout.write
-        process.stdout.write = data => {
-            debugStream.write(data)
-            process.stdout.writeReal(data)
+        const openLogs = () => {
+            const debugStream = fs.createWriteStream(stdoutLog, {flags: 'a'})
+                , errorStream = fs.createWriteStream(stderrLog, {flags: 'a'});
+            process.stdout.writeReal = process.stdout.write
+            process.stdout.write = data => {
+                debugStream.write(data)
+
+                if (!argv.child) {
+                    process.stdout.writeReal(data)
+                }
+            }
+
+            process.stderr.writeReal = process.stderr.write
+            process.stderr.write = data => {
+                debugStream.write(data)
+                errorStream.write(data)
+                //  if (!argv.child) {
+                process.stderr.writeReal(data)
+                // }
+            }
         }
 
-        process.stderr.writeReal = process.stderr.write
-        process.stderr.write = data => {
-            debugStream.write(data)
-            errorStream.write(data)
-            process.stderr.writeReal(data)
-        }
+        openLogs()
 
-        if (argv.daemonize) {
+        if (argv.daemonize && !argv.child) {
+
+            if (!argv.dontFork) {
+                daemonizeProcess()
+            }
 
             if (argv.verbose) {
                 console.log('[INFO] An instance has just started. PID: ' + process.pid)
             }
 
-            daemonizeProcess()
+            clusterduck.updateProcessTitle({type: 'master'})
+            const watchdog = new Watchdog(
+                process.argv[0],
+                process.argv.slice(1).concat(['--child', '--filler', 'x'.repeat(50)])
+            )
 
+            acquirePid()
+            watchdog.run()
+
+            return
         }
 
-        pid.acquireOrThrow()
-
-
+        if (!argv.child) {
+            acquirePid()
+            clusterduck.updateProcessTitle()
+        } else {
+            clusterduck.updateProcessTitle({type: 'child'})
+        }
         await clusterduck.set_config_file(new ConfigFile(argv.configFile))
 
         process.on('exit', code => console.log('Exited with code: ' + code))

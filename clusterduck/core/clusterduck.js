@@ -28,9 +28,13 @@ class ClusterDuck extends emitter {
         this.config_id = md5(argv.configFile)
         this.verbose = ![null, false, undefined].includes(this.argv.verbose)
         this.statuses = {}
-        this.updateProcessTitle()
 
         this._ready = false
+
+        this.errors = {
+            EntityNotFound: class extends Error {
+            }
+        }
     }
 
     /**
@@ -38,13 +42,13 @@ class ClusterDuck extends emitter {
      * @param update
      */
     updateProcessTitle(update) {
-        this.statuses = Object.assign(this.statuses, update || {})
+        Object.assign(this.statuses, update || {})
         const statuses = Object.values(this.statuses).filter(x => x !== null)
         const title = 'clusterduck: '
             + this.argv.configFile
             + (statuses.length ? ' (' + statuses.join(', ') + ')' : '')
 
-        //process.title = title
+        process.title = title
     }
 
     /**
@@ -79,8 +83,8 @@ class ClusterDuck extends emitter {
      */
     resolveEntityPath(path) {
         let ptr = this
-        path.forEach(key => {
 
+        path.forEach(key => {
             const forceProp = key.match(/^:/);
             if (forceProp) {
                 key = key.slice(1)
@@ -88,12 +92,12 @@ class ClusterDuck extends emitter {
             if (!forceProp && typeof ptr === 'object' && typeof ptr.get === 'function') {
                 ptr = ptr.get(key)
                 if (ptr === null) {
-                    throw new Error(key + ' not found')
+                    throw new this.errors.EntityNotFound(key + ' not found')
                 }
             } else if (forceProp || ptr.hasOwnProperty(key)) {
                 ptr = ptr[key]
             } else {
-                throw new Error(key + ' not found')
+                throw new this.errors.EntityNotFound(key + ' not found')
             }
         })
         return ptr

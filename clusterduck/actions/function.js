@@ -43,9 +43,9 @@ class FunctionAction {
         return new Promise((resolve, reject) => {
             exec(cmd, options, (error, stdout, stderr) => {
                 if (error) {
-                    console.warn(error);
+                    this.debug('stderr: ', stdout)
                 }
-                console.log(stdout)
+                this.debug('stdout: ', stdout)
                 resolve(stdout ? stdout : stderr);
             });
         });

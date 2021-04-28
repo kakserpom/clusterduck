@@ -61,11 +61,11 @@ class UpdateNode extends Command {
 
     /**
      *
-     * @param root
+     * @param clusterduck
      */
-    run(root) {
+    run(clusterduck) {
         try {
-            const cluster = root.resolveEntityPath(this.path.slice(0, -2))
+            const cluster = clusterduck.resolveEntityPath(this.path.slice(0, -2))
 
             if (!cluster.acceptCommits) {
                 // Dropping it
@@ -73,7 +73,7 @@ class UpdateNode extends Command {
                 return
             }
 
-            const node = root.resolveEntityPath(this.path)
+            const node = clusterduck.resolveEntityPath(this.path)
 
             let changed = false, changed_ss = false
 
@@ -115,6 +115,9 @@ class UpdateNode extends Command {
                 node.emit('changed_shared_state', node)
             }
         } catch (e) {
+            if (e instanceof clusterduck.errors.EntityNotFound) {
+                return
+            }
             console.error(this.command + ': ' + JSON.stringify(this.path) + ' failed', e)
         }
 

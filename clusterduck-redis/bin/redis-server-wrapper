@@ -120,7 +120,7 @@ const start = (argv, port) => {
                                     'NODE': argv.addr + ':' + port,
                                 })
                             }, (error, stdout, stderr) => {
-                                if (!stdout.toString().match(/^\s+available:/m)) {
+                                if (stdout.toString().match(/ not found$/m)) {
                                     console.log('CHECK FAILED. EXITING...')
                                     process.kill(process.pid, 'SIGINT')
                                 }
