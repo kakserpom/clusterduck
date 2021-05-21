@@ -424,13 +424,12 @@ class Cluster extends Entity {
                     .on('changed', (node, state) => this.nodes.emit('changed', node, state))
                     .on('passed', () => {
                         const warnings = new Set()
-                        const attrs = {}
 
                         let error = null
                         let available = true
                         node.health_checks.forEach(check => {
                             for (const [key, value] of Object.entries(check.node_attrs || {})) {
-                                attrs[key] = value
+                                dotProp.set(node.attrs, key, value)
                             }
                             if (check.error) {
                                 available = false
@@ -443,7 +442,6 @@ class Cluster extends Entity {
                             (new UpdateNode).target(node).setSharedState(this.clusterduck.id, {
                                 available,
                                 error,
-                                attrs,
                                 warnings: Array.from(warnings),
                                 checked: true,
                             })

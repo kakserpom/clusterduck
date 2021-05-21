@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-
+// env -S node --inspect
 (async () => {
 
     const ConfigFile = require("../misc/config")

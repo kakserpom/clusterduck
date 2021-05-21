@@ -1,4 +1,5 @@
-const Redis = require("ioredis")
+const redis = require('redis')
+const {promisify} = require('util')
 const parseAddr = require('clusterduck/misc/addr')
 
 module.exports = (node, config, timeoutMs) =>
@@ -8,22 +9,17 @@ module.exports = (node, config, timeoutMs) =>
         process.listenerCount(event) || process.on(event, e => e.hide = true)
 
         const addr = parseAddr(node.addr)
-        let clientConfig = {
+        const client = redis.createClient({
             host: addr.hostname,
             port: addr.port,
-            maxRetriesPerRequest: 0,
-            //enableOfflineQueue: false,
-            showFriendlyErrorStack: true
-        }
-        if (node.enableReadyCheck != null) {
-            clientConfig.enableReadyCheck = node.enableReadyCheck
-        }
+            connect_timeout: timeoutMs,
+            no_ready_check: !(node.enableReadyCheck || false)
+        })
 
-        const client = new Redis(clientConfig)
+        const infoCommand = promisify(client.info).bind(client);
         const destroy = () => {
             if (client) {
-                if (client.stream) client.stream.destroy()
-                client.disconnect()
+                client.end(true)
             }
         }
 
@@ -38,7 +34,7 @@ module.exports = (node, config, timeoutMs) =>
                 destroy()
             })
             const warnings = []
-            const response = await client.info()
+            const response = await infoCommand()
             const info = {}
             for (let [, key, value] of response.matchAll(/^(?!#)([^\n:]+):(.+)$/gm)) {
                 const numeric = value.match(/^-?\d+(\.\d+)?$/)

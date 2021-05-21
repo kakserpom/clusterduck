@@ -24,12 +24,19 @@ class Threads extends Collection {
      */
     get thread() {
         if (this.length < this.maxThreads) {
-            const worker = new Thread
-            this.add(worker)
-            return worker
+            const thread = new Thread
+            this.add(thread)
+            return thread
         } else {
-            return this.get(this.keys()[Math.floor(Math.random() * this.length)])
+           return this.get(this.keys()[Math.floor(Math.random() * this.length)])
         }
+    }
+
+    restart() {
+        this.forEach(thread => {
+            this.delete(thread)
+            thread.exitWhenFree()
+        })
     }
 }
 

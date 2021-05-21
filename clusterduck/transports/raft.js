@@ -157,6 +157,7 @@ class RaftTransport extends Transport {
                 }
                 socket.connected = true
                 socket.latencies = []
+
                 socket.pingInterval = setInterval(() => {
                     const time = Date.now()
                     socket.send({type: 'ping'}, response => {
@@ -167,6 +168,7 @@ class RaftTransport extends Transport {
                         }
                     })
                 }, 1e3)
+
                 socket.options = response.options
                 this.peers.emit('changed', socket)
                 this.raft.join(address)
@@ -388,7 +390,11 @@ class RaftTransport extends Transport {
 
                     if (!socket.connected) {
                         debug('SOCKET NOT CONNECTED, ' + JSON.stringify(packet.type) + ' packet %s', this.address)
+                        return
                     }
+
+                    const json = JSON.stringify(packet)
+                   //debug('sent packet: ' + json.length  + ': ' + json)
 
                     socket.send(packet, data => {
                         try {

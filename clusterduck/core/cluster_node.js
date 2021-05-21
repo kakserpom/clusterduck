@@ -17,6 +17,7 @@ class ClusterNode extends Entity {
         this.active = false
         this.spare = false
         this.shared_state = {}
+        this.attrs = {}
 
         if (entry !== null) {
             this.entry(entry)
